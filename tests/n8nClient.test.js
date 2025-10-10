@@ -1,0 +1,243 @@
+const axios = require('axios');
+
+// Mock console methods to reduce noise in test output
+global.console = {
+  ...console,
+  log: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+};
+
+// Mock axios
+jest.mock('axios');
+
+const N8nClient = require('../src/n8nClient');
+
+describe('N8nClient', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('getHeaders', () => {
+    test('should return headers with Authorization when token is set', () => {
+      const originalToken = N8nClient.config.n8nBearerToken;
+      N8nClient.config.n8nBearerToken = 'test-token';
+
+      const headers = N8nClient.getHeaders();
+
+      expect(headers).toHaveProperty('Content-Type', 'application/json');
+      expect(headers).toHaveProperty('Authorization', 'Bearer test-token');
+
+      N8nClient.config.n8nBearerToken = originalToken;
+    });
+
+    test('should return headers without Authorization when token is empty', () => {
+      const originalToken = N8nClient.config.n8nBearerToken;
+      N8nClient.config.n8nBearerToken = '';
+
+      const headers = N8nClient.getHeaders();
+
+      expect(headers).toHaveProperty('Content-Type', 'application/json');
+      expect(headers).not.toHaveProperty('Authorization');
+
+      N8nClient.config.n8nBearerToken = originalToken;
+    });
+  });
+
+  describe('buildPayload', () => {
+    test('should build payload with system prompt and current message', () => {
+      const messages = [
+        { role: 'system', content: 'You are a helpful assistant' },
+        { role: 'user', content: 'Hello' },
+        { role: 'assistant', content: 'Hi there!' },
+        { role: 'user', content: 'How are you?' }
+      ];
+
+      const payload = N8nClient.buildPayload(messages, 'session-123', 'user-456');
+
+      expect(payload.systemPrompt).toBe('You are a helpful assistant');
+      expect(payload.currentMessage).toBe('How are you?');
+      expect(payload.chatInput).toBe('How are you?');
+      expect(payload.sessionId).toBe('session-123');
+      expect(payload.userId).toBe('user-456');
+    });
+
+    test('should filter out system messages from messages array', () => {
+      const messages = [
+        { role: 'system', content: 'System prompt' },
+        { role: 'user', content: 'Hello' },
+        { role: 'assistant', content: 'Hi!' }
+      ];
+
+      const payload = N8nClient.buildPayload(messages, 'session-123', 'user-456');
+
+      expect(payload.messages).toHaveLength(2);
+      expect(payload.messages.every(m => m.role !== 'system')).toBe(true);
+    });
+
+    test('should handle empty messages array', () => {
+      const payload = N8nClient.buildPayload([], 'session-123', 'user-456');
+
+      expect(payload.systemPrompt).toBe('');
+      expect(payload.currentMessage).toBe('');
+      expect(payload.messages).toEqual([]);
+    });
+  });
+
+  describe('nonStreamingCompletion', () => {
+    test('should return string response as-is', async () => {
+      axios.post.mockResolvedValue({
+        data: 'Simple text response'
+      });
+
+      const result = await N8nClient.nonStreamingCompletion(
+        'https://n8n.example.com/webhook/test/chat',
+        [{ role: 'user', content: 'Hello' }],
+        'session-123',
+        'user-456'
+      );
+
+      expect(result).toBe('Simple text response');
+    });
+
+    test('should extract content from output field', async () => {
+      axios.post.mockResolvedValue({
+        data: { output: 'Response from output field' }
+      });
+
+      const result = await N8nClient.nonStreamingCompletion(
+        'https://n8n.example.com/webhook/test/chat',
+        [{ role: 'user', content: 'Hello' }],
+        'session-123',
+        'user-456'
+      );
+
+      expect(result).toBe('Response from output field');
+    });
+
+    test('should extract content from content field', async () => {
+      axios.post.mockResolvedValue({
+        data: { content: 'Response from content field' }
+      });
+
+      const result = await N8nClient.nonStreamingCompletion(
+        'https://n8n.example.com/webhook/test/chat',
+        [{ role: 'user', content: 'Hello' }],
+        'session-123',
+        'user-456'
+      );
+
+      expect(result).toBe('Response from content field');
+    });
+
+    test('should handle errors gracefully', async () => {
+      axios.post.mockRejectedValue(new Error('Network error'));
+
+      await expect(
+        N8nClient.nonStreamingCompletion(
+          'https://n8n.example.com/webhook/test/chat',
+          [{ role: 'user', content: 'Hello' }],
+          'session-123',
+          'user-456'
+        )
+      ).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('extractJsonChunks', () => {
+    test('should extract single JSON object', () => {
+      const buffer = '{"content":"Hello"}';
+      const result = N8nClient.extractJsonChunks(buffer);
+
+      expect(result.extracted).toHaveLength(1);
+      expect(result.extracted[0]).toBe('{"content":"Hello"}');
+      expect(result.remainder).toBe('');
+    });
+
+    test('should extract multiple JSON objects', () => {
+      const buffer = '{"content":"Hello"}{"content":"World"}';
+      const result = N8nClient.extractJsonChunks(buffer);
+
+      expect(result.extracted).toHaveLength(2);
+      expect(result.extracted[0]).toBe('{"content":"Hello"}');
+      expect(result.extracted[1]).toBe('{"content":"World"}');
+    });
+
+    test('should handle nested JSON objects', () => {
+      const buffer = '{"data":{"nested":"value"}}';
+      const result = N8nClient.extractJsonChunks(buffer);
+
+      expect(result.extracted).toHaveLength(1);
+      expect(result.extracted[0]).toBe('{"data":{"nested":"value"}}');
+    });
+
+    test('should keep incomplete JSON in remainder', () => {
+      const buffer = '{"content":"Hello"}{"incomplete":';
+      const result = N8nClient.extractJsonChunks(buffer);
+
+      expect(result.extracted).toHaveLength(1);
+      expect(result.remainder).toBe('{"incomplete":');
+    });
+
+    test('should handle buffer with no JSON', () => {
+      const buffer = 'plain text';
+      const result = N8nClient.extractJsonChunks(buffer);
+
+      expect(result.extracted).toHaveLength(0);
+      expect(result.remainder).toBe('plain text');
+    });
+  });
+
+  describe('parseN8nChunk', () => {
+    test('should extract content from JSON chunk', () => {
+      const chunk = '{"content":"Hello world"}';
+      const result = N8nClient.parseN8nChunk(chunk);
+
+      expect(result).toBe('Hello world');
+    });
+
+    test('should extract text from JSON chunk', () => {
+      const chunk = '{"text":"Hello world"}';
+      const result = N8nClient.parseN8nChunk(chunk);
+
+      expect(result).toBe('Hello world');
+    });
+
+    test('should extract output from JSON chunk', () => {
+      const chunk = '{"output":"Hello world"}';
+      const result = N8nClient.parseN8nChunk(chunk);
+
+      expect(result).toBe('Hello world');
+    });
+
+    test('should skip metadata chunks', () => {
+      const chunk = '{"type":"metadata","data":"ignored"}';
+      const result = N8nClient.parseN8nChunk(chunk);
+
+      expect(result).toBeNull();
+    });
+
+    test('should skip begin/end/error chunks', () => {
+      expect(N8nClient.parseN8nChunk('{"type":"begin"}')).toBeNull();
+      expect(N8nClient.parseN8nChunk('{"type":"end"}')).toBeNull();
+      expect(N8nClient.parseN8nChunk('{"type":"error"}')).toBeNull();
+    });
+
+    test('should handle plain text', () => {
+      const result = N8nClient.parseN8nChunk('plain text');
+
+      expect(result).toBe('plain text');
+    });
+
+    test('should return null for empty input', () => {
+      expect(N8nClient.parseN8nChunk('')).toBeNull();
+      expect(N8nClient.parseN8nChunk('   ')).toBeNull();
+    });
+
+    test('should return null for invalid JSON starting with brace', () => {
+      const result = N8nClient.parseN8nChunk('{invalid json}');
+
+      expect(result).toBeNull();
+    });
+  });
+});

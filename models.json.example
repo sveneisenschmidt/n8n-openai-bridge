@@ -1,0 +1,5 @@
+{
+  "my-custom-agent": "https://n8n.example.com/webhook/your-webhook-id/chat",
+  "gpt-4-assistant": "https://n8n.example.com/webhook/another-webhook-id/chat",
+  "code-helper": "https://n8n.example.com/webhook/code-helper-webhook-id/chat"
+}
