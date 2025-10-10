@@ -167,7 +167,31 @@ Authorization: Bearer your-secret-api-key-here
 - API Key: Your `BEARER_TOKEN` from `.env`
 - Set `ENABLE_FORWARD_USER_INFO_HEADERS=true` (required for session tracking)
 
-**Title Generation:** Disable or use a separate local task model to avoid session pollution.
+### LibreChat
+
+**Setup:** Add to your `librechat.yaml` configuration:
+
+```yaml
+endpoints:
+  custom:
+    - name: "n8n"
+      apiKey: "your-secret-api-key-here"
+      baseURL: "http://n8n-openai-bridge:3333/v1"
+      models:
+        default: ["placeholder-model-do-not-remove-me"]
+        fetch: true
+      headers:
+        X-Chat-Id: "{{LIBRECHAT_BODY_CONVERSATIONID}}"
+      titleConvo: true
+      summary: true
+```
+
+**Configuration Notes:**
+- `apiKey`: Must match your `BEARER_TOKEN` from `.env`
+- `baseURL`: Use `http://n8n-openai-bridge:3333/v1` if running in Docker, or `http://your-server:3333/v1` for external access
+- `fetch: true`: Automatically fetches available models from the bridge
+- `X-Chat-Id` header: Passes LibreChat's conversation ID to the bridge for session tracking
+- `titleConvo` and `summary`: Enable automatic conversation titling and summarization
 
 ### JavaScript/TypeScript
 

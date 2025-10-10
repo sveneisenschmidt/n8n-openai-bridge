@@ -73,27 +73,47 @@ class N8nClient {
 
   async nonStreamingCompletion(webhookUrl, messages, sessionId, userId) {
     const payload = this.buildPayload(messages, sessionId, userId);
-    
+
     try {
+      // n8n always sends streams, so we need to handle it as a stream
+      // and collect all content chunks
       const response = await axios.post(webhookUrl, payload, {
         headers: this.getHeaders(),
+        responseType: 'stream',
         timeout: 300000, // 5 minutes
       });
 
-      const data = response.data;
-      
-      if (typeof data === 'string') {
-        return data;
+      let buffer = '';
+      let collectedContent = [];
+
+      for await (const chunk of response.data) {
+        const text = chunk.toString();
+        buffer += text;
+
+        // Process JSON chunks
+        if (buffer.includes('{') && buffer.includes('}')) {
+          const chunks = this.extractJsonChunks(buffer);
+          buffer = chunks.remainder;
+
+          for (const jsonChunk of chunks.extracted) {
+            const content = this.parseN8nChunk(jsonChunk);
+            if (content) {
+              collectedContent.push(content);
+            }
+          }
+        }
       }
-      
-      // Try different field names
-      if (data.output) return data.output;
-      if (data.content) return data.content;
-      if (data.text) return data.text;
-      if (data.message) return data.message;
-      
-      // Fallback to stringified JSON
-      return JSON.stringify(data);
+
+      // Process remaining buffer
+      if (buffer.trim()) {
+        const content = this.parseN8nChunk(buffer.trim());
+        if (content) {
+          collectedContent.push(content);
+        }
+      }
+
+      // Return all collected content as a single string
+      return collectedContent.join('');
     } catch (error) {
       console.error('Non-streaming error:', error.message);
       throw error;

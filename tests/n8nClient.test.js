@@ -85,9 +85,19 @@ describe('N8nClient', () => {
   });
 
   describe('nonStreamingCompletion', () => {
-    test('should return string response as-is', async () => {
+    test('should collect and return complete streamed response', async () => {
+      // Mock a stream response from n8n
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from('{"type":"begin","metadata":{}}');
+          yield Buffer.from('{"type":"item","content":"Hello "}');
+          yield Buffer.from('{"type":"item","content":"World"}');
+          yield Buffer.from('{"type":"end","metadata":{}}');
+        }
+      };
+
       axios.post.mockResolvedValue({
-        data: 'Simple text response'
+        data: mockStream
       });
 
       const result = await N8nClient.nonStreamingCompletion(
@@ -97,12 +107,19 @@ describe('N8nClient', () => {
         'user-456'
       );
 
-      expect(result).toBe('Simple text response');
+      expect(result).toBe('Hello World');
     });
 
-    test('should extract content from output field', async () => {
+    test('should handle single chunk response', async () => {
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from('{"type":"item","content":"Complete response"}');
+          yield Buffer.from('{"type":"end"}');
+        }
+      };
+
       axios.post.mockResolvedValue({
-        data: { output: 'Response from output field' }
+        data: mockStream
       });
 
       const result = await N8nClient.nonStreamingCompletion(
@@ -112,12 +129,20 @@ describe('N8nClient', () => {
         'user-456'
       );
 
-      expect(result).toBe('Response from output field');
+      expect(result).toBe('Complete response');
     });
 
-    test('should extract content from content field', async () => {
+    test('should handle response with different content fields', async () => {
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from('{"output":"Part 1 "}');
+          yield Buffer.from('{"text":"Part 2 "}');
+          yield Buffer.from('{"message":"Part 3"}');
+        }
+      };
+
       axios.post.mockResolvedValue({
-        data: { content: 'Response from content field' }
+        data: mockStream
       });
 
       const result = await N8nClient.nonStreamingCompletion(
@@ -127,7 +152,7 @@ describe('N8nClient', () => {
         'user-456'
       );
 
-      expect(result).toBe('Response from content field');
+      expect(result).toBe('Part 1 Part 2 Part 3');
     });
 
     test('should handle errors gracefully', async () => {
