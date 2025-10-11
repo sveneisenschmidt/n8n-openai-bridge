@@ -54,6 +54,16 @@ function maskSensitiveBody(body) {
   return masked;
 }
 
+// Health check (before authentication middleware)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    models: Object.keys(config.models).length,
+    uptime: process.uptime(),
+    logging: config.logRequests
+  });
+});
+
 // Authentication middleware
 function authenticate(req, res, next) {
   if (!config.bearerToken) {
@@ -74,16 +84,6 @@ function authenticate(req, res, next) {
 }
 
 app.use(authenticate);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    models: Object.keys(config.models).length,
-    uptime: process.uptime(),
-    logging: config.logRequests
-  });
-});
 
 // Reload models config
 app.post('/admin/reload', (req, res) => {
