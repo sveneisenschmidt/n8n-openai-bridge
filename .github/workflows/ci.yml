@@ -77,9 +77,13 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: n8n-openai-bridge:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Docker image exists
+        run: docker images | grep n8n-openai-bridge || (echo "Image not found!" && exit 1)
 
       - name: Test Docker image
         run: |
@@ -89,7 +93,19 @@ jobs:
             n8n-openai-bridge:test
 
           # Wait for container to be ready
-          sleep 5
+          echo "Waiting for container to start..."
+          for i in {1..30}; do
+            if docker logs test-container 2>&1 | grep -q "Server running on port"; then
+              echo "✓ Container started"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Container failed to start"
+              docker logs test-container
+              exit 1
+            fi
+            sleep 1
+          done
 
           # Check health endpoint
           curl -f http://localhost:3333/health || exit 1
