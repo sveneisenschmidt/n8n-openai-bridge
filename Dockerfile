@@ -10,8 +10,16 @@ COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install --omit=dev --prefer-offline --no-audit --no-fund
 
+# Copy version file
+COPY VERSION ./VERSION
+
 # Copy application files
 COPY src/ ./src/
+
+# Copy default configuration files for Docker
+# These will be used if no external configs are mounted
+COPY docker/.env ./.env
+COPY docker/models.json ./models.json
 
 # Expose port
 EXPOSE 3333

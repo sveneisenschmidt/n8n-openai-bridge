@@ -44,6 +44,59 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 
 ## Installation
 
+### Option 1: Docker Image (Recommended)
+
+The Docker image comes with default configuration files built-in. Simply mount your custom `models.json` to configure your n8n webhooks.
+
+**Quick Start:**
+
+```bash
+# Create your models configuration
+cat > models.json << 'EOF'
+{
+  "my-agent": "https://n8n.example.com/webhook/abc123/chat"
+}
+EOF
+
+# Run container
+docker run -d \
+  --name n8n-openai-bridge \
+  -p 3333:3333 \
+  -e BEARER_TOKEN=your-secret-api-key-here \
+  -v $(pwd)/models.json:/app/models.json:ro \
+  ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+
+# Check health
+curl http://localhost:3333/health
+```
+
+**Docker Compose:**
+
+```yaml
+services:
+  n8n-openai-bridge:
+    image: ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+    container_name: n8n-openai-bridge
+    ports:
+      - "3333:3333"
+    environment:
+      - BEARER_TOKEN=your-secret-api-key-here
+      - N8N_BEARER_TOKEN=  # Optional: for authenticated n8n webhooks
+      - LOG_REQUESTS=false
+      - SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
+    volumes:
+      - ./models.json:/app/models.json:ro
+    restart: unless-stopped
+```
+
+**Available image tags:**
+- `latest` - Latest stable release
+- `0.0.3` - Specific version
+- `0.0` - Latest patch version of 0.0.x
+- `0` - Latest minor version of 0.x.x
+
+### Option 2: Build from Source
+
 ```bash
 # Clone the repository
 git clone git@github.com:sveneisenschmidt/n8n-openai-bridge.git
@@ -58,7 +111,7 @@ nano .env           # Add your BEARER_TOKEN
 nano models.json    # Add your n8n webhook URLs
 ```
 
-### Start with Docker Compose
+**Start with Docker Compose:**
 
 ```bash
 make rebuild  # Stops, rebuilds, starts (recommended)
@@ -262,9 +315,21 @@ Tests cover configuration, n8n client, and API endpoints. See `tests/` directory
 LOG_REQUESTS=true
 ```
 
+### Check if your models.json is loaded
+
+```bash
+# List available models
+curl -H "Authorization: Bearer your-token" http://localhost:3333/v1/models
+
+# If you see "docker-default-model" - your mounted models.json is NOT being loaded
+# This is the built-in placeholder from the Docker image
+# Solution: Check your volume mount path and restart the container
+```
+
 ### Common issues
 
 - **"Model not found"**: Check `models.json`
+- **Seeing "docker-default-model"**: Your `models.json` mount is not working - check volume path
 - **"Unauthorized"**: Verify `BEARER_TOKEN` matches
 - **Webhook not responding**: Test webhook directly with `curl`
 - **Streaming issues**: Try with `stream: false` first
@@ -291,6 +356,64 @@ n8n-openai-bridge/
 ├── Makefile               # Build and test automation
 └── package.json           # Node.js dependencies and scripts
 ```
+
+## Development
+
+### Feature Branch Workflow
+
+This project uses feature branches and GitHub Actions for CI/CD.
+
+**Branch naming conventions:**
+- `feature/*` - New features
+- `fix/*` - Bug fixes
+- `hotfix/*` - Urgent production fixes
+
+**Development workflow:**
+
+```bash
+# Create feature branch
+git checkout -b feature/my-new-feature
+
+# Make changes and commit
+git add .
+git commit -m "Add: description of changes"
+
+# Push to GitHub
+git push origin feature/my-new-feature
+
+# Create Pull Request on GitHub
+# CI will automatically run tests, build Docker image, and security scan
+```
+
+**CI checks on every push:**
+- Unit tests with coverage
+- Docker image build test
+- Security vulnerability scan
+- Health check validation
+
+**Releases:**
+1. Update [CHANGELOG.md](CHANGELOG.md) with version and changes
+2. Commit to `main` branch
+3. Create GitHub Release with version tag (e.g., `v1.0.0`)
+4. Docker images automatically built and published to GitHub Container Registry
+
+See [.github/workflows/README.md](.github/workflows/README.md) for detailed CI/CD documentation.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add: amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please ensure:
+- All tests pass (`npm test`)
+- Docker build succeeds
+- Code follows existing style
+- Update documentation as needed
 
 ## License
 

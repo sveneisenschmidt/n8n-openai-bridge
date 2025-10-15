@@ -9,22 +9,18 @@ services:
     environment:
       - PORT=3333
       - BEARER_TOKEN=${BEARER_TOKEN}
-      - N8N_BEARER_TOKEN=${N8N_BEARER_TOKEN}
+      - N8N_BEARER_TOKEN=${N8N_BEARER_TOKEN:-}
       - MODELS_CONFIG=/app/models.json
       - LOG_REQUESTS=${LOG_REQUESTS:-false}
+      - SESSION_ID_HEADERS=${SESSION_ID_HEADERS:-X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id}
     volumes:
+      # Mount user configuration files
+      # Create models.json from models.json.example before starting
       - ./models.json:/app/models.json:ro
     restart: unless-stopped
-    networks:
-      - ${DOCKER_NETWORK_NAME:-proxy}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
-
-networks:
-  proxy:
-    name: ${DOCKER_NETWORK_NAME:-proxy}
-    external: true

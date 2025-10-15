@@ -313,9 +313,13 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = config.port;
+const fs = require('fs');
+const path = require('path');
+const version = fs.readFileSync(path.join(__dirname, '../VERSION'), 'utf8').trim();
+
 app.listen(PORT, () => {
   console.log('='.repeat(60));
-  console.log(`n8n OpenAI Bridge v1.0.0`);
+  console.log(`n8n OpenAI Bridge v${version}`);
   console.log('='.repeat(60));
   console.log(`Server running on port: ${PORT}`);
   console.log(`Request logging: ${config.logRequests ? 'ENABLED' : 'DISABLED'}`);
