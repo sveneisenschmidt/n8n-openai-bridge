@@ -1,8 +1,7 @@
 const axios = require('axios');
-const config = require('./config');
 
 class N8nClient {
-  constructor() {
+  constructor(config) {
     this.config = config;
   }
 
@@ -187,4 +186,4 @@ class N8nClient {
   }
 }
 
-module.exports = new N8nClient();
+module.exports = N8nClient;

@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all verify version release-check release-prepare release-tag
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify version release-check release-prepare release-tag
 
 # Get version from VERSION file
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
@@ -17,10 +17,11 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test           - Run all tests (unit + image build)"
-	@echo "  make test-unit      - Run unit tests for server logic only"
-	@echo "  make test-image     - Run Docker image build validation tests"
-	@echo "  make test-all       - Alias for test"
+	@echo "  make test              - Run all tests (unit + image build)"
+	@echo "  make test-unit         - Run unit tests for server logic only"
+	@echo "  make test-image        - Run Docker image build validation tests"
+	@echo "  make test-all          - Alias for test"
+	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
 	@echo ""
 	@echo "Release:"
 	@echo "  make version        - Show current version from VERSION file"
@@ -102,6 +103,28 @@ test-image:
 	@echo "======================================"
 	@echo ""
 	@bash tests/test-image-build.sh
+
+# Test 3: Load testing with k6 (via docker-compose)
+test-load:
+	@echo ""
+	@echo "======================================"
+	@echo "Running Load Tests (20 users, 1min)"
+	@echo "======================================"
+	@echo ""
+	@echo "Building images..."
+	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml build
+	@echo ""
+	@echo "Starting services (mock-n8n, bridge, k6)..."
+	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
+	@echo ""
+	@echo "Cleaning up..."
+	@docker-compose -f docker-compose.loadtest.yml down -v
+	@echo ""
+	@echo "✓ Load tests completed!"
+	@echo ""
+	@if [ -f tests/load/summary.json ]; then \
+		echo "📊 Detailed results saved to: tests/load/summary.json"; \
+	fi
 
 # Release Management
 

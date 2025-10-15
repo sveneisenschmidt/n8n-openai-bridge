@@ -1,0 +1,23 @@
+# Dockerfile for Mock n8n Server (Load Testing)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy mock server
+COPY tests/load/mock-n8n-server.js .
+
+# Expose mock server port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"
+
+# Run mock server
+CMD ["node", "mock-n8n-server.js"]

@@ -13,8 +13,13 @@ global.console = {
 jest.mock('axios');
 
 describe('Edge Cases and Error Handling', () => {
+  let client;
+  let mockConfig;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockConfig = { n8nBearerToken: '' };
+    client = new N8nClient(mockConfig);
   });
 
   describe('N8nClient - Timeout Handling', () => {
@@ -27,7 +32,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -50,7 +55,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -78,7 +83,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.streamCompletion(
+        client.streamCompletion(
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -98,7 +103,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://invalid-domain.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -118,7 +123,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://self-signed.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -141,7 +146,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -163,7 +168,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -185,7 +190,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -208,7 +213,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -234,7 +239,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -256,7 +261,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -276,7 +281,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -297,7 +302,7 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await N8nClient.nonStreamingCompletion(
+      const result = await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
@@ -320,7 +325,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -344,7 +349,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -368,7 +373,7 @@ describe('Edge Cases and Error Handling', () => {
       const userContext = { userId: 'test-user' };
 
       await expect(
-        N8nClient.nonStreamingCompletion(
+        client.nonStreamingCompletion(
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
@@ -385,7 +390,7 @@ describe('Edge Cases and Error Handling', () => {
   describe('extractJsonChunks - Edge Cases', () => {
     test('should handle deeply nested objects', () => {
       const buffer = '{"a":{"b":{"c":{"d":"value"}}}}';
-      const result = N8nClient.extractJsonChunks(buffer);
+      const result = client.extractJsonChunks(buffer);
 
       expect(result.extracted).toHaveLength(1);
       expect(result.extracted[0]).toBe(buffer);
@@ -393,7 +398,7 @@ describe('Edge Cases and Error Handling', () => {
 
     test('should handle arrays in JSON', () => {
       const buffer = '{"items":[1,2,3,{"nested":"value"}]}';
-      const result = N8nClient.extractJsonChunks(buffer);
+      const result = client.extractJsonChunks(buffer);
 
       expect(result.extracted).toHaveLength(1);
       expect(result.extracted[0]).toBe(buffer);
@@ -401,7 +406,7 @@ describe('Edge Cases and Error Handling', () => {
 
     test('should handle empty objects', () => {
       const buffer = '{}{}{}';
-      const result = N8nClient.extractJsonChunks(buffer);
+      const result = client.extractJsonChunks(buffer);
 
       expect(result.extracted).toHaveLength(3);
       expect(result.extracted[0]).toBe('{}');
@@ -409,7 +414,7 @@ describe('Edge Cases and Error Handling', () => {
 
     test('should handle mixed valid and invalid JSON', () => {
       const buffer = 'prefix{"valid":true}suffix{"also":"valid"}';
-      const result = N8nClient.extractJsonChunks(buffer);
+      const result = client.extractJsonChunks(buffer);
 
       expect(result.extracted).toHaveLength(2);
       expect(result.extracted[0]).toBe('{"valid":true}');
@@ -425,7 +430,7 @@ describe('Edge Cases and Error Handling', () => {
       ];
 
       const userContext = { userId: 'test-user' };
-      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.currentMessage).toBe(longMessage);
       expect(payload.currentMessage.length).toBe(10000);
@@ -437,7 +442,7 @@ describe('Edge Cases and Error Handling', () => {
       ];
 
       const userContext = { userId: 'test-user' };
-      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.currentMessage).toContain('\n');
       expect(payload.currentMessage).toContain('\t');
@@ -456,7 +461,7 @@ describe('Edge Cases and Error Handling', () => {
         userRole: ''
       };
 
-      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.userId).toBe('');
       expect(payload).not.toHaveProperty('userEmail');
@@ -476,7 +481,7 @@ describe('Edge Cases and Error Handling', () => {
         userRole: ''
       };
 
-      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.userId).toBe('test-user');
       // undefined, null, and empty string should all be excluded

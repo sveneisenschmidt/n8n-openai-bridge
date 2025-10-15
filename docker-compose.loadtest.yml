@@ -1,0 +1,69 @@
+services:
+  # Mock n8n server - simulates n8n webhook responses
+  mock-n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock-n8n
+    container_name: loadtest-mock-n8n
+    environment:
+      - MOCK_PORT=3001
+      - MOCK_LATENCY_MIN=${MOCK_LATENCY_MIN:-50}
+      - MOCK_LATENCY_MAX=${MOCK_LATENCY_MAX:-200}
+      - MOCK_ERROR_RATE=${MOCK_ERROR_RATE:-0}
+      - MOCK_STREAM_CHUNK_DELAY=${MOCK_STREAM_CHUNK_DELAY:-30}
+    networks:
+      - loadtest
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # n8n-openai-bridge - the service under test
+  n8n-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loadtest-bridge
+    volumes:
+      - ./tests/load/models.json:/app/models.json:ro
+    environment:
+      - N8N_WEBHOOK_URL=http://mock-n8n:3001/webhook/test
+      - N8N_WEBHOOK_STREAM_URL=http://mock-n8n:3001/webhook/test/stream
+      - BEARER_TOKEN=${BEARER_TOKEN:-test-token}
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      mock-n8n:
+        condition: service_healthy
+    networks:
+      - loadtest
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # k6 - load testing tool
+  k6:
+    image: grafana/k6:latest
+    container_name: loadtest-k6
+    volumes:
+      - ./tests/load:/scripts
+    environment:
+      - TARGET_URL=http://n8n-bridge:3000
+      - BEARER_TOKEN=${BEARER_TOKEN:-test-token}
+      - VUS=${VUS:-10}
+      - DURATION=${DURATION:-30s}
+    command: run /scripts/loadtest.k6.js
+    depends_on:
+      n8n-bridge:
+        condition: service_healthy
+    networks:
+      - loadtest
+
+networks:
+  loadtest:
+    driver: bridge

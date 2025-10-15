@@ -21,13 +21,18 @@ class Config {
 
   setupFileWatcher() {
     const configPath = path.resolve(this.modelsConfigPath);
+    let reloadTimeout = null;
 
     try {
       this.watcher = fs.watch(configPath, (eventType) => {
         if (eventType === 'change') {
-          console.log(`[${new Date().toISOString()}] models.json changed, reloading...`);
-          this.reloadModels();
-          console.log(`[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`);
+          // Debounce: wait 100ms before reloading to avoid multiple reloads
+          clearTimeout(reloadTimeout);
+          reloadTimeout = setTimeout(() => {
+            console.log(`[${new Date().toISOString()}] models.json changed, reloading...`);
+            this.reloadModels();
+            console.log(`[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`);
+          }, 100);
         }
       });
       console.log(`[${new Date().toISOString()}] Watching ${configPath} for changes...`);
@@ -43,9 +48,8 @@ class Config {
     }
   }
 
-  parseSessionIdHeaders() {
-    const defaultHeaders = ['X-Session-Id', 'X-Chat-Id'];
-    const envValue = process.env.SESSION_ID_HEADERS;
+  parseHeadersFromEnv(envVarName, defaultHeaders) {
+    const envValue = process.env[envVarName];
 
     if (!envValue || !envValue.trim()) {
       return defaultHeaders;
@@ -58,74 +62,26 @@ class Config {
       .filter(h => h.length > 0);
 
     return headers.length > 0 ? headers : defaultHeaders;
+  }
+
+  parseSessionIdHeaders() {
+    return this.parseHeadersFromEnv('SESSION_ID_HEADERS', ['X-Session-Id', 'X-Chat-Id']);
   }
 
   parseUserIdHeaders() {
-    const defaultHeaders = ['X-User-Id'];
-    const envValue = process.env.USER_ID_HEADERS;
-
-    if (!envValue || !envValue.trim()) {
-      return defaultHeaders;
-    }
-
-    // Split by comma, trim whitespace, filter empty values
-    const headers = envValue
-      .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
-
-    return headers.length > 0 ? headers : defaultHeaders;
+    return this.parseHeadersFromEnv('USER_ID_HEADERS', ['X-User-Id']);
   }
 
   parseUserEmailHeaders() {
-    const defaultHeaders = ['X-User-Email'];
-    const envValue = process.env.USER_EMAIL_HEADERS;
-
-    if (!envValue || !envValue.trim()) {
-      return defaultHeaders;
-    }
-
-    // Split by comma, trim whitespace, filter empty values
-    const headers = envValue
-      .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
-
-    return headers.length > 0 ? headers : defaultHeaders;
+    return this.parseHeadersFromEnv('USER_EMAIL_HEADERS', ['X-User-Email']);
   }
 
   parseUserNameHeaders() {
-    const defaultHeaders = ['X-User-Name'];
-    const envValue = process.env.USER_NAME_HEADERS;
-
-    if (!envValue || !envValue.trim()) {
-      return defaultHeaders;
-    }
-
-    // Split by comma, trim whitespace, filter empty values
-    const headers = envValue
-      .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
-
-    return headers.length > 0 ? headers : defaultHeaders;
+    return this.parseHeadersFromEnv('USER_NAME_HEADERS', ['X-User-Name']);
   }
 
   parseUserRoleHeaders() {
-    const defaultHeaders = ['X-User-Role'];
-    const envValue = process.env.USER_ROLE_HEADERS;
-
-    if (!envValue || !envValue.trim()) {
-      return defaultHeaders;
-    }
-
-    // Split by comma, trim whitespace, filter empty values
-    const headers = envValue
-      .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
-
-    return headers.length > 0 ? headers : defaultHeaders;
+    return this.parseHeadersFromEnv('USER_ROLE_HEADERS', ['X-User-Role']);
   }
 
   loadModels() {

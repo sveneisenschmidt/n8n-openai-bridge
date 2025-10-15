@@ -2,13 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const config = require('./config');
-const n8nClient = require('./n8nClient');
+const N8nClient = require('./n8nClient');
 const { maskSensitiveHeaders, maskSensitiveBody } = require('./utils/masking');
 const { extractSessionId } = require('./services/sessionService');
 const { extractUserContext } = require('./services/userService');
 const { validateChatCompletionRequest } = require('./services/validationService');
 
 const app = express();
+const n8nClient = new N8nClient(config);
 
 // Middleware
 app.use(cors());
