@@ -1,12 +1,39 @@
+# Dependencies
 node_modules
 npm-debug.log
+
+# Environment files (use docker/.env instead)
 .env
 .env.local
+.env.example
+
+# Git
 .git
 .gitignore
+
+# Documentation
 README.md
+CHANGELOG.md
+
+# IDE
 .vscode
 .idea
+
+# Test artifacts
 coverage
-.DS_Store
 *.log
+
+# Configuration examples (use docker/models.json instead)
+models.json
+models.json.example
+
+# Development files
+docker-compose.yml
+Makefile
+n8n_workflow.json.example
+
+# OS
+.DS_Store
+
+# Note: tests/ and Dockerfile.test are intentionally NOT ignored
+# They are needed for the test Docker image (Dockerfile.test)
