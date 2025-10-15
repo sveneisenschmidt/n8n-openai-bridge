@@ -194,14 +194,84 @@ app.post('/v1/chat/completions', async (req, res) => {
     sessionSource = 'generated (new UUID)';
   }
 
-  // Get user ID from body or fallback
-  const userId = user || req.body.user_id || 'anonymous';
+  // Extract user information from headers or body
+  let userId = null;
+  let userEmail = null;
+  let userName = null;
+  let userRole = null;
+
+  // Try to get userId from configured headers
+  for (const headerName of config.userIdHeaders) {
+    const lowerHeaderName = headerName.toLowerCase();
+    if (req.headers[lowerHeaderName]) {
+      userId = req.headers[lowerHeaderName];
+      break;
+    }
+  }
+
+  // Fallback to body fields for userId
+  if (!userId) {
+    userId = user || req.body.user_id || req.body.userId || 'anonymous';
+  }
+
+  // Try to get userEmail from configured headers
+  for (const headerName of config.userEmailHeaders) {
+    const lowerHeaderName = headerName.toLowerCase();
+    if (req.headers[lowerHeaderName]) {
+      userEmail = req.headers[lowerHeaderName];
+      break;
+    }
+  }
+
+  // Fallback to body fields for userEmail
+  if (!userEmail) {
+    userEmail = req.body.user_email || req.body.userEmail || null;
+  }
+
+  // Try to get userName from configured headers
+  for (const headerName of config.userNameHeaders) {
+    const lowerHeaderName = headerName.toLowerCase();
+    if (req.headers[lowerHeaderName]) {
+      userName = req.headers[lowerHeaderName];
+      break;
+    }
+  }
+
+  // Fallback to body fields for userName
+  if (!userName) {
+    userName = req.body.user_name || req.body.userName || null;
+  }
+
+  // Try to get userRole from configured headers
+  for (const headerName of config.userRoleHeaders) {
+    const lowerHeaderName = headerName.toLowerCase();
+    if (req.headers[lowerHeaderName]) {
+      userRole = req.headers[lowerHeaderName];
+      break;
+    }
+  }
+
+  // Fallback to body fields for userRole
+  if (!userRole) {
+    userRole = req.body.user_role || req.body.userRole || null;
+  }
 
   console.log(`\n>>> SESSION ID: ${sessionId}`);
   console.log(`>>> SOURCE: ${sessionSource}`);
   console.log(`>>> USER ID: ${userId}`);
+  console.log(`>>> USER EMAIL: ${userEmail || 'not provided'}`);
+  console.log(`>>> USER NAME: ${userName || 'not provided'}`);
+  console.log(`>>> USER ROLE: ${userRole || 'not provided'}`);
   console.log(`>>> MODEL: ${model}`);
   console.log(`>>> STREAM: ${stream}\n`);
+
+  // Build user context object
+  const userContext = {
+    userId,
+    userEmail,
+    userName,
+    userRole,
+  };
 
   try {
     if (stream) {
@@ -211,7 +281,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
 
       try {
-        const streamGenerator = n8nClient.streamCompletion(webhookUrl, messages, sessionId, userId);
+        const streamGenerator = n8nClient.streamCompletion(webhookUrl, messages, sessionId, userContext);
 
         for await (const content of streamGenerator) {
           const chunk = {
@@ -260,7 +330,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       }
     } else {
       // Non-streaming response
-      const content = await n8nClient.nonStreamingCompletion(webhookUrl, messages, sessionId, userId);
+      const content = await n8nClient.nonStreamingCompletion(webhookUrl, messages, sessionId, userContext);
 
       const response = {
         id: `chatcmpl-${uuidv4()}`,
