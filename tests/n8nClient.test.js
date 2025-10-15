@@ -53,13 +53,23 @@ describe('N8nClient', () => {
         { role: 'user', content: 'How are you?' }
       ];
 
-      const payload = N8nClient.buildPayload(messages, 'session-123', 'user-456');
+      const userContext = {
+        userId: 'user-456',
+        userEmail: 'user@example.com',
+        userName: 'John Doe',
+        userRole: 'admin'
+      };
+
+      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.systemPrompt).toBe('You are a helpful assistant');
       expect(payload.currentMessage).toBe('How are you?');
       expect(payload.chatInput).toBe('How are you?');
       expect(payload.sessionId).toBe('session-123');
       expect(payload.userId).toBe('user-456');
+      expect(payload.userEmail).toBe('user@example.com');
+      expect(payload.userName).toBe('John Doe');
+      expect(payload.userRole).toBe('admin');
     });
 
     test('should filter out system messages from messages array', () => {
@@ -69,18 +79,60 @@ describe('N8nClient', () => {
         { role: 'assistant', content: 'Hi!' }
       ];
 
-      const payload = N8nClient.buildPayload(messages, 'session-123', 'user-456');
+      const userContext = { userId: 'user-456' };
+      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.messages).toHaveLength(2);
       expect(payload.messages.every(m => m.role !== 'system')).toBe(true);
     });
 
     test('should handle empty messages array', () => {
-      const payload = N8nClient.buildPayload([], 'session-123', 'user-456');
+      const userContext = { userId: 'user-456' };
+      const payload = N8nClient.buildPayload([], 'session-123', userContext);
 
       expect(payload.systemPrompt).toBe('');
       expect(payload.currentMessage).toBe('');
       expect(payload.messages).toEqual([]);
+    });
+
+    test('should only include userId when other user fields are null', () => {
+      const messages = [
+        { role: 'user', content: 'Hello' }
+      ];
+
+      const userContext = {
+        userId: 'user-456',
+        userEmail: null,
+        userName: null,
+        userRole: null
+      };
+
+      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+
+      expect(payload.userId).toBe('user-456');
+      expect(payload).not.toHaveProperty('userEmail');
+      expect(payload).not.toHaveProperty('userName');
+      expect(payload).not.toHaveProperty('userRole');
+    });
+
+    test('should include only provided optional user fields', () => {
+      const messages = [
+        { role: 'user', content: 'Hello' }
+      ];
+
+      const userContext = {
+        userId: 'user-456',
+        userEmail: 'user@example.com',
+        userName: null,
+        userRole: 'admin'
+      };
+
+      const payload = N8nClient.buildPayload(messages, 'session-123', userContext);
+
+      expect(payload.userId).toBe('user-456');
+      expect(payload.userEmail).toBe('user@example.com');
+      expect(payload).not.toHaveProperty('userName');
+      expect(payload.userRole).toBe('admin');
     });
   });
 
@@ -100,11 +152,12 @@ describe('N8nClient', () => {
         data: mockStream
       });
 
+      const userContext = { userId: 'user-456' };
       const result = await N8nClient.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        'user-456'
+        userContext
       );
 
       expect(result).toBe('Hello World');
@@ -122,11 +175,12 @@ describe('N8nClient', () => {
         data: mockStream
       });
 
+      const userContext = { userId: 'user-456' };
       const result = await N8nClient.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        'user-456'
+        userContext
       );
 
       expect(result).toBe('Complete response');
@@ -145,11 +199,12 @@ describe('N8nClient', () => {
         data: mockStream
       });
 
+      const userContext = { userId: 'user-456' };
       const result = await N8nClient.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        'user-456'
+        userContext
       );
 
       expect(result).toBe('Part 1 Part 2 Part 3');
@@ -158,12 +213,13 @@ describe('N8nClient', () => {
     test('should handle errors gracefully', async () => {
       axios.post.mockRejectedValue(new Error('Network error'));
 
+      const userContext = { userId: 'user-456' };
       await expect(
         N8nClient.nonStreamingCompletion(
           'https://n8n.example.com/webhook/test/chat',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          'user-456'
+          userContext
         )
       ).rejects.toThrow('Network error');
     });

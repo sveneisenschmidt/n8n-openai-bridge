@@ -38,6 +38,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Streaming and non-streaming responses
 - Multi-model support via JSON configuration
 - Session tracking for conversation memory
+- User context forwarding (ID, email, name, role)
 - Bearer token authentication
 - Docker ready with health checks
 - Hot-reload models without restart
@@ -136,7 +137,14 @@ BEARER_TOKEN=your-api-key        # Auth for requests TO this bridge
 N8N_BEARER_TOKEN=                # Optional: Auth for requests FROM bridge to n8n
 MODELS_CONFIG=./models.json      # Path to models config
 LOG_REQUESTS=false               # Debug logging
-SESSION_ID_HEADERS=X-Session-Id  # Comma-separated session header names
+
+# Session & User Context Headers (comma-separated, first found wins)
+SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id
+USER_ID_HEADERS=X-User-Id
+USER_EMAIL_HEADERS=X-User-Email
+USER_NAME_HEADERS=X-User-Name
+USER_ROLE_HEADERS=X-User-Role
+
 DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ```
 
@@ -166,9 +174,18 @@ Your n8n workflow receives:
     {"role": "assistant", "content": "Hi!"}
   ],
   "sessionId": "uuid-or-custom-id",
-  "userId": "user-identifier"
+  "userId": "user-identifier",
+  "userEmail": "user@example.com",
+  "userName": "John Doe",
+  "userRole": "admin"
 }
 ```
+
+**User Context Fields:**
+- `userId` - User identifier (required, defaults to "anonymous")
+- `userEmail` - User email address (optional)
+- `userName` - User display name (optional)
+- `userRole` - User role/permission level (optional)
 
 **Response format:**
 - **Streaming:** JSON chunks with `content`, `text`, `output` or `message` field
@@ -218,7 +235,32 @@ Authorization: Bearer your-secret-api-key-here
 **Setup:** Settings → Connections → OpenAI API
 - API Base URL: `http://your-server:3333/v1`
 - API Key: Your `BEARER_TOKEN` from `.env`
-- Set `ENABLE_FORWARD_USER_INFO_HEADERS=true` (required for session tracking)
+- Set `ENABLE_FORWARD_USER_INFO_HEADERS=true` (required for session and user tracking)
+
+**User Context Integration:**
+
+Open WebUI automatically forwards user information via HTTP headers when `ENABLE_FORWARD_USER_INFO_HEADERS=true`:
+- `X-OpenWebUI-User-Id` - User's unique identifier
+- `X-OpenWebUI-User-Email` - User's email address
+- `X-OpenWebUI-User-Name` - User's display name
+- `X-OpenWebUI-User-Role` - User's role (admin, user, etc.)
+- `X-OpenWebUI-Chat-Id` - Chat session identifier
+
+To enable OpenWebUI header support, add them to your `.env`:
+
+```bash
+SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
+USER_ID_HEADERS=X-User-Id,X-OpenWebUI-User-Id
+USER_EMAIL_HEADERS=X-User-Email,X-OpenWebUI-User-Email
+USER_NAME_HEADERS=X-User-Name,X-OpenWebUI-User-Name
+USER_ROLE_HEADERS=X-User-Role,X-OpenWebUI-User-Role
+```
+
+This allows your n8n workflows to:
+- Personalize responses based on user role
+- Track user-specific conversations
+- Implement role-based access control
+- Log user activity for analytics
 
 ### LibreChat
 
@@ -235,6 +277,10 @@ endpoints:
         fetch: true
       headers:
         X-Chat-Id: "{{LIBRECHAT_BODY_CONVERSATIONID}}"
+        X-User-Id: "{{LIBRECHAT_USER_ID}}"
+        X-User-Email: "{{LIBRECHAT_USER_EMAIL}}"
+        X-User-Name: "{{LIBRECHAT_USER_NAME}}"
+        X-User-Role: "{{LIBRECHAT_USER_ROLE}}"
       titleConvo: true
       summary: true
 ```
@@ -243,8 +289,22 @@ endpoints:
 - `apiKey`: Must match your `BEARER_TOKEN` from `.env`
 - `baseURL`: Use `http://n8n-openai-bridge:3333/v1` if running in Docker, or `http://your-server:3333/v1` for external access
 - `fetch: true`: Automatically fetches available models from the bridge
-- `X-Chat-Id` header: Passes LibreChat's conversation ID to the bridge for session tracking
 - `titleConvo` and `summary`: Enable automatic conversation titling and summarization
+
+**User Context Integration:**
+
+LibreChat provides template variables that can be mapped to custom headers:
+- `{{LIBRECHAT_BODY_CONVERSATIONID}}` → `X-Chat-Id` - Session tracking
+- `{{LIBRECHAT_USER_ID}}` → `X-User-Id` - User identifier
+- `{{LIBRECHAT_USER_EMAIL}}` → `X-User-Email` - User email address
+- `{{LIBRECHAT_USER_NAME}}` → `X-User-Name` - User display name
+- `{{LIBRECHAT_USER_ROLE}}` → `X-User-Role` - User role (user, admin, etc.)
+
+These headers are automatically recognized by the bridge and forwarded to your n8n workflows, enabling:
+- User-specific conversation history
+- Role-based response customization
+- User activity tracking and analytics
+- Personalized AI agent behavior
 
 ### JavaScript/TypeScript
 
@@ -281,21 +341,34 @@ Import [`n8n_workflow.json.example`](n8n_workflow.json.example) in n8n → Confi
 4. **Memory Node** (Optional)
    - Use default settings - bridge passes `sessionId` automatically
 
-## Session Management
+## Session & User Context Management
+
+### Session Tracking
 
 Sessions are identified from (first found wins):
 1. Request body: `session_id`, `conversation_id`, `chat_id`
 2. HTTP headers: Configurable via `SESSION_ID_HEADERS`
 3. Fallback: Auto-generated UUID
 
-Example with custom header:
+### User Context Forwarding
+
+User information is extracted from (first found wins):
+1. HTTP headers: Configurable via `USER_ID_HEADERS`, `USER_EMAIL_HEADERS`, etc.
+2. Request body: `user`, `user_id`, `userId`, `user_email`, `userEmail`, etc.
+3. Fallback: `userId` defaults to "anonymous", others remain `null`
+
+Example with custom headers:
 ```bash
 curl -X POST http://localhost:3333/v1/chat/completions \
   -H "Authorization: Bearer your-key" \
   -H "X-Session-Id: my-session-123" \
+  -H "X-User-Id: user-456" \
+  -H "X-User-Email: john@example.com" \
   -H "Content-Type: application/json" \
   -d '{"model": "my-agent", "messages": [...]}'
 ```
+
+All user context fields are automatically forwarded to your n8n webhook, enabling personalized workflows.
 
 ## Testing
 

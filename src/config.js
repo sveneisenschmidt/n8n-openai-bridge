@@ -10,6 +10,10 @@ class Config {
     this.modelsConfigPath = process.env.MODELS_CONFIG || './models.json';
     this.logRequests = process.env.LOG_REQUESTS === 'true';
     this.sessionIdHeaders = this.parseSessionIdHeaders();
+    this.userIdHeaders = this.parseUserIdHeaders();
+    this.userEmailHeaders = this.parseUserEmailHeaders();
+    this.userNameHeaders = this.parseUserNameHeaders();
+    this.userRoleHeaders = this.parseUserRoleHeaders();
     this.models = this.loadModels();
     this.watcher = null;
     this.setupFileWatcher();
@@ -42,6 +46,74 @@ class Config {
   parseSessionIdHeaders() {
     const defaultHeaders = ['X-Session-Id', 'X-Chat-Id'];
     const envValue = process.env.SESSION_ID_HEADERS;
+
+    if (!envValue || !envValue.trim()) {
+      return defaultHeaders;
+    }
+
+    // Split by comma, trim whitespace, filter empty values
+    const headers = envValue
+      .split(',')
+      .map(h => h.trim())
+      .filter(h => h.length > 0);
+
+    return headers.length > 0 ? headers : defaultHeaders;
+  }
+
+  parseUserIdHeaders() {
+    const defaultHeaders = ['X-User-Id'];
+    const envValue = process.env.USER_ID_HEADERS;
+
+    if (!envValue || !envValue.trim()) {
+      return defaultHeaders;
+    }
+
+    // Split by comma, trim whitespace, filter empty values
+    const headers = envValue
+      .split(',')
+      .map(h => h.trim())
+      .filter(h => h.length > 0);
+
+    return headers.length > 0 ? headers : defaultHeaders;
+  }
+
+  parseUserEmailHeaders() {
+    const defaultHeaders = ['X-User-Email'];
+    const envValue = process.env.USER_EMAIL_HEADERS;
+
+    if (!envValue || !envValue.trim()) {
+      return defaultHeaders;
+    }
+
+    // Split by comma, trim whitespace, filter empty values
+    const headers = envValue
+      .split(',')
+      .map(h => h.trim())
+      .filter(h => h.length > 0);
+
+    return headers.length > 0 ? headers : defaultHeaders;
+  }
+
+  parseUserNameHeaders() {
+    const defaultHeaders = ['X-User-Name'];
+    const envValue = process.env.USER_NAME_HEADERS;
+
+    if (!envValue || !envValue.trim()) {
+      return defaultHeaders;
+    }
+
+    // Split by comma, trim whitespace, filter empty values
+    const headers = envValue
+      .split(',')
+      .map(h => h.trim())
+      .filter(h => h.length > 0);
+
+    return headers.length > 0 ? headers : defaultHeaders;
+  }
+
+  parseUserRoleHeaders() {
+    const defaultHeaders = ['X-User-Role'];
+    const envValue = process.env.USER_ROLE_HEADERS;
 
     if (!envValue || !envValue.trim()) {
       return defaultHeaders;

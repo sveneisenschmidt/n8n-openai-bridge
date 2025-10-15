@@ -121,6 +121,86 @@ describe('Config', () => {
     });
   });
 
+  describe('parseUserIdHeaders', () => {
+    test('should parse comma-separated user ID headers', () => {
+      process.env.USER_ID_HEADERS = 'X-Custom-User,X-User-ID,X-OpenWebUI-User-Id';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userIdHeaders).toEqual(['X-Custom-User', 'X-User-ID', 'X-OpenWebUI-User-Id']);
+    });
+
+    test('should use default headers when env var is empty', () => {
+      process.env.USER_ID_HEADERS = '';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userIdHeaders).toEqual(['X-User-Id']);
+    });
+
+    test('should trim whitespace from header names', () => {
+      process.env.USER_ID_HEADERS = ' X-User-1 , X-User-2 ,  X-User-3  ';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userIdHeaders).toEqual(['X-User-1', 'X-User-2', 'X-User-3']);
+    });
+  });
+
+  describe('parseUserEmailHeaders', () => {
+    test('should parse comma-separated user email headers', () => {
+      process.env.USER_EMAIL_HEADERS = 'X-Email,X-User-Email,X-OpenWebUI-User-Email';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userEmailHeaders).toEqual(['X-Email', 'X-User-Email', 'X-OpenWebUI-User-Email']);
+    });
+
+    test('should use default headers when env var is empty', () => {
+      process.env.USER_EMAIL_HEADERS = '';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userEmailHeaders).toEqual(['X-User-Email']);
+    });
+  });
+
+  describe('parseUserNameHeaders', () => {
+    test('should parse comma-separated user name headers', () => {
+      process.env.USER_NAME_HEADERS = 'X-Name,X-User-Name,X-OpenWebUI-User-Name';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userNameHeaders).toEqual(['X-Name', 'X-User-Name', 'X-OpenWebUI-User-Name']);
+    });
+
+    test('should use default headers when env var is empty', () => {
+      process.env.USER_NAME_HEADERS = '';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userNameHeaders).toEqual(['X-User-Name']);
+    });
+  });
+
+  describe('parseUserRoleHeaders', () => {
+    test('should parse comma-separated user role headers', () => {
+      process.env.USER_ROLE_HEADERS = 'X-Role,X-User-Role,X-OpenWebUI-User-Role';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userRoleHeaders).toEqual(['X-Role', 'X-User-Role', 'X-OpenWebUI-User-Role']);
+    });
+
+    test('should use default headers when env var is empty', () => {
+      process.env.USER_ROLE_HEADERS = '';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.userRoleHeaders).toEqual(['X-User-Role']);
+    });
+  });
+
   describe('loadModels', () => {
     test('should load models from JSON file', () => {
       const models = Config.models;

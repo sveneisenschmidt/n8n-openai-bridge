@@ -14,23 +14,36 @@ class N8nClient {
     return headers;
   }
 
-  buildPayload(messages, sessionId, userId) {
+  buildPayload(messages, sessionId, userContext) {
     const systemPrompt = messages.find(m => m.role === 'system')?.content || '';
     const currentMessage = messages[messages.length - 1]?.content || '';
-    
-    return {
+
+    const payload = {
       systemPrompt,
       currentMessage,
       chatInput: currentMessage,
       messages: messages.filter(m => m.role !== 'system'),
       sessionId,
-      userId,
+      userId: userContext.userId,
     };
+
+    // Add optional user fields if provided
+    if (userContext.userEmail) {
+      payload.userEmail = userContext.userEmail;
+    }
+    if (userContext.userName) {
+      payload.userName = userContext.userName;
+    }
+    if (userContext.userRole) {
+      payload.userRole = userContext.userRole;
+    }
+
+    return payload;
   }
 
-  async *streamCompletion(webhookUrl, messages, sessionId, userId) {
-    const payload = this.buildPayload(messages, sessionId, userId);
-    
+  async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
+    const payload = this.buildPayload(messages, sessionId, userContext);
+
     try {
       const response = await axios.post(webhookUrl, payload, {
         headers: this.getHeaders(),
@@ -71,8 +84,8 @@ class N8nClient {
     }
   }
 
-  async nonStreamingCompletion(webhookUrl, messages, sessionId, userId) {
-    const payload = this.buildPayload(messages, sessionId, userId);
+  async nonStreamingCompletion(webhookUrl, messages, sessionId, userContext) {
+    const payload = this.buildPayload(messages, sessionId, userContext);
 
     try {
       // n8n always sends streams, so we need to handle it as a stream
