@@ -23,7 +23,7 @@ gh release create v0.0.4 --title "Version 0.0.4" --notes-file CHANGELOG.md
 - Git repository clean (no uncommitted changes)
 - All changes merged to `main` branch
 - Tests passing (`make test`)
-- GitHub CLI installed (optional, for `gh` commands)
+- GitHub CLI installed (optional, for `gh` commands - see [Installation](#github-cli-installation) below)
 
 ## Release Workflow
 
@@ -396,6 +396,89 @@ This requires manual Docker tag manipulation (not automated).
 1. Verify VERSION file was committed before tagging
 2. Check GitHub Actions build logs
 3. Rebuild: Delete tag, fix VERSION, re-tag
+
+## GitHub CLI Installation
+
+The GitHub CLI (`gh`) is optional but recommended for streamlined release creation.
+
+### macOS
+
+**Via Homebrew (Recommended):**
+```bash
+brew install gh
+```
+
+**Via MacPorts:**
+```bash
+sudo port install gh
+```
+
+### Linux
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install gh
+```
+
+**Fedora/CentOS/RHEL:**
+```bash
+sudo dnf install gh
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S github-cli
+```
+
+### Windows
+
+**Via Winget:**
+```bash
+winget install --id GitHub.cli
+```
+
+**Via Chocolatey:**
+```bash
+choco install gh
+```
+
+### Authentication
+
+After installation, authenticate with GitHub:
+
+```bash
+gh auth login
+```
+
+Follow the interactive prompts:
+1. Select **GitHub.com**
+2. Choose **HTTPS** as protocol
+3. Select **Login with a web browser**
+4. Copy the one-time code shown
+5. Press Enter to open browser
+6. Paste the code and authorize
+
+**Verify authentication:**
+```bash
+gh auth status
+```
+
+### Usage for Releases
+
+Once authenticated, you can create releases directly from the command line:
+
+```bash
+# Create release with auto-generated notes
+gh release create v0.0.5 --title "Version 0.0.5" --generate-notes
+
+# Create release with specific notes
+gh release create v0.0.5 --title "Version 0.0.5" --notes "Bug fixes and improvements"
+
+# Create release with notes from CHANGELOG
+gh release create v0.0.5 --title "Version 0.0.5" --notes-file CHANGELOG.md
+```
+
+**Alternative:** You can always use the GitHub web interface instead of the CLI.
 
 ## Support
 
