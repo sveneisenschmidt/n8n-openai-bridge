@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2025-10-15
+
+### Added
+- User context header forwarding (userId, userEmail, userName, userRole)
+- Four new configurable header groups via environment variables:
+  - `USER_ID_HEADERS` (default: X-User-Id)
+  - `USER_EMAIL_HEADERS` (default: X-User-Email)
+  - `USER_NAME_HEADERS` (default: X-User-Name)
+  - `USER_ROLE_HEADERS` (default: X-User-Role)
+- First-found-wins priority for header extraction
+- Fallback to request body fields for user information
+- OpenWebUI integration documentation with header mapping examples
+- LibreChat integration documentation with template variables
+- New "Session & User Context Management" section in README
+- 16 new unit tests for user header parsers
+- Extended n8nClient tests for userContext handling
+
+### Changed
+- `n8nClient.buildPayload()` now accepts userContext object instead of just userId
+- Console logging now includes all user context fields (email, name, role)
+- n8n webhook payload now includes optional user fields when provided
+
+### Documentation
+- Updated README.md with comprehensive user context documentation
+- Added integration guides for OpenWebUI and LibreChat
+- Extended .env.example with new header configuration variables
+- Updated n8n webhook payload documentation with user context fields
+
 ## [0.0.5] - 2025-10-15
 
 ### Fixed
