@@ -60,47 +60,12 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
-      - name: Update release with Docker instructions
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            const imageName = '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}';
-
-            const dockerInstructions = `
-
-            ## Docker Image
-
-            This release is available as a Docker image:
-
-            \`\`\`bash
-            docker pull ${imageName}:${version}
-            docker pull ${imageName}:latest
-            \`\`\`
-
-            ### Quick Start
-
-            \`\`\`bash
-            docker run -d \\
-              --name n8n-openai-bridge \\
-              -p 3333:3333 \\
-              -e BEARER_TOKEN=your-secret-key \\
-              -v ./models.json:/app/models.json:ro \\
-              ${imageName}:${version}
-            \`\`\`
-
-            See [README.md](https://github.com/${{ github.repository }}) for full documentation.
-            `;
-
-            const { data: release } = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: context.ref.replace('refs/tags/', '')
-            });
-
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: release.body + dockerInstructions
-            });
+      - name: Docker images published successfully
+        run: |
+          echo "✓ Docker images have been built and pushed successfully!"
+          echo ""
+          echo "Published images:"
+          echo "  - ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+          echo "  - ghcr.io/${{ env.IMAGE_NAME }}:latest"
+          echo ""
+          echo "Images are now available on GitHub Container Registry."
