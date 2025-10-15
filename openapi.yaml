@@ -1,0 +1,430 @@
+openapi: 3.1.0
+info:
+  title: n8n OpenAI Bridge
+  version: 0.0.6
+  description: |
+    OpenAI-compatible API bridge that forwards chat completion requests to n8n workflows.
+
+    This bridge allows you to use n8n workflows as if they were OpenAI models, enabling:
+    - Custom AI assistants powered by n8n workflows
+    - Integration with OpenAI-compatible clients (OpenWebUI, Continue, etc.)
+    - Session management and user context forwarding
+    - Streaming and non-streaming responses
+
+    ## Features
+    - OpenAI-compatible API endpoints
+    - Bearer token authentication
+    - Session ID tracking (multiple sources)
+    - User context forwarding (ID, email, name, role)
+    - Request logging and sensitive data masking
+    - Dynamic model configuration
+  contact:
+    name: Sven Eisenschmidt
+    url: https://github.com/sveneisenschmidt/n8n-openai-bridge
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3333
+    description: Local development server
+  - url: https://your-domain.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Models
+    description: Model management endpoints
+  - name: Chat
+    description: Chat completion endpoints
+  - name: Admin
+    description: Administrative endpoints
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the server. Does not require authentication.
+      operationId: getHealth
+      tags:
+        - Health
+      security: []  # No authentication required
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  models:
+                    type: integer
+                    description: Number of configured models
+                    example: 3
+                  uptime:
+                    type: number
+                    description: Server uptime in seconds
+                    example: 3600.5
+                  logging:
+                    type: boolean
+                    description: Whether request logging is enabled
+                    example: true
+
+  /v1/models:
+    get:
+      summary: List available models
+      description: Returns a list of all configured n8n workflow models in OpenAI-compatible format
+      operationId: listModels
+      tags:
+        - Models
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    enum: [list]
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/chat/completions:
+    post:
+      summary: Create chat completion
+      description: |
+        Creates a chat completion by forwarding the request to the configured n8n workflow.
+
+        ## Session Management
+        Session IDs can be provided through multiple sources (priority order):
+        1. Request body fields: `session_id`, `conversation_id`, `chat_id`
+        2. HTTP headers: Configured via `SESSION_ID_HEADERS` env variable
+        3. Auto-generated UUID (fallback)
+
+        ## User Context
+        User information is extracted from:
+        1. HTTP headers (configured via env variables)
+        2. Request body fields: `user`, `user_id`, `user_email`, `user_name`, `user_role`
+        3. Default: `userId: "anonymous"`
+      operationId: createChatCompletion
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+            examples:
+              basic:
+                summary: Basic chat completion
+                value:
+                  model: my-workflow
+                  messages:
+                    - role: user
+                      content: Hello, how are you?
+              withSession:
+                summary: With session ID
+                value:
+                  model: my-workflow
+                  messages:
+                    - role: system
+                      content: You are a helpful assistant
+                    - role: user
+                      content: What did we discuss before?
+                  session_id: session-123
+              withUser:
+                summary: With user context
+                value:
+                  model: my-workflow
+                  messages:
+                    - role: user
+                      content: Show me my profile
+                  user: user-456
+                  user_email: user@example.com
+                  user_name: John Doe
+              streaming:
+                summary: Streaming response
+                value:
+                  model: my-workflow
+                  messages:
+                    - role: user
+                      content: Tell me a long story
+                  stream: true
+      responses:
+        '200':
+          description: Chat completion response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events stream (when stream=true)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/reload:
+    post:
+      summary: Reload models configuration
+      description: Reloads the models configuration from the models.json file
+      operationId: reloadModels
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Configuration reloaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: Models reloaded
+                  models:
+                    type: integer
+                    description: Number of models loaded
+                    example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer token authentication. Set the `BEARER_TOKEN` environment variable to enable authentication.
+        If not set, all endpoints (except /health) will be accessible without authentication.
+
+  schemas:
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Model identifier
+          example: my-workflow
+        object:
+          type: string
+          enum: [model]
+          example: model
+        created:
+          type: integer
+          description: Unix timestamp
+          example: 1704067200
+        owned_by:
+          type: string
+          enum: [n8n]
+          example: n8n
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+          description: The role of the message author
+        content:
+          type: string
+          description: The content of the message
+
+    ChatCompletionRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          description: ID of the model (n8n workflow) to use
+          example: my-workflow
+        messages:
+          type: array
+          description: List of messages in the conversation
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          minItems: 1
+        stream:
+          type: boolean
+          description: Whether to stream the response
+          default: false
+        session_id:
+          type: string
+          description: Optional session identifier for conversation tracking
+          example: session-123
+        conversation_id:
+          type: string
+          description: Alternative session identifier (fallback)
+          example: conv-456
+        chat_id:
+          type: string
+          description: Alternative session identifier (fallback)
+          example: chat-789
+        user:
+          type: string
+          description: User identifier
+          example: user-123
+        user_id:
+          type: string
+          description: Alternative user identifier
+          example: user-456
+        user_email:
+          type: string
+          description: User email address
+          example: user@example.com
+        user_name:
+          type: string
+          description: User display name
+          example: John Doe
+        user_role:
+          type: string
+          description: User role
+          example: admin
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the completion
+          example: chatcmpl-123
+        object:
+          type: string
+          enum: [chat.completion]
+          example: chat.completion
+        created:
+          type: integer
+          description: Unix timestamp
+          example: 1704067200
+        model:
+          type: string
+          description: Model used for completion
+          example: my-workflow
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+                example: 0
+              message:
+                $ref: '#/components/schemas/ChatMessage'
+              finish_reason:
+                type: string
+                enum: [stop, length, error]
+                example: stop
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+              example: 10
+            completion_tokens:
+              type: integer
+              example: 20
+            total_tokens:
+              type: integer
+              example: 30
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Error message
+            type:
+              type: string
+              description: Error type
+              enum:
+                - authentication_error
+                - invalid_request_error
+                - server_error
+
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: Unauthorized
+              type: authentication_error
+
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missingFields:
+              summary: Missing required fields
+              value:
+                error:
+                  message: "Missing required fields: model, messages"
+                  type: invalid_request_error
+            invalidMessages:
+              summary: Invalid messages format
+              value:
+                error:
+                  message: "messages must be a non-empty array"
+                  type: invalid_request_error
+
+    ModelNotFound:
+      description: Requested model not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: "Model 'unknown-model' not found"
+              type: invalid_request_error
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: Internal server error
+              type: server_error

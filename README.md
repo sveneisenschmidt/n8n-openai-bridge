@@ -42,6 +42,8 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Bearer token authentication
 - Docker ready with health checks
 - Hot-reload models without restart
+- Complete OpenAPI 3.1 documentation
+- 78%+ test coverage with 147 unit tests
 
 ## Installation
 
@@ -191,20 +193,26 @@ Your n8n workflow receives:
 - **Streaming:** JSON chunks with `content`, `text`, `output` or `message` field
 - **Non-streaming:** String or JSON with one of the above fields
 
-## API Endpoints
+## API Documentation
 
-### Health Check
+**Complete OpenAPI 3.1 Specification:** [openapi.yaml](openapi.yaml)
+
+**Interactive Documentation:** Open [docs/api.html](docs/api.html) in your browser for Swagger UI
+
+### Quick Reference
+
+**Health Check** (no auth required)
 ```bash
 GET /health
 ```
 
-### List Models
+**List Models**
 ```bash
 GET /v1/models
 Authorization: Bearer your-secret-api-key-here
 ```
 
-### Chat Completion
+**Chat Completion**
 ```bash
 POST /v1/chat/completions
 Authorization: Bearer your-secret-api-key-here
@@ -219,14 +227,13 @@ Content-Type: application/json
 }
 ```
 
-### Reload Models
-
-Models are automatically reloaded when `models.json` is modified. You can also manually trigger a reload:
-
+**Reload Models Configuration**
 ```bash
 POST /admin/reload
 Authorization: Bearer your-secret-api-key-here
 ```
+
+Models are also automatically reloaded when `models.json` is modified.
 
 ## Integration Examples
 
