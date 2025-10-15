@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2025-10-15
+
+### Added
+- Comprehensive CI/CD workflow with GitHub Actions for automated testing
+- Docker image build validation in CI pipeline
+- Security vulnerability scanning with Trivy
+- Automated Docker image publishing to GitHub Container Registry on releases
+- Pull request template for consistent contribution process
+- Extensive documentation for testing, releases, and versioning
+- Docker default configuration files for easier container deployment
+
+### Fixed
+- Docker image availability issue in GitHub Actions CI workflow
+- SARIF upload permissions for security scan results in CI
+
+### Improved
+- Enhanced container startup validation with better error logging
+- More robust health check implementation in CI tests
+- Better Docker build caching in CI for faster builds
+
 ## [0.0.3] - 2025-10-11
 
 ### Fixed
