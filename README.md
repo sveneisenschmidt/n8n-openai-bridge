@@ -42,6 +42,8 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Bearer token authentication
 - Docker ready with health checks
 - Hot-reload models without restart
+- Complete OpenAPI 3.1 documentation
+- 78%+ test coverage with 147 unit tests
 
 ## Installation
 
@@ -191,20 +193,26 @@ Your n8n workflow receives:
 - **Streaming:** JSON chunks with `content`, `text`, `output` or `message` field
 - **Non-streaming:** String or JSON with one of the above fields
 
-## API Endpoints
+## API Documentation
 
-### Health Check
+**Complete OpenAPI 3.1 Specification:** [openapi.yaml](openapi.yaml)
+
+**Interactive Documentation:** Open [docs/api.html](docs/api.html) in your browser for Swagger UI
+
+### Quick Reference
+
+**Health Check** (no auth required)
 ```bash
 GET /health
 ```
 
-### List Models
+**List Models**
 ```bash
 GET /v1/models
 Authorization: Bearer your-secret-api-key-here
 ```
 
-### Chat Completion
+**Chat Completion**
 ```bash
 POST /v1/chat/completions
 Authorization: Bearer your-secret-api-key-here
@@ -219,14 +227,13 @@ Content-Type: application/json
 }
 ```
 
-### Reload Models
-
-Models are automatically reloaded when `models.json` is modified. You can also manually trigger a reload:
-
+**Reload Models Configuration**
 ```bash
 POST /admin/reload
 Authorization: Bearer your-secret-api-key-here
 ```
+
+Models are also automatically reloaded when `models.json` is modified.
 
 ## Integration Examples
 
@@ -434,7 +441,7 @@ n8n-openai-bridge/
 
 ### Feature Branch Workflow
 
-This project uses feature branches and GitHub Actions for CI/CD.
+This project uses feature branches and GitHub Actions for CI/CD with **automated releases on merge**.
 
 **Branch naming conventions:**
 - `feature/*` - New features
@@ -464,11 +471,22 @@ git push origin feature/my-new-feature
 - Security vulnerability scan
 - Health check validation
 
-**Releases:**
-1. Update [CHANGELOG.md](CHANGELOG.md) with version and changes
-2. Commit to `main` branch
-3. Create GitHub Release with version tag (e.g., `v1.0.0`)
-4. Docker images automatically built and published to GitHub Container Registry
+**Automated Releases:**
+When a PR is merged to `main`, a new release is **automatically created**:
+1. The workflow finds the latest version tag (e.g., `v0.0.6`)
+2. Increments the patch version (e.g., `v0.0.7`)
+3. Creates a GitHub Release with auto-generated notes
+4. Builds and publishes Docker images to GitHub Container Registry
+
+**For major/minor version bumps:**
+```bash
+# Create version tag manually
+git tag v1.0.0
+git push origin v1.0.0
+gh release create v1.0.0 --generate-notes
+```
+
+After this, automated releases continue with patch increments from the new version.
 
 See [.github/workflows/README.md](.github/workflows/README.md) for detailed CI/CD documentation.
 
@@ -490,4 +508,18 @@ Please ensure:
 
 ## License
 
-Apache 2.0
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+### What this means:
+
+- ✅ You can use, modify, and distribute this software freely
+- ✅ You must share your modifications under the same license
+- ✅ If you run a modified version as a web service, you must make the source code available
+- ✅ Original author attribution is required
+
+See the [LICENSE](LICENSE) file for full details.
+
+### License History
+
+- **v0.0.7+**: AGPL-3.0 (current)
+- **v0.0.1 - v0.0.6**: Apache 2.0 (previous versions remain under Apache 2.0)

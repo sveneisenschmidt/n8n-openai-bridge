@@ -1,10 +1,33 @@
+/*
+ * n8n OpenAI Bridge
+ * Copyright (C) 2025 Sven Eisenschmidt
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const config = require('./config');
-const n8nClient = require('./n8nClient');
+const N8nClient = require('./n8nClient');
+const { maskSensitiveHeaders, maskSensitiveBody } = require('./utils/masking');
+const { extractSessionId } = require('./services/sessionService');
+const { extractUserContext } = require('./services/userService');
+const { validateChatCompletionRequest } = require('./services/validationService');
 
 const app = express();
+const n8nClient = new N8nClient(config);
 
 // Middleware
 app.use(cors());
@@ -25,34 +48,6 @@ app.use((req, res, next) => {
   
   next();
 });
-
-// Mask sensitive information in headers
-function maskSensitiveHeaders(headers) {
-  const masked = { ...headers };
-  if (masked.authorization) {
-    const parts = masked.authorization.split(' ');
-    if (parts.length === 2) {
-      const token = parts[1];
-      masked.authorization = `${parts[0]} ${token.substring(0, 8)}...${token.substring(token.length - 4)}`;
-    }
-  }
-  return masked;
-}
-
-// Mask sensitive information in body
-function maskSensitiveBody(body) {
-  if (!body || typeof body !== 'object') return body;
-  
-  const masked = { ...body };
-  
-  // Mask API keys if present
-  if (masked.api_key) {
-    const key = masked.api_key;
-    masked.api_key = `${key.substring(0, 8)}...${key.substring(key.length - 4)}`;
-  }
-  
-  return masked;
-}
 
 // Health check (before authentication middleware)
 app.get('/health', (req, res) => {
@@ -110,7 +105,7 @@ app.get('/v1/models', (req, res) => {
 
 // Chat completions (OpenAI compatible)
 app.post('/v1/chat/completions', async (req, res) => {
-  const { model, messages, stream = false, user } = req.body;
+  const { model, messages, stream = false } = req.body;
 
   // SESSION ID DETECTION (Debug logging)
   if (config.logRequests) {
@@ -132,22 +127,9 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 
   // Validation
-  if (!model || !messages) {
-    return res.status(400).json({ 
-      error: { 
-        message: 'Missing required fields: model, messages',
-        type: 'invalid_request_error'
-      } 
-    });
-  }
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ 
-      error: { 
-        message: 'messages must be a non-empty array',
-        type: 'invalid_request_error'
-      } 
-    });
+  const validation = validateChatCompletionRequest(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
   const webhookUrl = config.getModelWebhookUrl(model);
@@ -160,118 +142,20 @@ app.post('/v1/chat/completions', async (req, res) => {
     });
   }
 
-  // Try to get session ID from configured sources
-  let sessionId = null;
-  let sessionSource = null;
+  // Extract session ID using service
+  const { sessionId, sessionSource } = extractSessionId(req, config.sessionIdHeaders, uuidv4);
 
-  // 1. Try body fields first
-  if (req.body.session_id) {
-    sessionId = req.body.session_id;
-    sessionSource = 'req.body.session_id';
-  } else if (req.body.conversation_id) {
-    sessionId = req.body.conversation_id;
-    sessionSource = 'req.body.conversation_id';
-  } else if (req.body.chat_id) {
-    sessionId = req.body.chat_id;
-    sessionSource = 'req.body.chat_id';
-  }
-
-  // 2. Try configured headers in order
-  if (!sessionId) {
-    for (const headerName of config.sessionIdHeaders) {
-      const lowerHeaderName = headerName.toLowerCase();
-      if (req.headers[lowerHeaderName]) {
-        sessionId = req.headers[lowerHeaderName];
-        sessionSource = `headers[${headerName}]`;
-        break;
-      }
-    }
-  }
-
-  // 3. Fallback to UUID
-  if (!sessionId) {
-    sessionId = uuidv4();
-    sessionSource = 'generated (new UUID)';
-  }
-
-  // Extract user information from headers or body
-  let userId = null;
-  let userEmail = null;
-  let userName = null;
-  let userRole = null;
-
-  // Try to get userId from configured headers
-  for (const headerName of config.userIdHeaders) {
-    const lowerHeaderName = headerName.toLowerCase();
-    if (req.headers[lowerHeaderName]) {
-      userId = req.headers[lowerHeaderName];
-      break;
-    }
-  }
-
-  // Fallback to body fields for userId
-  if (!userId) {
-    userId = user || req.body.user_id || req.body.userId || 'anonymous';
-  }
-
-  // Try to get userEmail from configured headers
-  for (const headerName of config.userEmailHeaders) {
-    const lowerHeaderName = headerName.toLowerCase();
-    if (req.headers[lowerHeaderName]) {
-      userEmail = req.headers[lowerHeaderName];
-      break;
-    }
-  }
-
-  // Fallback to body fields for userEmail
-  if (!userEmail) {
-    userEmail = req.body.user_email || req.body.userEmail || null;
-  }
-
-  // Try to get userName from configured headers
-  for (const headerName of config.userNameHeaders) {
-    const lowerHeaderName = headerName.toLowerCase();
-    if (req.headers[lowerHeaderName]) {
-      userName = req.headers[lowerHeaderName];
-      break;
-    }
-  }
-
-  // Fallback to body fields for userName
-  if (!userName) {
-    userName = req.body.user_name || req.body.userName || null;
-  }
-
-  // Try to get userRole from configured headers
-  for (const headerName of config.userRoleHeaders) {
-    const lowerHeaderName = headerName.toLowerCase();
-    if (req.headers[lowerHeaderName]) {
-      userRole = req.headers[lowerHeaderName];
-      break;
-    }
-  }
-
-  // Fallback to body fields for userRole
-  if (!userRole) {
-    userRole = req.body.user_role || req.body.userRole || null;
-  }
+  // Extract user context using service
+  const userContext = extractUserContext(req, config);
 
   console.log(`\n>>> SESSION ID: ${sessionId}`);
   console.log(`>>> SOURCE: ${sessionSource}`);
-  console.log(`>>> USER ID: ${userId}`);
-  console.log(`>>> USER EMAIL: ${userEmail || 'not provided'}`);
-  console.log(`>>> USER NAME: ${userName || 'not provided'}`);
-  console.log(`>>> USER ROLE: ${userRole || 'not provided'}`);
+  console.log(`>>> USER ID: ${userContext.userId}`);
+  console.log(`>>> USER EMAIL: ${userContext.userEmail || 'not provided'}`);
+  console.log(`>>> USER NAME: ${userContext.userName || 'not provided'}`);
+  console.log(`>>> USER ROLE: ${userContext.userRole || 'not provided'}`);
   console.log(`>>> MODEL: ${model}`);
   console.log(`>>> STREAM: ${stream}\n`);
-
-  // Build user context object
-  const userContext = {
-    userId,
-    userEmail,
-    userName,
-    userRole,
-  };
 
   try {
     if (stream) {
@@ -383,13 +267,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = config.port;
-const fs = require('fs');
-const path = require('path');
-const version = fs.readFileSync(path.join(__dirname, '../VERSION'), 'utf8').trim();
 
 app.listen(PORT, () => {
   console.log('='.repeat(60));
-  console.log(`n8n OpenAI Bridge v${version}`);
+  console.log('n8n OpenAI Bridge');
   console.log('='.repeat(60));
   console.log(`Server running on port: ${PORT}`);
   console.log(`Request logging: ${config.logRequests ? 'ENABLED' : 'DISABLED'}`);

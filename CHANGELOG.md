@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Complete OpenAPI 3.1 specification (openapi.yaml)
+- Interactive API documentation with Swagger UI (docs/api.html)
+- Comprehensive test suite with 147 unit tests
+- Integration tests for all API endpoints
+- Edge case tests (network errors, malformed data, special characters)
+- Service layer architecture:
+  - sessionService: Session ID extraction logic
+  - userService: User context extraction logic
+  - validationService: Request validation logic
+  - masking utils: Sensitive data masking
+
+### Changed
+- Refactored server.js to use service layer (416 → 282 lines, -32%)
+- Improved code organization with separation of concerns
+- Enhanced testability with modular architecture
+- Better error handling and logging
+
+### Documentation
+- Added OpenAPI 3.1 specification
+- Created interactive Swagger UI documentation
+- Updated README.md with API documentation links
+- Added test coverage information to features section
+
+### Testing
+- Test coverage: 40.1% → 78.86% (+38.76%)
+- 147 tests passing across 9 test suites
+- Service modules: 100% test coverage
+- server.js: 0% → 56.25% coverage
+- n8nClient.js: 75.26% → 80.64% coverage
+
+### Code Quality
+- Applied DRY principle throughout codebase
+- Removed ~150 lines of duplicate code
+- Improved maintainability with SOLID principles
+- All business logic now fully tested
+
 ## [0.0.6] - 2025-10-15
 
 ### Added

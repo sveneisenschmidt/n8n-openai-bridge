@@ -10,9 +10,6 @@ COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install --omit=dev --prefer-offline --no-audit --no-fund
 
-# Copy version file
-COPY VERSION ./VERSION
-
 # Copy application files
 COPY src/ ./src/
 

@@ -1,7 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all verify version release-check release-prepare release-tag
-
-# Get version from VERSION file
-VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify
 
 help:
 	@echo "Available commands:"
@@ -17,16 +14,11 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test           - Run all tests (unit + image build)"
-	@echo "  make test-unit      - Run unit tests for server logic only"
-	@echo "  make test-image     - Run Docker image build validation tests"
-	@echo "  make test-all       - Alias for test"
-	@echo ""
-	@echo "Release:"
-	@echo "  make version        - Show current version from VERSION file"
-	@echo "  make release-check  - Check if ready for release"
-	@echo "  make release-prepare NEW_VERSION=x.y.z - Prepare new release"
-	@echo "  make release-tag    - Create git tag for current version"
+	@echo "  make test              - Run all tests (unit + image build)"
+	@echo "  make test-unit         - Run unit tests for server logic only"
+	@echo "  make test-image        - Run Docker image build validation tests"
+	@echo "  make test-all          - Alias for test"
+	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
 
 rebuild: stop build start
 	@echo "Rebuild complete!"
@@ -103,110 +95,24 @@ test-image:
 	@echo ""
 	@bash tests/test-image-build.sh
 
-# Release Management
-
-version:
-	@echo "Current version: $(VERSION)"
+# Test 3: Load testing with k6 (via docker-compose)
+test-load:
 	@echo ""
-	@echo "This version is read from the VERSION file."
-	@echo "To update, run: make release-prepare NEW_VERSION=x.y.z"
-
-release-check:
-	@echo "Checking release readiness..."
+	@echo "======================================"
+	@echo "Running Load Tests (20 users, 1min)"
+	@echo "======================================"
 	@echo ""
-	@echo "Current version: $(VERSION)"
+	@echo "Building images..."
+	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml build
 	@echo ""
-	@if [ -z "$(VERSION)" ] || [ "$(VERSION)" = "0.0.0" ]; then \
-		echo "✗ VERSION file not found or invalid"; \
-		exit 1; \
+	@echo "Starting services (mock-n8n, bridge, k6)..."
+	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
+	@echo ""
+	@echo "Cleaning up..."
+	@docker-compose -f docker-compose.loadtest.yml down -v
+	@echo ""
+	@echo "✓ Load tests completed!"
+	@echo ""
+	@if [ -f tests/load/summary.json ]; then \
+		echo "📊 Detailed results saved to: tests/load/summary.json"; \
 	fi
-	@echo "✓ VERSION file exists: $(VERSION)"
-	@echo ""
-	@if ! git diff-index --quiet HEAD --; then \
-		echo "✗ Uncommitted changes detected"; \
-		echo "  Please commit all changes before release"; \
-		exit 1; \
-	fi
-	@echo "✓ No uncommitted changes"
-	@echo ""
-	@if ! git diff --quiet HEAD origin/main 2>/dev/null; then \
-		echo "⚠ Local branch differs from origin/main"; \
-		echo "  Consider pushing changes first"; \
-	else \
-		echo "✓ Branch in sync with origin/main"; \
-	fi
-	@echo ""
-	@if git tag | grep -q "^v$(VERSION)$$"; then \
-		echo "✗ Tag v$(VERSION) already exists"; \
-		exit 1; \
-	fi
-	@echo "✓ Tag v$(VERSION) does not exist yet"
-	@echo ""
-	@if ! grep -q "## \[$(VERSION)\]" CHANGELOG.md; then \
-		echo "⚠ Version $(VERSION) not found in CHANGELOG.md"; \
-		echo "  Consider updating CHANGELOG.md"; \
-	else \
-		echo "✓ Version $(VERSION) documented in CHANGELOG.md"; \
-	fi
-	@echo ""
-	@echo "Ready for release!"
-
-release-prepare:
-	@if [ -z "$(NEW_VERSION)" ]; then \
-		echo "Error: NEW_VERSION not specified"; \
-		echo "Usage: make release-prepare NEW_VERSION=0.0.4"; \
-		exit 1; \
-	fi
-	@echo "Preparing release $(NEW_VERSION)..."
-	@echo ""
-	@echo "Current version: $(VERSION)"
-	@echo "New version: $(NEW_VERSION)"
-	@echo ""
-	@read -p "Continue? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "Aborted."; \
-		exit 1; \
-	fi
-	@echo "$(NEW_VERSION)" > VERSION
-	@echo "✓ Updated VERSION file to $(NEW_VERSION)"
-	@echo ""
-	@echo "Next steps:"
-	@echo "1. Update CHANGELOG.md with version $(NEW_VERSION) and changes"
-	@echo "2. Run: git add VERSION CHANGELOG.md"
-	@echo "3. Run: git commit -m 'Prepare release v$(NEW_VERSION)'"
-	@echo "4. Run: git push origin main"
-	@echo "5. Run: make release-tag"
-	@echo ""
-	@echo "Or open CHANGELOG.md now? [y/N]"
-	@read -p "" -n 1 -r; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		$${EDITOR:-nano} CHANGELOG.md; \
-	fi
-
-release-tag:
-	@echo "Creating release tag for version $(VERSION)..."
-	@echo ""
-	@make release-check
-	@echo ""
-	@echo "This will:"
-	@echo "  1. Create git tag: v$(VERSION)"
-	@echo "  2. Push tag to origin"
-	@echo "  3. Trigger GitHub Actions to build and publish Docker images"
-	@echo ""
-	@read -p "Continue? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "Aborted."; \
-		exit 1; \
-	fi
-	@git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
-	@echo "✓ Created tag v$(VERSION)"
-	@git push origin "v$(VERSION)"
-	@echo "✓ Pushed tag to origin"
-	@echo ""
-	@echo "Tag created successfully!"
-	@echo ""
-	@echo "Next step: Create GitHub Release"
-	@echo "  Run: gh release create v$(VERSION) --title 'Version $(VERSION)' --notes-file CHANGELOG.md"
-	@echo "  Or visit: https://github.com/sveneisenschmidt/n8n-openai-bridge/releases/new?tag=v$(VERSION)"
