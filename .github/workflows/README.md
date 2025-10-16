@@ -38,15 +38,25 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 
 **Jobs:**
 
-#### Auto Release
+#### 1. Create Release
 - Only runs when a PR with the `release` label is merged
 - Increments patch version (0.0.1 → 0.0.2)
 - Generates release notes from commit history
 - Requires at least one existing tag to work
 - No release is created if no previous version tag exists
 
+#### 2. Build and Push Docker Image
+- Builds Docker image for multiple platforms (amd64, arm64)
+- Pushes to GitHub Container Registry (ghcr.io)
+- Creates semantic version tags:
+  - Full version (e.g., `0.0.7`)
+  - Major.Minor (e.g., `0.0`)
+  - Major (e.g., `0`)
+  - `latest`
+
 **Required Permissions:**
 - `contents: write` - Create tags and releases
+- `packages: write` - Push to GitHub Container Registry
 
 **How it works:**
 1. Add the `release` label to your PR before merging
@@ -55,29 +65,9 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 4. Finds the latest version tag (e.g., `v0.0.6`)
 5. Increments the patch version (e.g., `v0.0.7`)
 6. Creates a new GitHub Release with auto-generated notes
-7. This triggers the Docker image build workflow
+7. Immediately builds and pushes Docker images
 
 **Important:** PRs without the `release` label will NOT trigger a release, even when merged to `main`.
-
-### 3. Release Docker Image Workflow (`release.yml`)
-
-**Triggers:**
-- GitHub Release published (triggered by release-on-merge workflow)
-
-**Jobs:**
-
-#### Build and Push
-- Builds Docker image for multiple platforms (amd64, arm64)
-- Pushes to GitHub Container Registry (ghcr.io)
-- Creates semantic version tags:
-  - Full version (e.g., `0.0.7`)
-  - Major.Minor (e.g., `0.0`)
-  - Major (e.g., `0`)
-  - `latest` (for default branch)
-
-**Required Permissions:**
-- `contents: write` - Read repository contents
-- `packages: write` - Push to GitHub Container Registry
 
 ## Branch Strategy
 
@@ -148,17 +138,16 @@ gh pr merge --squash --delete-branch
 ```
 
 #### 4. Automatic Release Process
-After merge to `main`:
+After merge to `main` (with `release` label):
 1. ✅ `release-on-merge` workflow triggers
 2. ✅ Finds latest tag (e.g., `v0.0.6`)
 3. ✅ Creates new tag (e.g., `v0.0.7`)
 4. ✅ Creates GitHub Release with auto-generated notes
-5. ✅ `release` workflow triggers on the new release
-6. ✅ Docker image builds for amd64 and arm64
-7. ✅ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
-8. ✅ Tagged with `v0.0.7`, `0.0`, `0`, and `latest`
+5. ✅ Docker image builds for amd64 and arm64
+6. ✅ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
+7. ✅ Tagged with `0.0.7`, `0.0`, `0`, and `latest`
 
-**That's it!** No manual version bumping needed.
+**That's it!** Everything happens in one workflow - no manual steps needed.
 
 ### Verify the Release
 
