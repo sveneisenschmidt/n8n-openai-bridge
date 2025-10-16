@@ -441,7 +441,7 @@ n8n-openai-bridge/
 
 ### Feature Branch Workflow
 
-This project uses feature branches and GitHub Actions for CI/CD.
+This project uses feature branches and GitHub Actions for CI/CD with **automated releases on merge**.
 
 **Branch naming conventions:**
 - `feature/*` - New features
@@ -471,11 +471,22 @@ git push origin feature/my-new-feature
 - Security vulnerability scan
 - Health check validation
 
-**Releases:**
-1. Update [CHANGELOG.md](CHANGELOG.md) with version and changes
-2. Commit to `main` branch
-3. Create GitHub Release with version tag (e.g., `v1.0.0`)
-4. Docker images automatically built and published to GitHub Container Registry
+**Automated Releases:**
+When a PR is merged to `main`, a new release is **automatically created**:
+1. The workflow finds the latest version tag (e.g., `v0.0.6`)
+2. Increments the patch version (e.g., `v0.0.7`)
+3. Creates a GitHub Release with auto-generated notes
+4. Builds and publishes Docker images to GitHub Container Registry
+
+**For major/minor version bumps:**
+```bash
+# Create version tag manually
+git tag v1.0.0
+git push origin v1.0.0
+gh release create v1.0.0 --generate-notes
+```
+
+After this, automated releases continue with patch increments from the new version.
 
 See [.github/workflows/README.md](.github/workflows/README.md) for detailed CI/CD documentation.
 

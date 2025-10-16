@@ -1,0 +1,41 @@
+name: Release on Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    # Only run if PR was merged AND has the 'release' label
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Release
+        uses: dexwritescode/release-on-merge-action@v1
+        with:
+          version-increment: patch
+          tag-prefix: v
+          generate-release-notes: true
+          body: |
+            ## Docker Images
+
+            This release is available on GitHub Container Registry:
+
+            ```bash
+            docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+            docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:${{ github.ref_name }}
+            ```
+
+            See [README.md](https://github.com/sveneisenschmidt/n8n-openai-bridge#readme) for usage instructions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

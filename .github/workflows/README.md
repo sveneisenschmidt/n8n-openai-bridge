@@ -31,10 +31,38 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 - Scans codebase for vulnerabilities using Trivy
 - Uploads results to GitHub Security tab
 
-### 2. Release Workflow (`release.yml`)
+### 2. Release on Merge Workflow (`release-on-merge.yml`)
 
 **Triggers:**
-- GitHub Release published
+- Pull request closed and merged to `main` **with the `release` label**
+
+**Jobs:**
+
+#### Auto Release
+- Only runs when a PR with the `release` label is merged
+- Increments patch version (0.0.1 → 0.0.2)
+- Generates release notes from commit history
+- Requires at least one existing tag to work
+- No release is created if no previous version tag exists
+
+**Required Permissions:**
+- `contents: write` - Create tags and releases
+
+**How it works:**
+1. Add the `release` label to your PR before merging
+2. Merge the PR to `main` (squash, merge commit, or rebase)
+3. Workflow checks if PR was merged AND has `release` label
+4. Finds the latest version tag (e.g., `v0.0.6`)
+5. Increments the patch version (e.g., `v0.0.7`)
+6. Creates a new GitHub Release with auto-generated notes
+7. This triggers the Docker image build workflow
+
+**Important:** PRs without the `release` label will NOT trigger a release, even when merged to `main`.
+
+### 3. Release Docker Image Workflow (`release.yml`)
+
+**Triggers:**
+- GitHub Release published (triggered by release-on-merge workflow)
 
 **Jobs:**
 
@@ -42,14 +70,13 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 - Builds Docker image for multiple platforms (amd64, arm64)
 - Pushes to GitHub Container Registry (ghcr.io)
 - Creates semantic version tags:
-  - Full version (e.g., `1.0.0`)
-  - Major.Minor (e.g., `1.0`)
-  - Major (e.g., `1`)
+  - Full version (e.g., `0.0.7`)
+  - Major.Minor (e.g., `0.0`)
+  - Major (e.g., `0`)
   - `latest` (for default branch)
-- Updates release notes with Docker instructions
 
 **Required Permissions:**
-- `contents: read` - Read repository contents
+- `contents: write` - Read repository contents
 - `packages: write` - Push to GitHub Container Registry
 
 ## Branch Strategy
@@ -79,57 +106,77 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 
 ## Creating a Release
 
-### 1. Prepare the Release
+The project uses **automated releases on merge**. When you merge a PR with the `release` label to `main`, a new release is automatically created.
 
-Update version in relevant files:
+### How Version Numbers are Determined
+
+The release workflow automatically determines the version:
+
+1. **Finds the latest version tag** in the repository (e.g., `v0.0.6`)
+2. **Increments the patch version** (e.g., `v0.0.6` → `v0.0.7`)
+3. **Creates a new GitHub Release** with the incremented version
+4. **Generates release notes** automatically from merged PRs and commits
+5. **Triggers Docker image build** automatically
+
+**Important:** The workflow requires at least one existing version tag (e.g., `v0.0.1`). If no tags exist, no release will be created.
+
+### Release Workflow
+
+#### 1. Make Your Changes
 ```bash
-# Update CHANGELOG.md with new version and changes
-nano CHANGELOG.md
+# Create feature branch
+git checkout -b feature/my-feature
 
-# Commit changes
-git add CHANGELOG.md
-git commit -m "Prepare release v1.0.0"
-git push origin main
+# Make changes
+# ...
+
+# Commit
+git add .
+git commit -m "Add: my awesome feature"
+git push origin feature/my-feature
 ```
 
-### 2. Create a GitHub Release
+#### 2. Create Pull Request
+- Open PR on GitHub
+- Wait for CI checks to pass
+- Get approval (if required)
 
-#### Option A: GitHub UI
-1. Go to repository → Releases → "Draft a new release"
-2. Click "Choose a tag" → Enter new tag (e.g., `v1.0.0`)
-3. Target: `main` branch
-4. Release title: `v1.0.0` (or descriptive name)
-5. Description: Copy from CHANGELOG.md
-6. Click "Publish release"
-
-#### Option B: GitHub CLI
+#### 3. Merge to Main
 ```bash
-gh release create v1.0.0 \
-  --title "Version 1.0.0" \
-  --notes "$(cat CHANGELOG.md | sed -n '/## \[1.0.0\]/,/## \[/p' | head -n -1)"
+# Merge via GitHub UI or CLI
+gh pr merge --squash --delete-branch
 ```
 
-### 3. Automatic Process
+#### 4. Automatic Release Process
+After merge to `main`:
+1. ✅ `release-on-merge` workflow triggers
+2. ✅ Finds latest tag (e.g., `v0.0.6`)
+3. ✅ Creates new tag (e.g., `v0.0.7`)
+4. ✅ Creates GitHub Release with auto-generated notes
+5. ✅ `release` workflow triggers on the new release
+6. ✅ Docker image builds for amd64 and arm64
+7. ✅ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
+8. ✅ Tagged with `v0.0.7`, `0.0`, `0`, and `latest`
 
-After publishing the release:
-1. ✅ Release workflow triggers automatically
-2. ✅ Docker image builds for amd64 and arm64
-3. ✅ Image pushed to `ghcr.io/[owner]/n8n-openai-bridge`
-4. ✅ Tagged with version and `latest`
-5. ✅ Release notes updated with Docker instructions
+**That's it!** No manual version bumping needed.
 
-### 4. Verify the Release
+### Verify the Release
+
+After a few minutes, check:
 
 ```bash
+# View releases
+gh release list
+
 # Pull the new image
-docker pull ghcr.io/[owner]/n8n-openai-bridge:v1.0.0
+docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
 
 # Test it
 docker run -d \
   --name test-bridge \
   -p 3333:3333 \
   -e BEARER_TOKEN=test-token \
-  ghcr.io/[owner]/n8n-openai-bridge:v1.0.0
+  ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
 
 # Check health
 curl http://localhost:3333/health
@@ -137,6 +184,23 @@ curl http://localhost:3333/health
 # Cleanup
 docker stop test-bridge && docker rm test-bridge
 ```
+
+### Manual Version Control (Optional)
+
+If you need to create a specific version (e.g., for major/minor bumps):
+
+```bash
+# Create and push a version tag manually
+git tag v1.0.0
+git push origin v1.0.0
+
+# Create a GitHub Release
+gh release create v1.0.0 --generate-notes
+
+# This will trigger the Docker image build
+```
+
+After this, the automated workflow will continue from `v1.0.0` with patch increments (`v1.0.1`, `v1.0.2`, etc.).
 
 ## Docker Image Tags
 
