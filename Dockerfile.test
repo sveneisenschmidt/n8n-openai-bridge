@@ -8,7 +8,7 @@ COPY package*.json ./
 # Install ALL dependencies (including dev dependencies for testing)
 # Using build cache mount for npm cache
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --omit=optional --prefer-offline --no-audit --no-fund
+    npm install --prefer-offline --no-audit --no-fund
 
 # Copy source and test files
 COPY src/ ./src/
