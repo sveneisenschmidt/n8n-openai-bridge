@@ -1,5 +1,12 @@
 {
   "name": "n8n-openai-bridge",
+  "description": "OpenAI-compatible API middleware for n8n workflows",
+  "license": "AGPL-3.0",
+  "author": "Sven Eisenschmidt",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sveneisenschmidt/n8n-openai-bridge.git"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",

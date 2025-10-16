@@ -508,4 +508,18 @@ Please ensure:
 
 ## License
 
-Apache 2.0
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+### What this means:
+
+- ✅ You can use, modify, and distribute this software freely
+- ✅ You must share your modifications under the same license
+- ✅ If you run a modified version as a web service, you must make the source code available
+- ✅ Original author attribution is required
+
+See the [LICENSE](LICENSE) file for full details.
+
+### License History
+
+- **v0.0.7+**: AGPL-3.0 (current)
+- **v0.0.1 - v0.0.6**: Apache 2.0 (previous versions remain under Apache 2.0)
