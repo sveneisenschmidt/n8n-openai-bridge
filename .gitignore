@@ -26,6 +26,7 @@ coverage/
 # Test artifacts
 tests/test-models.json
 tests/load/summary.json
+VERSION
 
 # IDE
 .vscode/
