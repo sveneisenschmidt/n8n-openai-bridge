@@ -127,7 +127,7 @@ make clean    # Remove everything
 make help     # Show all commands
 ```
 
-Or manually: `docker-compose up -d`
+Or manually: `docker compose -f docker/docker-compose.dev.yml up -d`
 
 ## Configuration
 
@@ -426,13 +426,16 @@ n8n-openai-bridge/
 │   ├── server.test.js     # Server endpoint tests
 │   ├── n8nClient.test.js  # n8n client tests
 │   └── config.test.js     # Configuration tests
+├── docker/
+│   ├── Dockerfile.build          # Production Docker image
+│   ├── Dockerfile.test           # Test Docker image
+│   ├── Dockerfile.mock-n8n       # Mock n8n server for load testing
+│   ├── docker-compose.dev.yml    # Development Docker Compose
+│   └── docker-compose.loadtest.yml # Load testing Docker Compose
 ├── models.json            # Model-to-webhook mapping (create from .example)
 ├── models.json.example    # Example models configuration
 ├── .env                   # Environment variables (create from .example)
 ├── .env.example           # Example environment configuration
-├── Dockerfile             # Production Docker image
-├── Dockerfile.test        # Test Docker image
-├── docker-compose.yml     # Docker Compose configuration
 ├── Makefile               # Build and test automation
 └── package.json           # Node.js dependencies and scripts
 ```

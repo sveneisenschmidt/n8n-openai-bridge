@@ -29,7 +29,7 @@ cd "$PROJECT_ROOT"
 
 # Test 1: Build the image
 echo "Test 1: Building production Docker image..."
-if docker build -t "$IMAGE_NAME" .; then
+if docker build -f docker/Dockerfile.build -t "$IMAGE_NAME" .; then
     echo "✓ Docker image built successfully"
 else
     echo "✗ Docker build failed"
