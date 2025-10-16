@@ -25,29 +25,29 @@ rebuild: stop build start
 
 build:
 	@echo "Building Docker image with latest changes..."
-	DOCKER_BUILDKIT=1 docker compose build
+	DOCKER_BUILDKIT=1 docker compose -f docker/docker-compose.dev.yml build
 
 start:
 	@echo "Starting server..."
-	docker compose up -d
+	docker compose -f docker/docker-compose.dev.yml up -d
 	@echo "Server started successfully!"
 
 stop:
 	@echo "Stopping containers..."
-	docker compose down || true
+	docker compose -f docker/docker-compose.dev.yml down || true
 
 restart: stop start
 
 clean:
 	@echo "Cleaning up containers, images, and volumes..."
-	docker compose down -v --rmi all || true
+	docker compose -f docker/docker-compose.dev.yml down -v --rmi all || true
 
 logs:
-	docker compose logs -f
+	docker compose -f docker/docker-compose.dev.yml logs -f
 
 verify:
 	@echo "Verifying models endpoint..."
-	@if [ -z "$$(docker compose ps -q n8n-openai-bridge 2>/dev/null)" ]; then \
+	@if [ -z "$$(docker compose -f docker/docker-compose.dev.yml ps -q n8n-openai-bridge 2>/dev/null)" ]; then \
 		echo "✗ Error: Container is not running. Start it with 'make start'"; \
 		exit 1; \
 	fi
@@ -79,7 +79,7 @@ test-unit:
 	@echo "======================================"
 	@echo ""
 	@echo "Building test image with latest changes..."
-	@DOCKER_BUILDKIT=1 docker build -f Dockerfile.test -t n8n-openai-bridge-test .
+	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
 	@echo ""
 	@echo "Running unit tests in Docker..."
 	@docker run --rm n8n-openai-bridge-test
@@ -103,13 +103,13 @@ test-load:
 	@echo "======================================"
 	@echo ""
 	@echo "Building images..."
-	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml build
+	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build
 	@echo ""
 	@echo "Starting services (mock-n8n, bridge, k6)..."
-	@VUS=20 DURATION=1m docker-compose -f docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
+	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
 	@echo ""
 	@echo "Cleaning up..."
-	@docker-compose -f docker-compose.loadtest.yml down -v
+	@docker compose -f docker/docker-compose.loadtest.yml down -v
 	@echo ""
 	@echo "✓ Load tests completed!"
 	@echo ""

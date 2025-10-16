@@ -85,7 +85,7 @@ Running Docker Image Tests
 make test-unit
 ```
 
-Builds a test Docker image with `Dockerfile.test` and runs Jest tests inside it.
+Builds a test Docker image with `docker/Dockerfile.test` and runs Jest tests inside it.
 
 ### Run Docker Image Tests Only
 

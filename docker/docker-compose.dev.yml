@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   n8n-openai-bridge:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.build
     container_name: n8n-openai-bridge
     ports:
       - "${PORT:-3333}:3333"
@@ -16,7 +18,7 @@ services:
     volumes:
       # Mount user configuration files
       # Create models.json from models.json.example before starting
-      - ./models.json:/app/models.json:ro
+      - ../models.json:/app/models.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/health"]

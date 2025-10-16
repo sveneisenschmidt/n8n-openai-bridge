@@ -2,8 +2,8 @@ services:
   # Mock n8n server - simulates n8n webhook responses
   mock-n8n:
     build:
-      context: .
-      dockerfile: Dockerfile.mock-n8n
+      context: ..
+      dockerfile: docker/Dockerfile.mock-n8n
     container_name: loadtest-mock-n8n
     environment:
       - MOCK_PORT=3001
@@ -23,11 +23,11 @@ services:
   # n8n-openai-bridge - the service under test
   n8n-bridge:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile.build
     container_name: loadtest-bridge
     volumes:
-      - ./tests/load/models.json:/app/models.json:ro
+      - ../tests/load/models.json:/app/models.json:ro
     environment:
       - N8N_WEBHOOK_URL=http://mock-n8n:3001/webhook/test
       - N8N_WEBHOOK_STREAM_URL=http://mock-n8n:3001/webhook/test/stream
@@ -51,7 +51,7 @@ services:
     image: grafana/k6:latest
     container_name: loadtest-k6
     volumes:
-      - ./tests/load:/scripts
+      - ../tests/load:/scripts
     environment:
       - TARGET_URL=http://n8n-bridge:3000
       - BEARER_TOKEN=${BEARER_TOKEN:-test-token}
