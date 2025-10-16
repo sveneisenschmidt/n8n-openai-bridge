@@ -46,13 +46,6 @@ describe('Server Integration Tests', () => {
     };
     jest.spyOn(fs, 'watch').mockReturnValue(mockWatcher);
 
-    // Create VERSION file for test
-    const versionPath = path.join(__dirname, '..', 'VERSION');
-    const versionExists = fs.existsSync(versionPath);
-    if (!versionExists) {
-      fs.writeFileSync(versionPath, '0.0.6-test');
-    }
-
     // Clear module cache and require fresh instances
     jest.resetModules();
 
@@ -60,11 +53,6 @@ describe('Server Integration Tests', () => {
     jest.mock('../src/n8nClient');
 
     app = require('../src/server');
-
-    // Clean up VERSION file if we created it
-    if (!versionExists && fs.existsSync(versionPath)) {
-      fs.unlinkSync(versionPath);
-    }
   });
 
   afterAll(() => {
