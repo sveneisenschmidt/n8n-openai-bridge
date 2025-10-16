@@ -66,6 +66,40 @@ jobs:
           echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
           echo "minor=$(echo $VERSION | cut -d. -f1,2)" >> $GITHUB_OUTPUT
 
+      - name: Update Release Notes with Docker Tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          MINOR="${{ steps.version.outputs.minor }}"
+          MAJOR="${{ steps.version.outputs.major }}"
+
+          # Get current release body
+          RELEASE_BODY=$(gh release view "$TAG" --json body -q .body)
+
+          # Update Docker image references
+          UPDATED_BODY=$(cat <<EOF
+          ## Docker Images
+
+          This release is available on GitHub Container Registry:
+
+          \`\`\`bash
+          docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+          docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:$VERSION
+          docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:$MINOR
+          docker pull ghcr.io/sveneisenschmidt/n8n-openai-bridge:$MAJOR
+          \`\`\`
+
+          See [README.md](https://github.com/sveneisenschmidt/n8n-openai-bridge#readme) for usage instructions.
+
+          ${RELEASE_BODY#*instructions.}
+          EOF
+          )
+
+          # Update release
+          gh release edit "$TAG" --notes "$UPDATED_BODY"
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
