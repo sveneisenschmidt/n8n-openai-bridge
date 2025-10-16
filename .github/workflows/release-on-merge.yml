@@ -23,7 +23,7 @@ jobs:
       - name: Create Release
         uses: dexwritescode/release-on-merge-action@v1
         with:
-          version-increment: patch
+          version-increment-strategy: patch
           tag-prefix: v
           generate-release-notes: true
           body: |
