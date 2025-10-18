@@ -39,7 +39,7 @@ class Config {
     try {
       this.models = this.modelLoader.loadSync();
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Error loading models: ${error.message}`);
+      console.error(`Error loading models: ${error.message}`);
       this.models = {};
     }
 
@@ -109,12 +109,10 @@ class Config {
       .load()
       .then((models) => {
         this.models = models;
-        console.log(
-          `[${new Date().toISOString()}] Models loaded successfully (${Object.keys(models).length} models)`,
-        );
+        console.log(`Models loaded successfully (${Object.keys(models).length} models)`);
       })
       .catch((error) => {
-        console.error(`[${new Date().toISOString()}] Error loading models: ${error.message}`);
+        console.error(`Error loading models: ${error.message}`);
         this.models = {};
       });
   }
@@ -122,11 +120,9 @@ class Config {
   async reloadModels() {
     try {
       this.models = await this.modelLoader.load();
-      console.log(
-        `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`,
-      );
+      console.log(`Models reloaded successfully (${Object.keys(this.models).length} models)`);
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Error reloading models: ${error.message}`);
+      console.error(`Error reloading models: ${error.message}`);
     }
   }
 

@@ -423,11 +423,15 @@ All user context fields are automatically forwarded to your n8n webhook, enablin
 Unit tests run in isolated Docker containers with npm caching for fast rebuilds.
 
 ```bash
-make test         # Run tests (always uses latest code, ~5-10s with cache)
-make verify       # Test live API endpoint
+make test              # Run unit tests (~5-10s with cache)
+make test-image        # Run Docker image validation tests
+make test-load         # Run load tests with k6 (20 users, 1min)
+make verify            # Test live API endpoint
 ```
 
-Tests cover configuration, n8n client, and API endpoints. See `tests/` directory.
+**Image Tests:** Modular test scenarios validate the production Docker image (build, startup, endpoints, ModelLoader, etc.). Run individual tests: `bash tests/test-image-build.sh invalid-url-validation` or all tests with `make test-image`. See `tests/image-tests/` for available scenarios.
+
+**Load Tests:** Performance testing with k6 simulates concurrent users against a mock n8n backend. Validates streaming/non-streaming responses, authentication, and measures throughput. Results saved to `tests/load/summary.json`.
 
 ## Code Quality
 
@@ -436,13 +440,13 @@ This project uses ESLint and Prettier to maintain consistent code style.
 ```bash
 make lint          # Check code quality with ESLint
 make lint-fix      # Auto-fix ESLint issues
-make format        # Format code with Prettier
-make format-check  # Check if code is formatted correctly
+make format        # Check if code is formatted correctly
+make format-fix    # Format code with Prettier
 ```
 
 **Before committing:**
 ```bash
-make lint && make format-check  # Ensure code passes quality checks
+make lint && make format  # Ensure code passes quality checks
 ```
 
 ## Troubleshooting
@@ -601,7 +605,7 @@ Contributions are welcome! Please follow these steps:
 Please ensure:
 - All tests pass (`make test`)
 - Code passes linting (`make lint`)
-- Code is properly formatted (`make format-check`)
+- Code is properly formatted (`make format`)
 - Docker build succeeds
 - Update documentation as needed
 

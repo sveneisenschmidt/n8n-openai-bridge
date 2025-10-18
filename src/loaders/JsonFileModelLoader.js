@@ -69,7 +69,7 @@ class JsonFileModelLoader extends ModelLoader {
    */
   watch(callback) {
     if (this.watcher) {
-      console.warn(`[${new Date().toISOString()}] Already watching ${this.filePath}`);
+      console.warn(`Already watching ${this.filePath}`);
       return;
     }
 
@@ -81,28 +81,22 @@ class JsonFileModelLoader extends ModelLoader {
           // Debounce: wait 100ms before reloading to avoid multiple reloads
           clearTimeout(this.reloadTimeout);
           this.reloadTimeout = setTimeout(async () => {
-            console.log(`[${new Date().toISOString()}] ${this.filePath} changed, reloading...`);
+            console.log(`${this.filePath} changed, reloading...`);
             try {
               const models = await this.load();
-              console.log(
-                `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(models).length} models)`,
-              );
+              console.log(`Models reloaded successfully (${Object.keys(models).length} models)`);
               if (this.watchCallback) {
                 this.watchCallback(models);
               }
             } catch (error) {
-              console.error(
-                `[${new Date().toISOString()}] Error reloading models: ${error.message}`,
-              );
+              console.error(`Error reloading models: ${error.message}`);
             }
           }, 100);
         }
       });
-      console.log(`[${new Date().toISOString()}] Watching ${this.filePath} for changes...`);
+      console.log(`Watching ${this.filePath} for changes...`);
     } catch (error) {
-      console.warn(
-        `[${new Date().toISOString()}] Could not watch ${this.filePath}: ${error.message}`,
-      );
+      console.warn(`Could not watch ${this.filePath}: ${error.message}`);
     }
   }
 
@@ -119,7 +113,7 @@ class JsonFileModelLoader extends ModelLoader {
       this.watcher.close();
       this.watcher = null;
       this.watchCallback = null;
-      console.log(`[${new Date().toISOString()}] Stopped watching ${this.filePath}`);
+      console.log(`Stopped watching ${this.filePath}`);
     }
   }
 }
