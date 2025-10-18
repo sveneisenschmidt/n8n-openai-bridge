@@ -16,30 +16,39 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const axios = require('axios');
+const axios = require("axios");
 
 class N8nClient {
   constructor(config) {
     this.config = config;
   }
 
-  getHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    if (this.config.n8nBearerToken) {
-      headers['Authorization'] = `Bearer ${this.config.n8nBearerToken}`;
+  getWebhookHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    if (this.config.n8nWebhookBearerToken) {
+      headers["Authorization"] = `Bearer ${this.config.n8nWebhookBearerToken}`;
+    }
+    return headers;
+  }
+
+  getApiHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    if (this.config.n8nApiBearerToken) {
+      headers["Authorization"] = `Bearer ${this.config.n8nApiBearerToken}`;
     }
     return headers;
   }
 
   buildPayload(messages, sessionId, userContext) {
-    const systemPrompt = messages.find(m => m.role === 'system')?.content || '';
-    const currentMessage = messages[messages.length - 1]?.content || '';
+    const systemPrompt =
+      messages.find((m) => m.role === "system")?.content || "";
+    const currentMessage = messages[messages.length - 1]?.content || "";
 
     const payload = {
       systemPrompt,
       currentMessage,
       chatInput: currentMessage,
-      messages: messages.filter(m => m.role !== 'system'),
+      messages: messages.filter((m) => m.role !== "system"),
       sessionId,
       userId: userContext.userId,
     };
@@ -63,19 +72,19 @@ class N8nClient {
 
     try {
       const response = await axios.post(webhookUrl, payload, {
-        headers: this.getHeaders(),
-        responseType: 'stream',
+        headers: this.getWebhookHeaders(),
+        responseType: "stream",
         timeout: 300000, // 5 minutes
       });
 
-      let buffer = '';
-      
+      let buffer = "";
+
       for await (const chunk of response.data) {
         const text = chunk.toString();
         buffer += text;
 
         // Process JSON chunks
-        if (buffer.includes('{') && buffer.includes('}')) {
+        if (buffer.includes("{") && buffer.includes("}")) {
           const chunks = this.extractJsonChunks(buffer);
           buffer = chunks.remainder;
 
@@ -96,7 +105,7 @@ class N8nClient {
         }
       }
     } catch (error) {
-      console.error('Streaming error:', error.message);
+      console.error("Streaming error:", error.message);
       throw error;
     }
   }
@@ -108,12 +117,12 @@ class N8nClient {
       // n8n always sends streams, so we need to handle it as a stream
       // and collect all content chunks
       const response = await axios.post(webhookUrl, payload, {
-        headers: this.getHeaders(),
-        responseType: 'stream',
+        headers: this.getWebhookHeaders(),
+        responseType: "stream",
         timeout: 300000, // 5 minutes
       });
 
-      let buffer = '';
+      let buffer = "";
       let collectedContent = [];
 
       for await (const chunk of response.data) {
@@ -121,7 +130,7 @@ class N8nClient {
         buffer += text;
 
         // Process JSON chunks
-        if (buffer.includes('{') && buffer.includes('}')) {
+        if (buffer.includes("{") && buffer.includes("}")) {
           const chunks = this.extractJsonChunks(buffer);
           buffer = chunks.remainder;
 
@@ -143,9 +152,9 @@ class N8nClient {
       }
 
       // Return all collected content as a single string
-      return collectedContent.join('');
+      return collectedContent.join("");
     } catch (error) {
-      console.error('Non-streaming error:', error.message);
+      console.error("Non-streaming error:", error.message);
       throw error;
     }
   }
@@ -155,15 +164,15 @@ class N8nClient {
     let remainder = buffer;
 
     while (true) {
-      const startIdx = remainder.indexOf('{');
+      const startIdx = remainder.indexOf("{");
       if (startIdx === -1) break;
 
       let braceCount = 0;
       let endIdx = -1;
 
       for (let i = startIdx; i < remainder.length; i++) {
-        if (remainder[i] === '{') braceCount++;
-        else if (remainder[i] === '}') {
+        if (remainder[i] === "{") braceCount++;
+        else if (remainder[i] === "}") {
           braceCount--;
           if (braceCount === 0) {
             endIdx = i;
@@ -188,9 +197,12 @@ class N8nClient {
 
     try {
       const data = JSON.parse(chunkText);
-      
+
       // Skip metadata chunks
-      if (data.type && ['begin', 'end', 'error', 'metadata'].includes(data.type)) {
+      if (
+        data.type &&
+        ["begin", "end", "error", "metadata"].includes(data.type)
+      ) {
         return null;
       }
 
@@ -199,8 +211,98 @@ class N8nClient {
     } catch {
       // Not JSON, return as plain text
       const stripped = chunkText.trim();
-      return stripped.startsWith('{') ? null : stripped;
+      return stripped.startsWith("{") ? null : stripped;
     }
+  }
+
+  /**
+   * Fetch workflows from n8n API with optional tag filter
+   * @param {string} tag - Tag name to filter workflows (optional)
+   * @returns {Promise<Array>} - Array of workflow objects
+   */
+  async getWorkflows(tag = null) {
+    if (!this.config.n8nApiUrl) {
+      throw new Error("N8N_API_URL not configured");
+    }
+
+    if (!this.config.n8nApiBearerToken) {
+      throw new Error("N8N_API_BEARER_TOKEN not configured");
+    }
+
+    const baseUrl = this.config.n8nApiUrl.replace(/\/$/, ""); // Remove trailing slash
+    let url = `${baseUrl}/api/v1/workflows?limit=250`;
+
+    if (tag) {
+      url += `&tags=${encodeURIComponent(tag)}`;
+    }
+
+    const allWorkflows = [];
+    let cursor = null;
+
+    try {
+      do {
+        const requestUrl = cursor ? `${url}&cursor=${cursor}` : url;
+
+        const response = await axios.get(requestUrl, {
+          headers: this.getApiHeaders(),
+          timeout: 30000, // 30 seconds
+        });
+
+        if (response.data && response.data.data) {
+          allWorkflows.push(...response.data.data);
+          cursor = response.data.nextCursor || null;
+        } else {
+          break;
+        }
+      } while (cursor);
+
+      return allWorkflows;
+    } catch (error) {
+      console.error("Error fetching workflows from n8n API:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract webhook URL from workflow nodes
+   * @param {object} workflow - Workflow object from n8n API
+   * @returns {string|null} - Webhook URL or null if not found
+   */
+  extractWebhookUrl(workflow) {
+    if (!workflow.nodes || !Array.isArray(workflow.nodes)) {
+      return null;
+    }
+
+    // Find webhook node
+    const webhookNode = workflow.nodes.find(
+      (node) =>
+        node.type === "n8n-nodes-base.webhook" || node.type.includes("webhook"),
+    );
+
+    if (!webhookNode) {
+      return null;
+    }
+
+    // Use webhook base URL (may differ from API URL)
+    const baseUrl = this.config.n8nWebhookBaseUrl.replace(/\/$/, "");
+
+    // Try to get webhookId (preferred method)
+    if (webhookNode.webhookId) {
+      return `${baseUrl}/webhook/${webhookNode.webhookId}`;
+    }
+
+    // Fallback: Try to construct from parameters.path
+    if (webhookNode.parameters && webhookNode.parameters.path) {
+      const path = webhookNode.parameters.path;
+      return `${baseUrl}/webhook/${path}`;
+    }
+
+    // Last resort: Use workflow ID
+    if (workflow.id) {
+      return `${baseUrl}/webhook/${workflow.id}`;
+    }
+
+    return null;
   }
 }
 

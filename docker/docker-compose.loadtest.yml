@@ -14,7 +14,13 @@ services:
     networks:
       - loadtest
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })",
+        ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -34,13 +40,28 @@ services:
       - BEARER_TOKEN=${BEARER_TOKEN:-test-token}
       - PORT=3000
       - NODE_ENV=production
+      # Auto-Discovery configuration (optional, set via env vars)
+      - AUTO_FETCH_MODELS_BY_TAG=${AUTO_FETCH_MODELS_BY_TAG:-false}
+      - AUTO_DISCOVERY_TAG=${AUTO_DISCOVERY_TAG:-n8n-openai-model}
+      - AUTO_DISCOVERY_POLLING=${AUTO_DISCOVERY_POLLING:-0}
+      - N8N_API_URL=${N8N_API_URL:-http://mock-n8n:3001}
+      - N8N_API_BEARER_TOKEN=${N8N_API_BEARER_TOKEN:-}
+      - N8N_WEBHOOK_BASE_URL=${N8N_WEBHOOK_BASE_URL:-http://mock-n8n:3001}
     depends_on:
       mock-n8n:
         condition: service_healthy
     networks:
       - loadtest
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/health",
+        ]
       interval: 5s
       timeout: 3s
       retries: 5

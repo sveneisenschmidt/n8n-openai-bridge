@@ -38,17 +38,17 @@ Tests the production Docker image to ensure:
 - Custom `models.json` can be mounted
 
 **Test Coverage:**
-1. ✅ Docker image builds
-2. ✅ Image size check
-3. ✅ Configuration files exist
-4. ✅ docker/.env content validation
-5. ✅ docker/models.json placeholder model validation
-6. ✅ Container startup (log polling for "Server running on port")
-7. ✅ Health endpoint responding
-8. ✅ Built-in `docker-default-model` available via API
-9. ✅ Test files excluded from production image
-10. ✅ No dev dependencies (jest, nodemon, supertest)
-11. ✅ Custom models.json mount works
+1. OK Docker image builds
+2. OK Image size check
+3. OK Configuration files exist
+4. OK docker/.env content validation
+5. OK docker/models.json placeholder model validation
+6. OK Container startup (log polling for "Server running on port")
+7. OK Health endpoint responding
+8. OK Built-in `docker-default-model` available via API
+9. OK Test files excluded from production image
+10. OK No dev dependencies (jest, nodemon, supertest)
+11. OK Custom models.json mount works
 
 ## Running Tests
 
@@ -66,16 +66,16 @@ This runs both unit tests and Docker image tests sequentially.
 Running Unit Tests (Server Logic)
 ======================================
 ...
-✓ Unit tests passed!
+OK Unit tests passed!
 
 ======================================
 Running Docker Image Tests
 ======================================
 ...
-✓ All Docker image build tests passed!
+OK All Docker image build tests passed!
 
 ======================================
-✓ All tests passed successfully!
+OK All tests passed successfully!
 ======================================
 ```
 
@@ -105,7 +105,7 @@ Instead of static `sleep` commands, the image tests use log polling:
 # Wait for "Server running on port" in logs
 while [ $WAITED -lt $MAX_WAIT ]; do
     if docker logs "$TEST_CONTAINER" 2>&1 | grep -q "Server running on port"; then
-        echo "✓ Container started successfully"
+        echo "OK Container started successfully"
         break
     fi
     sleep 1
@@ -157,9 +157,9 @@ Edit `tests/test-image-build.sh` to add new test cases:
 # Test N: Your new test
 echo "Test N: Testing something new..."
 if docker run --rm "$IMAGE_NAME" test -f /app/new-file.txt; then
-    echo "✓ New test passed"
+    echo "OK New test passed"
 else
-    echo "✗ New test failed"
+    echo "FAIL New test failed"
     exit 1
 fi
 echo ""

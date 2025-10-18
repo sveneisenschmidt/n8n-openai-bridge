@@ -74,11 +74,11 @@ make release-check
 ```
 
 This validates:
-- ✅ VERSION file exists and is valid
-- ✅ No uncommitted changes
-- ✅ Branch synced with origin/main
-- ✅ Tag doesn't exist yet
-- ✅ Version documented in CHANGELOG.md
+- OK VERSION file exists and is valid
+- OK No uncommitted changes
+- OK Branch synced with origin/main
+- OK Tag doesn't exist yet
+- OK Version documented in CHANGELOG.md
 
 ### Step 3: Create Git Tag
 
@@ -193,11 +193,11 @@ Checking release readiness...
 
 Current version: 0.0.3
 
-✓ VERSION file exists: 0.0.3
-✓ No uncommitted changes
-✓ Branch in sync with origin/main
-✓ Tag v0.0.3 does not exist yet
-✓ Version 0.0.3 documented in CHANGELOG.md
+OK VERSION file exists: 0.0.3
+OK No uncommitted changes
+OK Branch in sync with origin/main
+OK Tag v0.0.3 does not exist yet
+OK Version 0.0.3 documented in CHANGELOG.md
 
 Ready for release!
 ```
@@ -213,7 +213,7 @@ Current version: 0.0.3
 New version: 0.0.4
 
 Continue? [y/N] y
-✓ Updated VERSION file to 0.0.4
+OK Updated VERSION file to 0.0.4
 
 Next steps:
 1. Update CHANGELOG.md with version 0.0.4 and changes
@@ -240,8 +240,8 @@ This will:
   3. Trigger GitHub Actions to build and publish Docker images
 
 Continue? [y/N] y
-✓ Created tag v0.0.4
-✓ Pushed tag to origin
+OK Created tag v0.0.4
+OK Pushed tag to origin
 
 Tag created successfully!
 

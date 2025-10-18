@@ -60,7 +60,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ Docker images published for ${{ inputs.version_tag }}:"
+          echo "OK Docker images published for ${{ inputs.version_tag }}:"
           echo ""
           echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:latest"
           echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.version }}"

@@ -82,8 +82,8 @@ We use a separate `VERSION` file instead of `package.json` version field because
 - No trailing newline or whitespace (will be trimmed)
 
 Examples:
-- ✅ `0.0.3`
-- ✅ `1.2.0`
-- ✅ `2.0.1`
-- ❌ `v0.0.3` (no prefix)
-- ❌ `0.0.3-beta` (pre-release tags in GitHub release, not VERSION file)
+- OK `0.0.3`
+- OK `1.2.0`
+- OK `2.0.1`
+- FAIL `v0.0.3` (no prefix)
+- FAIL `0.0.3-beta` (pre-release tags in GitHub release, not VERSION file)

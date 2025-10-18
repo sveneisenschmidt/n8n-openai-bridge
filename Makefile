@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load test-load-discovery verify
 
 help:
 	@echo "Available commands:"
@@ -14,11 +14,12 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test              - Run all tests (unit + image build)"
-	@echo "  make test-unit         - Run unit tests for server logic only"
-	@echo "  make test-image        - Run Docker image build validation tests"
-	@echo "  make test-all          - Alias for test"
-	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
+	@echo "  make test                    - Run all tests (unit + image build)"
+	@echo "  make test-unit               - Run unit tests for server logic only"
+	@echo "  make test-image              - Run Docker image build validation tests"
+	@echo "  make test-load               - Run all load tests (manual config + auto-discovery)"
+	@echo "  make test-load-manual-config - Run load tests (manual models.json mode)"
+	@echo "  make test-load-discovery     - Run load tests (auto-discovery mode)"
 
 rebuild: stop build start
 	@echo "Rebuild complete!"
@@ -67,10 +68,8 @@ verify:
 test: test-unit test-image
 	@echo ""
 	@echo "======================================"
-	@echo "✓ All tests passed successfully!"
+	@echo "OK All tests passed successfully!"
 	@echo "======================================"
-
-test-all: test
 
 # Test 1: Unit tests for server logic
 test-unit:
@@ -95,24 +94,55 @@ test-image:
 	@echo ""
 	@bash tests/test-image-build.sh
 
-# Test 3: Load testing with k6 (via docker-compose)
-test-load:
+# Test 3: Load testing with k6 (via docker-compose) - All modes
+test-load: test-load-manual-config test-load-discovery
 	@echo ""
 	@echo "======================================"
-	@echo "Running Load Tests (20 users, 1min)"
+	@echo "All load tests completed!"
+	@echo "======================================"
+
+# Test 3a: Load testing - Manual models.json configuration
+test-load-manual-config:
+	@echo ""
+	@echo "======================================"
+	@echo "Running Load Tests (Manual Config)"
+	@echo "20 users, 1min, models.json"
 	@echo "======================================"
 	@echo ""
 	@echo "Building images..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build
+	@VUS=20 DURATION=1m AUTO_FETCH_MODELS_BY_TAG=false docker compose -f docker/docker-compose.loadtest.yml build
 	@echo ""
 	@echo "Starting services (mock-n8n, bridge, k6)..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
+	@VUS=20 DURATION=1m AUTO_FETCH_MODELS_BY_TAG=false docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
 	@echo ""
 	@echo "Cleaning up..."
 	@docker compose -f docker/docker-compose.loadtest.yml down -v
 	@echo ""
-	@echo "✓ Load tests completed!"
+	@echo "OK Load tests (Manual Config) completed!"
 	@echo ""
 	@if [ -f tests/load/summary.json ]; then \
-		echo "📊 Detailed results saved to: tests/load/summary.json"; \
+		echo "Detailed results saved to: tests/load/summary.json"; \
+	fi
+
+# Test 3b: Load testing - Auto-Discovery mode
+test-load-discovery:
+	@echo ""
+	@echo "======================================"
+	@echo "Running Load Tests (Auto-Discovery)"
+	@echo "20 users, 1min, auto-discovery mode"
+	@echo "======================================"
+	@echo ""
+	@echo "Building images..."
+	@VUS=20 DURATION=1m AUTO_FETCH_MODELS_BY_TAG=true N8N_API_BEARER_TOKEN=mock-token docker compose -f docker/docker-compose.loadtest.yml build
+	@echo ""
+	@echo "Starting services (mock-n8n, bridge, k6)..."
+	@VUS=20 DURATION=1m AUTO_FETCH_MODELS_BY_TAG=true N8N_API_BEARER_TOKEN=mock-token docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
+	@echo ""
+	@echo "Cleaning up..."
+	@docker compose -f docker/docker-compose.loadtest.yml down -v
+	@echo ""
+	@echo "OK Load tests (Auto-Discovery) completed!"
+	@echo ""
+	@if [ -f tests/load/summary.json ]; then \
+		echo "Detailed results saved to: tests/load/summary.json"; \
 	fi

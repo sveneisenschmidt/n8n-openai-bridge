@@ -43,7 +43,56 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Docker ready with health checks
 - Hot-reload models without restart
 - Complete OpenAPI 3.1 documentation
-- 78%+ test coverage with 147 unit tests
+- Test coverage with 198 unit tests
+- **Advanced: Auto-Discovery (experimental)** - Automatically discover n8n workflows as models via tags
+
+## Quick Start
+
+### 1. Create models.json
+
+Map your n8n workflow webhooks to model names:
+
+```json
+{
+  "gpt-4-agent": "https://n8n.yourdomain.com/webhook/abc123/chat",
+  "claude-support": "https://n8n.yourdomain.com/webhook/def456/chat",
+  "custom-agent": "https://n8n.yourdomain.com/webhook/xyz789/chat"
+}
+```
+
+### 2. Configure Environment
+
+Create `.env` file:
+
+```bash
+PORT=3333
+BEARER_TOKEN=your-secret-api-key
+N8N_WEBHOOK_BEARER_TOKEN=your-n8n-webhook-token  # Optional
+MODELS_CONFIG=./models.json
+LOG_REQUESTS=false
+```
+
+### 3. Start the Bridge
+
+**Docker:**
+```bash
+docker run -d \
+  --name n8n-openai-bridge \
+  -p 3333:3333 \
+  -v $(pwd)/models.json:/app/models.json \
+  -e BEARER_TOKEN=your-secret-api-key \
+  ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+```
+
+**Local:**
+```bash
+npm install
+npm start
+```
+
+### 4. Use in OpenAI Clients
+
+Your models are now available at `http://localhost:3333/v1/chat/completions`
 
 ## Installation
 
@@ -73,7 +122,7 @@ docker run -d \
 curl http://localhost:3333/health
 ```
 
-**Docker Compose:**
+**Docker Compose (Manual models.json):**
 
 ```yaml
 services:
@@ -84,11 +133,34 @@ services:
       - "3333:3333"
     environment:
       - BEARER_TOKEN=your-secret-api-key-here
-      - N8N_BEARER_TOKEN=  # Optional: for authenticated n8n webhooks
+      - N8N_WEBHOOK_BEARER_TOKEN=  # Optional: for authenticated n8n webhooks
       - LOG_REQUESTS=false
       - SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
     volumes:
       - ./models.json:/app/models.json:ro
+    restart: unless-stopped
+```
+
+**Docker Compose (Auto-Discovery):**
+
+```yaml
+services:
+  n8n-openai-bridge:
+    image: ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+    container_name: n8n-openai-bridge
+    ports:
+      - "3333:3333"
+    environment:
+      - BEARER_TOKEN=your-secret-api-key-here
+      - N8N_API_URL=https://n8n.yourdomain.com
+      - N8N_API_BEARER_TOKEN=your-n8n-api-token
+      - N8N_WEBHOOK_BASE_URL=https://n8n.yourdomain.com
+      - N8N_WEBHOOK_BEARER_TOKEN=  # Optional: for authenticated webhooks
+      - AUTO_FETCH_MODELS_BY_TAG=true
+      - AUTO_DISCOVERY_TAG=n8n-openai-model
+      - AUTO_DISCOVERY_POLLING=300
+      - LOG_REQUESTS=false
+      - SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
     restart: unless-stopped
 ```
 
@@ -134,11 +206,12 @@ Or manually: `docker compose -f docker/docker-compose.dev.yml up -d`
 ### Environment Variables (.env)
 
 ```bash
-PORT=3333                        # Server port
-BEARER_TOKEN=your-api-key        # Auth for requests TO this bridge
-N8N_BEARER_TOKEN=                # Optional: Auth for requests FROM bridge to n8n
-MODELS_CONFIG=./models.json      # Path to models config
-LOG_REQUESTS=false               # Debug logging
+PORT=3333                             # Server port
+BEARER_TOKEN=your-api-key             # Auth for requests TO this bridge
+N8N_WEBHOOK_BEARER_TOKEN=             # Optional: Auth for webhook requests (bridge → n8n)
+N8N_API_BEARER_TOKEN=                 # Optional: Auth for n8n API (auto-discovery)
+MODELS_CONFIG=./models.json           # Path to models config
+LOG_REQUESTS=false                    # Debug logging
 
 # Session & User Context Headers (comma-separated, first found wins)
 SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id
@@ -152,8 +225,9 @@ DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 
 **Authentication Flow:**
 - `BEARER_TOKEN` - Protects this bridge (clients → bridge)
-- `N8N_BEARER_TOKEN` - Protects n8n webhooks (bridge → n8n)
-- Leave `N8N_BEARER_TOKEN` empty if your n8n webhooks are public
+- `N8N_WEBHOOK_BEARER_TOKEN` - Protects n8n webhooks (bridge → n8n)
+- `N8N_API_BEARER_TOKEN` - Authenticates with n8n API (for auto-discovery)
+- Leave these empty if your n8n webhooks/API are public
 
 ### Models (models.json)
 
@@ -340,7 +414,7 @@ Import [`n8n_workflow.json.example`](n8n_workflow.json.example) in n8n → Confi
    - Copy webhook URL (ends with `/chat`) → Add to `models.json`
 
 2. **AI Agent**
-   - Enable Streaming: ✓
+   - Enable Streaming: OK
 
 3. **Chat Model** (Anthropic, OpenAI, etc.)
    - Configure with your API credentials
@@ -376,6 +450,158 @@ curl -X POST http://localhost:3333/v1/chat/completions \
 ```
 
 All user context fields are automatically forwarded to your n8n webhook, enabling personalized workflows.
+
+## Advanced: Auto-Discovery (Experimental)
+
+**Note:** Auto-Discovery is an experimental opt-in feature for automatically discovering n8n workflows as models.
+
+### Overview
+
+Instead of manually maintaining `models.json`, the bridge can automatically discover your n8n workflows by tag and expose them as OpenAI models.
+
+### Quick Start
+
+1. **Tag your n8n workflows** with `n8n-openai-model`
+2. **Configure environment variables:**
+
+```bash
+AUTO_FETCH_MODELS_BY_TAG=true
+AUTO_DISCOVERY_TAG=n8n-openai-model
+AUTO_DISCOVERY_POLLING=300
+
+N8N_API_URL=https://n8n.yourdomain.com
+N8N_API_BEARER_TOKEN=your-n8n-api-token
+N8N_WEBHOOK_BASE_URL=https://n8n.yourdomain.com  # Optional, if different from API URL
+```
+
+3. **Start the bridge** - Models are discovered automatically!
+
+### How It Works
+
+```
+┌─────────────────────────────────────────┐
+│  1. Bridge starts & discovers workflows │
+│     Tagged with 'n8n-openai-model'      │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  2. Extract webhook URLs from nodes     │
+│     Write to models.json (cache)        │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  3. Periodic polling (every 5 minutes)  │
+│     Auto-update on workflow changes     │
+└─────────────────────────────────────────┘
+```
+
+### Configuration
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `AUTO_FETCH_MODELS_BY_TAG` | boolean | `false` | Enable auto-discovery |
+| `AUTO_DISCOVERY_TAG` | string | `n8n-openai-model` | Tag to identify workflows |
+| `AUTO_DISCOVERY_POLLING` | number | `300` | Polling interval in seconds (60-600, 0=disabled) |
+| `N8N_API_URL` | string | - | n8n API base URL (e.g., `https://n8n.domain.com`) |
+| `N8N_API_BEARER_TOKEN` | string | - | n8n API token (WARNING full access) |
+| `N8N_WEBHOOK_BASE_URL` | string | `N8N_API_URL` | Webhook base URL if different from API URL |
+| `N8N_WEBHOOK_BEARER_TOKEN` | string | - | Token for webhook calls (optional) |
+
+### Workflow Requirements
+
+Your n8n workflows must:
+- OK Be tagged with the discovery tag (default: `n8n-openai-model`)
+- OK Contain at least one **Webhook node**
+- WARNING Inactive workflows trigger a warning but are still added
+
+### Model Naming
+
+- **Model ID** = Workflow Name (as shown in n8n)
+- **Webhook URL** = Extracted from webhook node configuration
+
+Example:
+```
+n8n Workflow: "GPT-4 Customer Support Agent"
+→ Model ID: "GPT-4 Customer Support Agent"
+→ Available in OpenAI clients as this model name
+```
+
+**Important:** If multiple workflows have the same name, only the last discovered workflow will be available (last-wins behavior). Ensure your workflow names are unique.
+
+### Admin Endpoints
+
+**Trigger Manual Discovery:**
+```bash
+curl -X POST http://localhost:3333/admin/models-discover \
+  -H "Authorization: Bearer your-secret-api-key"
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "message": "Discovery completed",
+  "discovered": 5,
+  "added": 3,
+  "skipped": 2,
+  "warnings": [
+    "Workflow 'Test' (ID: abc-123) is INACTIVE but added to models"
+  ],
+  "models": 3
+}
+```
+
+**Reload from Disk:**
+```bash
+curl -X POST http://localhost:3333/admin/models-reload \
+  -H "Authorization: Bearer your-secret-api-key"
+```
+
+### Logging & Debugging
+
+Auto-discovery logs are written at startup and during each polling cycle:
+
+```
+[2025-01-15T10:00:00Z] Auto-Discovery: Starting...
+[2025-01-15T10:00:00Z] Auto-Discovery: Found 5 workflows with tag 'n8n-openai-model'
+[2025-01-15T10:00:00Z] Auto-Discovery: Complete - 3 added, 2 skipped, 1 warnings
+[2025-01-15T10:00:00Z] WARNING: Workflow 'Test' (ID: abc-123) is INACTIVE but added to models
+```
+
+**Inspect discovered models:**
+```bash
+# Docker
+docker exec -it n8n-openai-bridge cat models.json
+
+# Local
+cat models.json
+```
+
+### Error Handling
+
+- **n8n API unreachable at startup:** Falls back to existing `models.json`, retries after polling interval
+- **API errors during polling:** Keeps last successful model list
+- **3 consecutive failures:** Exponential backoff (up to 10 minutes)
+- **Workflow without webhook:** Skipped with detailed warning log
+
+### Backwards Compatibility
+
+When `AUTO_FETCH_MODELS_BY_TAG=false`, the bridge works exactly as before:
+- Manual `models.json` management
+- File-watch for hot-reload
+- No n8n API calls
+
+### Migration Notes
+
+**Deprecated:**
+- `N8N_BEARER_TOKEN` → Use `N8N_WEBHOOK_BEARER_TOKEN` instead
+- A warning is displayed at startup if using the deprecated variable
+
+**New Token Types:**
+- `N8N_WEBHOOK_BEARER_TOKEN` - For webhook authentication (optional)
+- `N8N_API_BEARER_TOKEN` - For n8n API access (required for auto-discovery, WARNING has full access)
 
 ## Testing
 
@@ -515,10 +741,10 @@ This project is licensed under the **GNU Affero General Public License v3.0 (AGP
 
 ### What this means:
 
-- ✅ You can use, modify, and distribute this software freely
-- ✅ You must share your modifications under the same license
-- ✅ If you run a modified version as a web service, you must make the source code available
-- ✅ Original author attribution is required
+- OK You can use, modify, and distribute this software freely
+- OK You must share your modifications under the same license
+- OK If you run a modified version as a web service, you must make the source code available
+- OK Original author attribution is required
 
 See the [LICENSE](LICENSE) file for full details.
 
