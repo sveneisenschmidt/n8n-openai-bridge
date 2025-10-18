@@ -96,10 +96,12 @@ Configure k6 tests via environment variables:
 
 The k6 script tests multiple scenarios with realistic distribution:
 
-- **40%** - Health check (`GET /health`)
-- **20%** - List models (`GET /v1/models`)
-- **30%** - Chat completion non-streaming (`POST /v1/chat/completions`)
+- **35%** - Health check (`GET /health`)
+- **15%** - List models (`GET /v1/models`)
+- **25%** - Chat completion non-streaming (`POST /v1/chat/completions`)
 - **10%** - Chat completion streaming (`POST /v1/chat/completions?stream=true`)
+- **7%** - Models reload (`POST /admin/models-reload`)
+- **8%** - Models discover (`POST /admin/models-discover`) - Auto-Discovery feature
 
 Each virtual user has a "think time" of 0.5-2.5 seconds between requests.
 
@@ -121,6 +123,8 @@ Default load test progression:
 - **Error Rate** - Failed requests ratio
 - **Chat Completion Duration** - Specific timing for chat endpoints
 - **Streaming Duration** - Specific timing for streaming endpoints
+- **Reload Duration** - Timing for models reload endpoint
+- **Discovery Duration** - Timing for auto-discovery endpoint
 
 ### Thresholds (Fail Conditions)
 

@@ -139,13 +139,13 @@ gh pr merge --squash --delete-branch
 
 #### 4. Automatic Release Process
 After merge to `main` (with `release` label):
-1. ✅ `release-on-merge` workflow triggers
-2. ✅ Finds latest tag (e.g., `v0.0.6`)
-3. ✅ Creates new tag (e.g., `v0.0.7`)
-4. ✅ Creates GitHub Release with auto-generated notes
-5. ✅ Docker image builds for amd64 and arm64
-6. ✅ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
-7. ✅ Tagged with `0.0.7`, `0.0`, `0`, and `latest`
+1. OK `release-on-merge` workflow triggers
+2. OK Finds latest tag (e.g., `v0.0.6`)
+3. OK Creates new tag (e.g., `v0.0.7`)
+4. OK Creates GitHub Release with auto-generated notes
+5. OK Docker image builds for amd64 and arm64
+6. OK Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
+7. OK Tagged with `0.0.7`, `0.0`, `0`, and `latest`
 
 **That's it!** Everything happens in one workflow - no manual steps needed.
 
@@ -205,17 +205,17 @@ After release `v1.0.0`, the following tags are available:
 Configure in GitHub Settings → Branches → Branch protection rules:
 
 ### Main Branch
-- ✅ Require a pull request before merging
-- ✅ Require approvals: 1
-- ✅ Dismiss stale pull request approvals when new commits are pushed
-- ✅ Require status checks to pass before merging:
+- OK Require a pull request before merging
+- OK Require approvals: 1
+- OK Dismiss stale pull request approvals when new commits are pushed
+- OK Require status checks to pass before merging:
   - `test`
   - `docker-build`
   - `lint`
   - `security-scan`
-- ✅ Require branches to be up to date before merging
-- ✅ Require conversation resolution before merging
-- ✅ Do not allow bypassing the above settings
+- OK Require branches to be up to date before merging
+- OK Require conversation resolution before merging
+- OK Do not allow bypassing the above settings
 
 ## Secrets Configuration
 

@@ -16,17 +16,35 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
+require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 
 class Config {
   constructor() {
     this.port = process.env.PORT || 3333;
-    this.bearerToken = process.env.BEARER_TOKEN || '';
-    this.n8nBearerToken = process.env.N8N_BEARER_TOKEN || '';
-    this.modelsConfigPath = process.env.MODELS_CONFIG || './models.json';
-    this.logRequests = process.env.LOG_REQUESTS === 'true';
+    this.bearerToken = process.env.BEARER_TOKEN || "";
+
+    // n8n Tokens (backwards compatibility)
+    this.n8nWebhookBearerToken =
+      process.env.N8N_WEBHOOK_BEARER_TOKEN ||
+      process.env.N8N_BEARER_TOKEN ||
+      "";
+    this.n8nApiBearerToken = process.env.N8N_API_BEARER_TOKEN || "";
+    this.n8nApiUrl = process.env.N8N_API_URL || "";
+    this.n8nWebhookBaseUrl =
+      process.env.N8N_WEBHOOK_BASE_URL || process.env.N8N_API_URL || "";
+
+    // Auto-Discovery Configuration
+    this.autoFetchModelsByTag = process.env.AUTO_FETCH_MODELS_BY_TAG === "true";
+    this.autoDiscoveryTag =
+      process.env.AUTO_DISCOVERY_TAG || "n8n-openai-model";
+    this.autoDiscoveryPolling = this.parsePollingInterval(
+      process.env.AUTO_DISCOVERY_POLLING,
+    );
+
+    this.modelsConfigPath = process.env.MODELS_CONFIG || "./models.json";
+    this.logRequests = process.env.LOG_REQUESTS === "true";
     this.sessionIdHeaders = this.parseSessionIdHeaders();
     this.userIdHeaders = this.parseUserIdHeaders();
     this.userEmailHeaders = this.parseUserEmailHeaders();
@@ -43,19 +61,27 @@ class Config {
 
     try {
       this.watcher = fs.watch(configPath, (eventType) => {
-        if (eventType === 'change') {
+        if (eventType === "change") {
           // Debounce: wait 100ms before reloading to avoid multiple reloads
           clearTimeout(reloadTimeout);
           reloadTimeout = setTimeout(() => {
-            console.log(`[${new Date().toISOString()}] models.json changed, reloading...`);
+            console.log(
+              `[${new Date().toISOString()}] models.json changed, reloading...`,
+            );
             this.reloadModels();
-            console.log(`[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`);
+            console.log(
+              `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`,
+            );
           }, 100);
         }
       });
-      console.log(`[${new Date().toISOString()}] Watching ${configPath} for changes...`);
+      console.log(
+        `[${new Date().toISOString()}] Watching ${configPath} for changes...`,
+      );
     } catch (error) {
-      console.warn(`[${new Date().toISOString()}] Could not watch models.json: ${error.message}`);
+      console.warn(
+        `[${new Date().toISOString()}] Could not watch models.json: ${error.message}`,
+      );
     }
   }
 
@@ -64,6 +90,21 @@ class Config {
       this.watcher.close();
       this.watcher = null;
     }
+  }
+
+  parsePollingInterval(value) {
+    const interval = parseInt(value, 10);
+
+    // 0 = disabled
+    if (interval === 0 || isNaN(interval)) {
+      return 300; // Default: 300 seconds
+    }
+
+    // Clamp between 60 and 600 seconds
+    if (interval < 60) return 60;
+    if (interval > 600) return 600;
+
+    return interval;
   }
 
   parseHeadersFromEnv(envVarName, defaultHeaders) {
@@ -75,41 +116,44 @@ class Config {
 
     // Split by comma, trim whitespace, filter empty values
     const headers = envValue
-      .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
+      .split(",")
+      .map((h) => h.trim())
+      .filter((h) => h.length > 0);
 
     return headers.length > 0 ? headers : defaultHeaders;
   }
 
   parseSessionIdHeaders() {
-    return this.parseHeadersFromEnv('SESSION_ID_HEADERS', ['X-Session-Id', 'X-Chat-Id']);
+    return this.parseHeadersFromEnv("SESSION_ID_HEADERS", [
+      "X-Session-Id",
+      "X-Chat-Id",
+    ]);
   }
 
   parseUserIdHeaders() {
-    return this.parseHeadersFromEnv('USER_ID_HEADERS', ['X-User-Id']);
+    return this.parseHeadersFromEnv("USER_ID_HEADERS", ["X-User-Id"]);
   }
 
   parseUserEmailHeaders() {
-    return this.parseHeadersFromEnv('USER_EMAIL_HEADERS', ['X-User-Email']);
+    return this.parseHeadersFromEnv("USER_EMAIL_HEADERS", ["X-User-Email"]);
   }
 
   parseUserNameHeaders() {
-    return this.parseHeadersFromEnv('USER_NAME_HEADERS', ['X-User-Name']);
+    return this.parseHeadersFromEnv("USER_NAME_HEADERS", ["X-User-Name"]);
   }
 
   parseUserRoleHeaders() {
-    return this.parseHeadersFromEnv('USER_ROLE_HEADERS', ['X-User-Role']);
+    return this.parseHeadersFromEnv("USER_ROLE_HEADERS", ["X-User-Role"]);
   }
 
   loadModels() {
     try {
       const configPath = path.resolve(this.modelsConfigPath);
-      const data = fs.readFileSync(configPath, 'utf8');
+      const data = fs.readFileSync(configPath, "utf8");
       const models = JSON.parse(data);
       return models;
     } catch (error) {
-      console.error('Error loading models config:', error.message);
+      console.error("Error loading models config:", error.message);
       return {};
     }
   }
@@ -123,11 +167,11 @@ class Config {
   }
 
   getAllModels() {
-    return Object.keys(this.models).map(id => ({
+    return Object.keys(this.models).map((id) => ({
       id,
-      object: 'model',
+      object: "model",
       created: Math.floor(Date.now() / 1000),
-      owned_by: 'n8n',
+      owned_by: "n8n",
     }));
   }
 }

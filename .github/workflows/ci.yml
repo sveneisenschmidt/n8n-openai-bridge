@@ -96,11 +96,11 @@ jobs:
           echo "Waiting for container to start..."
           for i in {1..30}; do
             if docker logs test-container 2>&1 | grep -q "Server running on port"; then
-              echo "✓ Container started"
+              echo "OK Container started"
               break
             fi
             if [ $i -eq 30 ]; then
-              echo "✗ Container failed to start"
+              echo "FAIL Container failed to start"
               docker logs test-container
               exit 1
             fi

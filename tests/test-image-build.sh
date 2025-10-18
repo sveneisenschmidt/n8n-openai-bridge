@@ -20,7 +20,7 @@ cleanup() {
     echo "Cleaning up..."
     docker rm -f "$TEST_CONTAINER" 2>/dev/null || true
     docker rmi "$IMAGE_NAME" 2>/dev/null || true
-    echo "✓ Cleanup complete"
+    echo "OK Cleanup complete"
 }
 
 trap cleanup EXIT
@@ -30,9 +30,9 @@ cd "$PROJECT_ROOT"
 # Test 1: Build the image
 echo "Test 1: Building production Docker image..."
 if docker build -f docker/Dockerfile.build -t "$IMAGE_NAME" .; then
-    echo "✓ Docker image built successfully"
+    echo "OK Docker image built successfully"
 else
-    echo "✗ Docker build failed"
+    echo "FAIL Docker build failed"
     exit 1
 fi
 echo ""
@@ -43,9 +43,9 @@ IMAGE_SIZE=$(docker image inspect "$IMAGE_NAME" --format='{{.Size}}')
 IMAGE_SIZE_MB=$((IMAGE_SIZE / 1024 / 1024))
 echo "  Image size: ${IMAGE_SIZE_MB}MB"
 if [ "$IMAGE_SIZE_MB" -lt 500 ]; then
-    echo "✓ Image size is reasonable (< 500MB)"
+    echo "OK Image size is reasonable (< 500MB)"
 else
-    echo "⚠ Warning: Image size is larger than expected (${IMAGE_SIZE_MB}MB)"
+    echo "WARNING Warning: Image size is larger than expected (${IMAGE_SIZE_MB}MB)"
 fi
 echo ""
 
@@ -53,9 +53,9 @@ echo ""
 echo "Test 3: Verifying built-in configuration files..."
 docker run --rm "$IMAGE_NAME" ls -la /app/.env /app/models.json > /dev/null
 if [ $? -eq 0 ]; then
-    echo "✓ Configuration files exist in image"
+    echo "OK Configuration files exist in image"
 else
-    echo "✗ Configuration files missing from image"
+    echo "FAIL Configuration files missing from image"
     exit 1
 fi
 echo ""
@@ -64,9 +64,9 @@ echo ""
 echo "Test 4: Checking docker/.env content in image..."
 ENV_CONTENT=$(docker run --rm "$IMAGE_NAME" cat /app/.env)
 if echo "$ENV_CONTENT" | grep -q "BEARER_TOKEN=change-me"; then
-    echo "✓ docker/.env contains expected default content"
+    echo "OK docker/.env contains expected default content"
 else
-    echo "✗ docker/.env does not contain expected content"
+    echo "FAIL docker/.env does not contain expected content"
     echo "Content:"
     echo "$ENV_CONTENT"
     exit 1
@@ -77,9 +77,9 @@ echo ""
 echo "Test 5: Checking docker/models.json content in image..."
 MODELS_CONTENT=$(docker run --rm "$IMAGE_NAME" cat /app/models.json)
 if echo "$MODELS_CONTENT" | grep -q "docker-default-model"; then
-    echo "✓ docker/models.json contains expected placeholder model"
+    echo "OK docker/models.json contains expected placeholder model"
 else
-    echo "✗ docker/models.json does not contain expected model"
+    echo "FAIL docker/models.json does not contain expected model"
     echo "Content:"
     echo "$MODELS_CONTENT"
     exit 1
@@ -98,12 +98,12 @@ MAX_WAIT=30
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if docker logs "$TEST_CONTAINER" 2>&1 | grep -q "Server running on port"; then
-        echo "✓ Container started successfully"
+        echo "OK Container started successfully"
         break
     fi
 
     if [ $WAITED -eq $((MAX_WAIT - 1)) ]; then
-        echo "✗ Container failed to start within ${MAX_WAIT}s"
+        echo "FAIL Container failed to start within ${MAX_WAIT}s"
         echo "Container logs:"
         docker logs "$TEST_CONTAINER"
         exit 1
@@ -119,9 +119,9 @@ echo "Test 7: Testing health check endpoint..."
 CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$TEST_CONTAINER")
 
 if curl -sf "http://${CONTAINER_IP}:3333/health" > /dev/null 2>&1; then
-    echo "✓ Health check endpoint responding"
+    echo "OK Health check endpoint responding"
 else
-    echo "✗ Health check endpoint not responding"
+    echo "FAIL Health check endpoint not responding"
     echo "Container logs:"
     docker logs "$TEST_CONTAINER"
     exit 1
@@ -132,9 +132,9 @@ echo ""
 echo "Test 8: Verifying built-in model is available..."
 MODELS_OUTPUT=$(curl -sf -H "Authorization: Bearer test-token" "http://${CONTAINER_IP}:3333/v1/models")
 if echo "$MODELS_OUTPUT" | grep -q "docker-default-model"; then
-    echo "✓ Built-in docker-default-model is available via API"
+    echo "OK Built-in docker-default-model is available via API"
 else
-    echo "✗ Built-in model not found in API response"
+    echo "FAIL Built-in model not found in API response"
     echo "Response:"
     echo "$MODELS_OUTPUT"
     exit 1
@@ -144,10 +144,10 @@ echo ""
 # Test 9: Check that test files are NOT in production image
 echo "Test 9: Verifying test files are excluded from production image..."
 if docker run --rm "$IMAGE_NAME" ls /app/tests 2>/dev/null; then
-    echo "✗ Test files found in production image (should be excluded)"
+    echo "FAIL Test files found in production image (should be excluded)"
     exit 1
 else
-    echo "✓ Test files correctly excluded from production image"
+    echo "OK Test files correctly excluded from production image"
 fi
 echo ""
 
@@ -155,9 +155,9 @@ echo ""
 echo "Test 10: Checking installed dependencies..."
 DEV_DEPS=$(docker run --rm "$IMAGE_NAME" sh -c 'cd /app && npm list --depth=0 2>/dev/null | grep -E "(jest|nodemon|supertest)" || true')
 if [ -z "$DEV_DEPS" ]; then
-    echo "✓ No dev dependencies installed (production-only)"
+    echo "OK No dev dependencies installed (production-only)"
 else
-    echo "✗ Dev dependencies found in production image:"
+    echo "FAIL Dev dependencies found in production image:"
     echo "$DEV_DEPS"
     exit 1
 fi
@@ -187,9 +187,9 @@ CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress
 CUSTOM_MODELS_OUTPUT=$(curl -sf -H "Authorization: Bearer test-token" "http://${CONTAINER_IP}:3333/v1/models")
 
 if echo "$CUSTOM_MODELS_OUTPUT" | grep -q "custom-test-model"; then
-    echo "✓ Custom models.json successfully mounted and loaded"
+    echo "OK Custom models.json successfully mounted and loaded"
 else
-    echo "✗ Custom models.json not loaded"
+    echo "FAIL Custom models.json not loaded"
     echo "Response:"
     echo "$CUSTOM_MODELS_OUTPUT"
     rm "$TEMP_MODELS"
@@ -200,5 +200,5 @@ rm "$TEMP_MODELS"
 echo ""
 
 echo "======================================"
-echo "✓ All Docker image build tests passed!"
+echo "OK All Docker image build tests passed!"
 echo "======================================"

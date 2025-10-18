@@ -10,56 +10,64 @@
  * - DURATION: Test duration (default: 30s)
  */
 
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Rate, Trend } from 'k6/metrics';
+import http from "k6/http";
+import { check, sleep } from "k6";
+import { Rate, Trend } from "k6/metrics";
 
 // Custom metrics
-const errorRate = new Rate('errors');
-const chatCompletionDuration = new Trend('chat_completion_duration');
-const streamingDuration = new Trend('streaming_duration');
+const errorRate = new Rate("errors");
+const chatCompletionDuration = new Trend("chat_completion_duration");
+const streamingDuration = new Trend("streaming_duration");
+const discoveryDuration = new Trend("discovery_duration");
+const reloadDuration = new Trend("reload_duration");
 
 // Configuration
-const TARGET_URL = __ENV.TARGET_URL || 'http://localhost:3000';
-const BEARER_TOKEN = __ENV.BEARER_TOKEN || 'test-token';
-const VUS = parseInt(__ENV.VUS || '10');
-const DURATION = __ENV.DURATION || '30s';
+const TARGET_URL = __ENV.TARGET_URL || "http://localhost:3000";
+const BEARER_TOKEN = __ENV.BEARER_TOKEN || "test-token";
+const VUS = parseInt(__ENV.VUS || "10");
+const DURATION = __ENV.DURATION || "30s";
 
 export const options = {
   stages: [
-    { duration: '10s', target: Math.floor(VUS * 0.3) },  // Ramp-up to 30%
-    { duration: '20s', target: VUS },                     // Ramp-up to 100%
-    { duration: DURATION, target: VUS },                  // Stay at 100%
-    { duration: '10s', target: 0 },                       // Ramp-down
+    { duration: "10s", target: Math.floor(VUS * 0.3) }, // Ramp-up to 30%
+    { duration: "20s", target: VUS }, // Ramp-up to 100%
+    { duration: DURATION, target: VUS }, // Stay at 100%
+    { duration: "10s", target: 0 }, // Ramp-down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'],  // 95% of requests should be below 2s
-    http_req_failed: ['rate<0.05'],     // Less than 5% errors
-    errors: ['rate<0.05'],
+    http_req_duration: ["p(95)<2000"], // 95% of requests should be below 2s
+    http_req_failed: ["rate<0.05"], // Less than 5% errors
+    errors: ["rate<0.05"],
   },
 };
 
 const headers = {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${BEARER_TOKEN}`,
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${BEARER_TOKEN}`,
 };
 
 // Test scenarios
 export default function () {
   const scenario = Math.random();
 
-  if (scenario < 0.4) {
-    // 40% - Health check
+  if (scenario < 0.35) {
+    // 35% - Health check
     testHealthCheck();
-  } else if (scenario < 0.6) {
-    // 20% - List models
+  } else if (scenario < 0.5) {
+    // 15% - List models
     testListModels();
-  } else if (scenario < 0.9) {
-    // 30% - Chat completion (non-streaming)
+  } else if (scenario < 0.75) {
+    // 25% - Chat completion (non-streaming)
     testChatCompletion();
-  } else {
+  } else if (scenario < 0.85) {
     // 10% - Chat completion (streaming)
     testChatCompletionStreaming();
+  } else if (scenario < 0.92) {
+    // 7% - Models reload (admin endpoint)
+    testModelsReload();
+  } else {
+    // 8% - Models discover (admin endpoint)
+    testModelsDiscover();
   }
 
   // Think time between requests
@@ -70,10 +78,10 @@ function testHealthCheck() {
   const res = http.get(`${TARGET_URL}/health`);
 
   const success = check(res, {
-    'health: status is 200': (r) => r.status === 200,
-    'health: has status field': (r) => {
+    "health: status is 200": (r) => r.status === 200,
+    "health: has status field": (r) => {
       try {
-        return JSON.parse(r.body).status === 'ok';
+        return JSON.parse(r.body).status === "ok";
       } catch {
         return false;
       }
@@ -87,8 +95,8 @@ function testListModels() {
   const res = http.get(`${TARGET_URL}/v1/models`, { headers });
 
   const success = check(res, {
-    'models: status is 200': (r) => r.status === 200,
-    'models: has data array': (r) => {
+    "models: status is 200": (r) => r.status === 200,
+    "models: has data array": (r) => {
       try {
         return Array.isArray(JSON.parse(r.body).data);
       } catch {
@@ -102,22 +110,24 @@ function testListModels() {
 
 function testChatCompletion() {
   const payload = JSON.stringify({
-    model: 'docker-default-model',
+    model: "docker-default-model",
     messages: [
-      { role: 'system', content: 'You are a helpful assistant.' },
-      { role: 'user', content: `Test message ${Date.now()}` }
+      { role: "system", content: "You are a helpful assistant." },
+      { role: "user", content: `Test message ${Date.now()}` },
     ],
     temperature: 0.7,
     max_tokens: 100,
   });
 
   const start = Date.now();
-  const res = http.post(`${TARGET_URL}/v1/chat/completions`, payload, { headers });
+  const res = http.post(`${TARGET_URL}/v1/chat/completions`, payload, {
+    headers,
+  });
   const duration = Date.now() - start;
 
   const success = check(res, {
-    'chat: status is 200': (r) => r.status === 200,
-    'chat: has choices': (r) => {
+    "chat: status is 200": (r) => r.status === 200,
+    "chat: has choices": (r) => {
       try {
         const body = JSON.parse(r.body);
         return Array.isArray(body.choices) && body.choices.length > 0;
@@ -125,10 +135,10 @@ function testChatCompletion() {
         return false;
       }
     },
-    'chat: has message content': (r) => {
+    "chat: has message content": (r) => {
       try {
         const body = JSON.parse(r.body);
-        return typeof body.choices[0].message.content === 'string';
+        return typeof body.choices[0].message.content === "string";
       } catch {
         return false;
       }
@@ -141,16 +151,14 @@ function testChatCompletion() {
 
 function testChatCompletionStreaming() {
   const payload = JSON.stringify({
-    model: 'docker-default-model',
-    messages: [
-      { role: 'user', content: `Streaming test ${Date.now()}` }
-    ],
+    model: "docker-default-model",
+    messages: [{ role: "user", content: `Streaming test ${Date.now()}` }],
     stream: true,
   });
 
   const params = {
     headers,
-    timeout: '30s',
+    timeout: "30s",
   };
 
   const start = Date.now();
@@ -158,21 +166,95 @@ function testChatCompletionStreaming() {
   const duration = Date.now() - start;
 
   const success = check(res, {
-    'stream: status is 200': (r) => r.status === 200,
-    'stream: is SSE': (r) => r.headers['Content-Type']?.includes('text/event-stream'),
-    'stream: has data': (r) => r.body.includes('data:'),
-    'stream: ends with DONE': (r) => r.body.includes('[DONE]'),
+    "stream: status is 200": (r) => r.status === 200,
+    "stream: is SSE": (r) =>
+      r.headers["Content-Type"]?.includes("text/event-stream"),
+    "stream: has data": (r) => r.body.includes("data:"),
+    "stream: ends with DONE": (r) => r.body.includes("[DONE]"),
   });
 
   streamingDuration.add(duration);
   errorRate.add(!success);
 }
 
+function testModelsReload() {
+  const start = Date.now();
+  const res = http.post(`${TARGET_URL}/admin/models-reload`, null, { headers });
+  const duration = Date.now() - start;
+
+  const success = check(res, {
+    "reload: status is 200": (r) => r.status === 200,
+    "reload: has status ok": (r) => {
+      try {
+        return JSON.parse(r.body).status === "ok";
+      } catch {
+        return false;
+      }
+    },
+    "reload: has models count": (r) => {
+      try {
+        return typeof JSON.parse(r.body).models === "number";
+      } catch {
+        return false;
+      }
+    },
+    "reload: completes within 1s": () => duration < 1000,
+  });
+
+  reloadDuration.add(duration);
+  errorRate.add(!success);
+}
+
+function testModelsDiscover() {
+  const start = Date.now();
+  const res = http.post(`${TARGET_URL}/admin/models-discover`, null, {
+    headers,
+  });
+  const duration = Date.now() - start;
+
+  // Accept both 200 (success) and 400 (disabled) as valid responses
+  const success = check(res, {
+    "discover: status is 200 or 400": (r) =>
+      r.status === 200 || r.status === 400,
+    "discover: has valid response": (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.status !== undefined || body.error !== undefined;
+      } catch {
+        return false;
+      }
+    },
+  });
+
+  // Only check detailed fields if discovery succeeded
+  if (res.status === 200) {
+    check(res, {
+      "discover: has discovered count": (r) => {
+        try {
+          return typeof JSON.parse(r.body).discovered === "number";
+        } catch {
+          return false;
+        }
+      },
+      "discover: has warnings array": (r) => {
+        try {
+          return Array.isArray(JSON.parse(r.body).warnings);
+        } catch {
+          return false;
+        }
+      },
+    });
+  }
+
+  discoveryDuration.add(duration);
+  errorRate.add(!success);
+}
+
 // Summary handler
 export function handleSummary(data) {
   return {
-    'stdout': textSummary(data),
-    'tests/load/summary.json': JSON.stringify(data, null, 2),
+    stdout: textSummary(data),
+    "tests/load/summary.json": JSON.stringify(data, null, 2),
   };
 }
 
@@ -196,17 +278,19 @@ Response Times:
   Avg:          ${duration.avg.toFixed(2)}ms
   Min:          ${duration.min.toFixed(2)}ms
   Max:          ${duration.max.toFixed(2)}ms
-  p(90):        ${duration['p(90)'].toFixed(2)}ms
-  p(95):        ${duration['p(95)'].toFixed(2)}ms
-  ${duration['p(99)'] ? `p(99):        ${duration['p(99)'].toFixed(2)}ms` : ''}
+  p(90):        ${duration["p(90)"].toFixed(2)}ms
+  p(95):        ${duration["p(95)"].toFixed(2)}ms
+  ${duration["p(99)"] ? `p(99):        ${duration["p(99)"].toFixed(2)}ms` : ""}
 
 Virtual Users:
   Max:          ${metrics.vus_max.values.max}
 
 Custom Metrics:
   Error Rate:   ${(metrics.errors.values.rate * 100).toFixed(2)}%
-  ${metrics.chat_completion_duration ? `Chat Avg:     ${metrics.chat_completion_duration.values.avg.toFixed(2)}ms` : ''}
-  ${metrics.streaming_duration ? `Stream Avg:   ${metrics.streaming_duration.values.avg.toFixed(2)}ms` : ''}
+  ${metrics.chat_completion_duration ? `Chat Avg:     ${metrics.chat_completion_duration.values.avg.toFixed(2)}ms` : ""}
+  ${metrics.streaming_duration ? `Stream Avg:   ${metrics.streaming_duration.values.avg.toFixed(2)}ms` : ""}
+  ${metrics.reload_duration ? `Reload Avg:   ${metrics.reload_duration.values.avg.toFixed(2)}ms` : ""}
+  ${metrics.discovery_duration ? `Discovery Avg: ${metrics.discovery_duration.values.avg.toFixed(2)}ms` : ""}
 
 ========================================
 `;
