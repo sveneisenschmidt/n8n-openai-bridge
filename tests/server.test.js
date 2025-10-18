@@ -14,7 +14,6 @@ jest.mock('../src/config');
 jest.mock('../src/n8nClient');
 
 const config = require('../src/config');
-const n8nClient = require('../src/n8nClient');
 
 describe('Server API Endpoints', () => {
   let app;
@@ -49,7 +48,7 @@ describe('Server API Endpoints', () => {
       const models = config.getAllModels();
       res.json({
         object: 'list',
-        data: models
+        data: models,
       });
     });
   });
@@ -67,7 +66,7 @@ describe('Server API Endpoints', () => {
     test('should return list of models with valid auth', async () => {
       config.getAllModels.mockReturnValue([
         { id: 'model-1', object: 'model', created: 1234567890, owned_by: 'n8n' },
-        { id: 'model-2', object: 'model', created: 1234567890, owned_by: 'n8n' }
+        { id: 'model-2', object: 'model', created: 1234567890, owned_by: 'n8n' },
       ]);
 
       const response = await request(app)
@@ -106,9 +105,7 @@ describe('Server API Endpoints', () => {
     });
 
     test('should reject requests with malformed authorization header', async () => {
-      const response = await request(app)
-        .get('/v1/models')
-        .set('Authorization', 'InvalidFormat');
+      const response = await request(app).get('/v1/models').set('Authorization', 'InvalidFormat');
 
       expect(response.status).toBe(401);
     });
@@ -119,14 +116,16 @@ describe('Server API Endpoints', () => {
       const extractSessionId = (req) => {
         for (const header of config.sessionIdHeaders) {
           const value = req.headers[header.toLowerCase()];
-          if (value) return value;
+          if (value) {
+            return value;
+          }
         }
         return null;
       };
 
       const mockReq = {
         headers: { 'x-session-id': 'session-123' },
-        body: {}
+        body: {},
       };
 
       const sessionId = extractSessionId(mockReq);
@@ -137,14 +136,16 @@ describe('Server API Endpoints', () => {
       const extractSessionId = (req) => {
         for (const header of config.sessionIdHeaders) {
           const value = req.headers[header.toLowerCase()];
-          if (value) return value;
+          if (value) {
+            return value;
+          }
         }
         return null;
       };
 
       const mockReq = {
         headers: { 'x-chat-id': 'chat-456' },
-        body: {}
+        body: {},
       };
 
       const sessionId = extractSessionId(mockReq);
@@ -153,15 +154,21 @@ describe('Server API Endpoints', () => {
 
     test('should extract session ID from request body', () => {
       const extractSessionId = (req) => {
-        if (req.body?.session_id) return req.body.session_id;
-        if (req.body?.conversation_id) return req.body.conversation_id;
-        if (req.body?.chat_id) return req.body.chat_id;
+        if (req.body?.session_id) {
+          return req.body.session_id;
+        }
+        if (req.body?.conversation_id) {
+          return req.body.conversation_id;
+        }
+        if (req.body?.chat_id) {
+          return req.body.chat_id;
+        }
         return null;
       };
 
       const mockReq = {
         headers: {},
-        body: { session_id: 'body-session-789' }
+        body: { session_id: 'body-session-789' },
       };
 
       const sessionId = extractSessionId(mockReq);
@@ -173,7 +180,9 @@ describe('Server API Endpoints', () => {
     test('should validate required fields in chat completion request', () => {
       const validateRequest = (body) => {
         const errors = [];
-        if (!body.model) errors.push('model is required');
+        if (!body.model) {
+          errors.push('model is required');
+        }
         if (!body.messages || !Array.isArray(body.messages)) {
           errors.push('messages must be an array');
         }
@@ -190,7 +199,9 @@ describe('Server API Endpoints', () => {
     test('should accept valid chat completion request', () => {
       const validateRequest = (body) => {
         const errors = [];
-        if (!body.model) errors.push('model is required');
+        if (!body.model) {
+          errors.push('model is required');
+        }
         if (!body.messages || !Array.isArray(body.messages)) {
           errors.push('messages must be an array');
         }
@@ -199,7 +210,7 @@ describe('Server API Endpoints', () => {
 
       const validBody = {
         model: 'test-model',
-        messages: [{ role: 'user', content: 'Hello' }]
+        messages: [{ role: 'user', content: 'Hello' }],
       };
       const errors = validateRequest(validBody);
 

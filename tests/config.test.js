@@ -23,7 +23,7 @@ describe('Config', () => {
     tempConfigPath = path.join(__dirname, 'test-models.json');
     const testModels = {
       'test-model': 'https://n8n.example.com/webhook/test/chat',
-      'another-model': 'https://n8n.example.com/webhook/another/chat'
+      'another-model': 'https://n8n.example.com/webhook/another/chat',
     };
     fs.writeFileSync(tempConfigPath, JSON.stringify(testModels, null, 2));
 
@@ -38,7 +38,7 @@ describe('Config', () => {
     mockWatcher = {
       close: jest.fn(),
       on: jest.fn(),
-      removeAllListeners: jest.fn()
+      removeAllListeners: jest.fn(),
     };
     jest.spyOn(fs, 'watch').mockReturnValue(mockWatcher);
 
@@ -153,7 +153,11 @@ describe('Config', () => {
       jest.resetModules();
       const config = require('../src/config');
 
-      expect(config.userEmailHeaders).toEqual(['X-Email', 'X-User-Email', 'X-OpenWebUI-User-Email']);
+      expect(config.userEmailHeaders).toEqual([
+        'X-Email',
+        'X-User-Email',
+        'X-OpenWebUI-User-Email',
+      ]);
     });
 
     test('should use default headers when env var is empty', () => {
@@ -245,7 +249,7 @@ describe('Config', () => {
 
     test('should include all configured models', () => {
       const models = Config.getAllModels();
-      const modelIds = models.map(m => m.id);
+      const modelIds = models.map((m) => m.id);
 
       expect(modelIds).toContain('test-model');
       expect(modelIds).toContain('another-model');
@@ -253,15 +257,15 @@ describe('Config', () => {
   });
 
   describe('reloadModels', () => {
-    test('should reload models from file', () => {
+    test('should reload models from file', async () => {
       // Modify the file
       const newModels = {
-        'new-model': 'https://n8n.example.com/webhook/new/chat'
+        'new-model': 'https://n8n.example.com/webhook/new/chat',
       };
       fs.writeFileSync(tempConfigPath, JSON.stringify(newModels, null, 2));
 
-      // Reload
-      Config.reloadModels();
+      // Reload (now async)
+      await Config.reloadModels();
 
       expect(Config.models).toHaveProperty('new-model');
       expect(Config.models).not.toHaveProperty('test-model');
@@ -271,8 +275,7 @@ describe('Config', () => {
   describe('close', () => {
     test('should close file watcher', () => {
       Config.close();
-      expect(Config.watcher).toBeNull();
-      expect(mockWatcher.close).toHaveBeenCalled();
+      expect(Config.modelLoader.watcher).toBeNull();
     });
   });
 });

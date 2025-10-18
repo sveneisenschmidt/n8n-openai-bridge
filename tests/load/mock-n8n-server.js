@@ -44,14 +44,14 @@ app.get('/health', (req, res) => {
     stats: {
       requests: requestCount,
       errors: errorCount,
-      errorRate: requestCount > 0 ? (errorCount / requestCount).toFixed(4) : 0
+      errorRate: requestCount > 0 ? (errorCount / requestCount).toFixed(4) : 0,
     },
     config: {
       latencyMin: LATENCY_MIN,
       latencyMax: LATENCY_MAX,
       errorRate: ERROR_RATE,
-      streamChunkDelay: STREAM_CHUNK_DELAY
-    }
+      streamChunkDelay: STREAM_CHUNK_DELAY,
+    },
   });
 });
 
@@ -81,24 +81,27 @@ app.post('/webhook/:webhookId', (req, res) => {
   // Normal response
   setTimeout(() => {
     res.json({
-      id: 'chatcmpl-mock-' + Date.now() + '-' + Math.random().toString(36).substring(7),
+      id: `chatcmpl-mock-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
       model: req.body.model || 'gpt-4',
-      choices: [{
-        index: 0,
-        message: {
-          role: 'assistant',
-          content: 'This is a mock response from n8n webhook. Your message was: ' +
-                   (req.body.messages?.[req.body.messages.length - 1]?.content || 'unknown')
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: `This is a mock response from n8n webhook. Your message was: ${
+              req.body.messages?.[req.body.messages.length - 1]?.content || 'unknown'
+            }`,
+          },
+          finish_reason: 'stop',
         },
-        finish_reason: 'stop'
-      }],
+      ],
       usage: {
         prompt_tokens: 10,
         completion_tokens: 20,
-        total_tokens: 30
-      }
+        total_tokens: 30,
+      },
     });
   }, latency);
 });
@@ -130,30 +133,34 @@ app.post('/webhook/:webhookId/stream', (req, res) => {
   const interval = setInterval(() => {
     if (i < words.length) {
       const chunk = {
-        id: 'chatcmpl-mock-' + Date.now(),
+        id: `chatcmpl-mock-${Date.now()}`,
         object: 'chat.completion.chunk',
         created: Math.floor(Date.now() / 1000),
         model: req.body.model || 'gpt-4',
-        choices: [{
-          index: 0,
-          delta: { content: (i === 0 ? '' : ' ') + words[i] },
-          finish_reason: null
-        }]
+        choices: [
+          {
+            index: 0,
+            delta: { content: (i === 0 ? '' : ' ') + words[i] },
+            finish_reason: null,
+          },
+        ],
       };
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
       i++;
     } else {
       // Send final chunk
       const finalChunk = {
-        id: 'chatcmpl-mock-' + Date.now(),
+        id: `chatcmpl-mock-${Date.now()}`,
         object: 'chat.completion.chunk',
         created: Math.floor(Date.now() / 1000),
         model: req.body.model || 'gpt-4',
-        choices: [{
-          index: 0,
-          delta: {},
-          finish_reason: 'stop'
-        }]
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: 'stop',
+          },
+        ],
       };
       res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
       res.write('data: [DONE]\n\n');

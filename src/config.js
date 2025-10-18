@@ -17,8 +17,7 @@
  */
 
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
+const JsonFileModelLoader = require('./loaders/JsonFileModelLoader');
 
 class Config {
   constructor() {
@@ -32,37 +31,40 @@ class Config {
     this.userEmailHeaders = this.parseUserEmailHeaders();
     this.userNameHeaders = this.parseUserNameHeaders();
     this.userRoleHeaders = this.parseUserRoleHeaders();
-    this.models = this.loadModels();
-    this.watcher = null;
+
+    // Initialize ModelLoader (default: JsonFileModelLoader)
+    this.modelLoader = this.createModelLoader();
+
+    // Load models synchronously on startup to ensure they're available immediately
+    try {
+      this.models = this.modelLoader.loadSync();
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error loading models: ${error.message}`);
+      this.models = {};
+    }
+
     this.setupFileWatcher();
   }
 
-  setupFileWatcher() {
-    const configPath = path.resolve(this.modelsConfigPath);
-    let reloadTimeout = null;
+  /**
+   * Create the appropriate ModelLoader instance
+   * Default: JsonFileModelLoader for models.json
+   * Can be extended to support other loaders based on env variables
+   */
+  createModelLoader() {
+    // Default to JsonFileModelLoader
+    return new JsonFileModelLoader(this.modelsConfigPath);
+  }
 
-    try {
-      this.watcher = fs.watch(configPath, (eventType) => {
-        if (eventType === 'change') {
-          // Debounce: wait 100ms before reloading to avoid multiple reloads
-          clearTimeout(reloadTimeout);
-          reloadTimeout = setTimeout(() => {
-            console.log(`[${new Date().toISOString()}] models.json changed, reloading...`);
-            this.reloadModels();
-            console.log(`[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`);
-          }, 100);
-        }
-      });
-      console.log(`[${new Date().toISOString()}] Watching ${configPath} for changes...`);
-    } catch (error) {
-      console.warn(`[${new Date().toISOString()}] Could not watch models.json: ${error.message}`);
-    }
+  setupFileWatcher() {
+    this.modelLoader.watch((newModels) => {
+      this.models = newModels;
+    });
   }
 
   close() {
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
+    if (this.modelLoader) {
+      this.modelLoader.stopWatching();
     }
   }
 
@@ -76,8 +78,8 @@ class Config {
     // Split by comma, trim whitespace, filter empty values
     const headers = envValue
       .split(',')
-      .map(h => h.trim())
-      .filter(h => h.length > 0);
+      .map((h) => h.trim())
+      .filter((h) => h.length > 0);
 
     return headers.length > 0 ? headers : defaultHeaders;
   }
@@ -103,19 +105,29 @@ class Config {
   }
 
   loadModels() {
-    try {
-      const configPath = path.resolve(this.modelsConfigPath);
-      const data = fs.readFileSync(configPath, 'utf8');
-      const models = JSON.parse(data);
-      return models;
-    } catch (error) {
-      console.error('Error loading models config:', error.message);
-      return {};
-    }
+    this.modelLoader
+      .load()
+      .then((models) => {
+        this.models = models;
+        console.log(
+          `[${new Date().toISOString()}] Models loaded successfully (${Object.keys(models).length} models)`,
+        );
+      })
+      .catch((error) => {
+        console.error(`[${new Date().toISOString()}] Error loading models: ${error.message}`);
+        this.models = {};
+      });
   }
 
-  reloadModels() {
-    this.models = this.loadModels();
+  async reloadModels() {
+    try {
+      this.models = await this.modelLoader.load();
+      console.log(
+        `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`,
+      );
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error reloading models: ${error.message}`);
+    }
   }
 
   getModelWebhookUrl(modelId) {
@@ -123,7 +135,7 @@ class Config {
   }
 
   getAllModels() {
-    return Object.keys(this.models).map(id => ({
+    return Object.keys(this.models).map((id) => ({
       id,
       object: 'model',
       created: Math.floor(Date.now() / 1000),

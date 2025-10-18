@@ -27,21 +27,21 @@ const DURATION = __ENV.DURATION || '30s';
 
 export const options = {
   stages: [
-    { duration: '10s', target: Math.floor(VUS * 0.3) },  // Ramp-up to 30%
-    { duration: '20s', target: VUS },                     // Ramp-up to 100%
-    { duration: DURATION, target: VUS },                  // Stay at 100%
-    { duration: '10s', target: 0 },                       // Ramp-down
+    { duration: '10s', target: Math.floor(VUS * 0.3) }, // Ramp-up to 30%
+    { duration: '20s', target: VUS }, // Ramp-up to 100%
+    { duration: DURATION, target: VUS }, // Stay at 100%
+    { duration: '10s', target: 0 }, // Ramp-down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'],  // 95% of requests should be below 2s
-    http_req_failed: ['rate<0.05'],     // Less than 5% errors
+    http_req_duration: ['p(95)<2000'], // 95% of requests should be below 2s
+    http_req_failed: ['rate<0.05'], // Less than 5% errors
     errors: ['rate<0.05'],
   },
 };
 
 const headers = {
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${BEARER_TOKEN}`,
+  Authorization: `Bearer ${BEARER_TOKEN}`,
 };
 
 // Test scenarios
@@ -105,7 +105,7 @@ function testChatCompletion() {
     model: 'docker-default-model',
     messages: [
       { role: 'system', content: 'You are a helpful assistant.' },
-      { role: 'user', content: `Test message ${Date.now()}` }
+      { role: 'user', content: `Test message ${Date.now()}` },
     ],
     temperature: 0.7,
     max_tokens: 100,
@@ -142,9 +142,7 @@ function testChatCompletion() {
 function testChatCompletionStreaming() {
   const payload = JSON.stringify({
     model: 'docker-default-model',
-    messages: [
-      { role: 'user', content: `Streaming test ${Date.now()}` }
-    ],
+    messages: [{ role: 'user', content: `Streaming test ${Date.now()}` }],
     stream: true,
   });
 
@@ -171,7 +169,7 @@ function testChatCompletionStreaming() {
 // Summary handler
 export function handleSummary(data) {
   return {
-    'stdout': textSummary(data),
+    stdout: textSummary(data),
     'tests/load/summary.json': JSON.stringify(data, null, 2),
   };
 }

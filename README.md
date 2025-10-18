@@ -45,6 +45,28 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Complete OpenAPI 3.1 documentation
 - 78%+ test coverage with 147 unit tests
 
+## Model Loading System
+
+The bridge uses a flexible ModelLoader architecture that supports different model sources:
+
+- **JsonFileModelLoader** (default): Loads models from `models.json`
+- Hot-reload: Changes to `models.json` are detected automatically (100ms debounce)
+- Validation: Models must be an object with valid webhook URLs
+- Graceful degradation: Server continues running even if model loading fails
+
+**Model Configuration Format:**
+```json
+{
+  "model-id": "https://n8n.example.com/webhook/abc123/chat"
+}
+```
+
+**Model Validation:**
+- ✅ Models must be a JSON object (not an array)
+- ✅ Each model URL must be a valid HTTP/HTTPS URL
+- ✅ Invalid models are logged but don't prevent server startup
+- ✅ Server starts with empty model list if validation fails
+
 ## Installation
 
 ### Option 1: Docker Image (Recommended)
@@ -97,6 +119,25 @@ services:
 - `0.0.3` - Specific version
 - `0.0` - Latest patch version of 0.0.x
 - `0` - Latest minor version of 0.x.x
+
+**Built-in vs Custom Configuration:**
+
+The Docker image includes built-in configuration files:
+- Built-in `.env` with default settings
+- Built-in `models.json` with placeholder model (`docker-default-model`)
+
+**To use custom configuration:**
+- Mount your `models.json` to `/app/models.json` (replaces built-in models)
+- Set environment variables via `-e` or Docker Compose (overrides built-in .env)
+
+**Verification:**
+```bash
+# Check if your custom models are loaded
+curl -H "Authorization: Bearer your-token" http://localhost:3333/v1/models
+
+# If you see "docker-default-model" → your mount is NOT working
+# If you see your custom models → configuration is correct ✓
+```
 
 ### Option 2: Build from Source
 
@@ -388,6 +429,22 @@ make verify       # Test live API endpoint
 
 Tests cover configuration, n8n client, and API endpoints. See `tests/` directory.
 
+## Code Quality
+
+This project uses ESLint and Prettier to maintain consistent code style.
+
+```bash
+make lint          # Check code quality with ESLint
+make lint-fix      # Auto-fix ESLint issues
+make format        # Format code with Prettier
+make format-check  # Check if code is formatted correctly
+```
+
+**Before committing:**
+```bash
+make lint && make format-check  # Ensure code passes quality checks
+```
+
 ## Troubleshooting
 
 ### Enable detailed logging
@@ -404,6 +461,43 @@ curl -H "Authorization: Bearer your-token" http://localhost:3333/v1/models
 # If you see "docker-default-model" - your mounted models.json is NOT being loaded
 # This is the built-in placeholder from the Docker image
 # Solution: Check your volume mount path and restart the container
+```
+
+### Model Loading Issues
+
+**Symptom:** Server logs show "Error loading models"
+
+**Possible causes:**
+- Invalid JSON syntax in models.json
+- Models.json is an array instead of an object
+- Model URLs are not valid HTTP/HTTPS URLs
+
+**Solution:**
+```bash
+# Validate JSON syntax
+cat models.json | jq .
+
+# Check server logs for specific error
+docker logs n8n-openai-bridge 2>&1 | grep "Error loading models"
+
+# Common errors:
+# "Models must be an object" → Change [] to {}
+# "Invalid webhook URL" → Check URL format (must start with http:// or https://)
+```
+
+**Symptom:** Models not reloading after changes
+
+**Possible causes:**
+- File is mounted read-only (correct behavior for security)
+- File watcher not triggered (requires container restart)
+
+**Solution:**
+```bash
+# For mounted volumes, restart container to reload
+docker restart n8n-openai-bridge
+
+# Or use the reload endpoint
+curl -X POST -H "Authorization: Bearer your-token" http://localhost:3333/admin/reload
 ```
 
 ### Common issues
@@ -469,6 +563,7 @@ git push origin feature/my-new-feature
 ```
 
 **CI checks on every push:**
+- Code quality (ESLint + Prettier)
 - Unit tests with coverage
 - Docker image build test
 - Security vulnerability scan
@@ -504,9 +599,10 @@ Contributions are welcome! Please follow these steps:
 5. Open a Pull Request
 
 Please ensure:
-- All tests pass (`npm test`)
+- All tests pass (`make test`)
+- Code passes linting (`make lint`)
+- Code is properly formatted (`make format-check`)
 - Docker build succeeds
-- Code follows existing style
 - Update documentation as needed
 
 ## License

@@ -1,0 +1,4 @@
+{
+  "test-model": "http://mock-n8n:3001/webhook/test",
+  "test-model-stream": "http://mock-n8n:3001/webhook/test/stream"
+}

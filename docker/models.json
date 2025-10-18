@@ -1,4 +1,3 @@
 {
-  "_comment": "This is a placeholder model built into the Docker image. Mount your own models.json to configure real n8n webhooks.",
   "docker-default-model": "https://n8n-openai-bridge.invalid/webhook/REPLACE-ME/chat"
 }

@@ -32,14 +32,14 @@ class N8nClient {
   }
 
   buildPayload(messages, sessionId, userContext) {
-    const systemPrompt = messages.find(m => m.role === 'system')?.content || '';
+    const systemPrompt = messages.find((m) => m.role === 'system')?.content || '';
     const currentMessage = messages[messages.length - 1]?.content || '';
 
     const payload = {
       systemPrompt,
       currentMessage,
       chatInput: currentMessage,
-      messages: messages.filter(m => m.role !== 'system'),
+      messages: messages.filter((m) => m.role !== 'system'),
       sessionId,
       userId: userContext.userId,
     };
@@ -69,7 +69,7 @@ class N8nClient {
       });
 
       let buffer = '';
-      
+
       for await (const chunk of response.data) {
         const text = chunk.toString();
         buffer += text;
@@ -114,7 +114,7 @@ class N8nClient {
       });
 
       let buffer = '';
-      let collectedContent = [];
+      const collectedContent = [];
 
       for await (const chunk of response.data) {
         const text = chunk.toString();
@@ -156,14 +156,17 @@ class N8nClient {
 
     while (true) {
       const startIdx = remainder.indexOf('{');
-      if (startIdx === -1) break;
+      if (startIdx === -1) {
+        break;
+      }
 
       let braceCount = 0;
       let endIdx = -1;
 
       for (let i = startIdx; i < remainder.length; i++) {
-        if (remainder[i] === '{') braceCount++;
-        else if (remainder[i] === '}') {
+        if (remainder[i] === '{') {
+          braceCount++;
+        } else if (remainder[i] === '}') {
           braceCount--;
           if (braceCount === 0) {
             endIdx = i;
@@ -172,7 +175,9 @@ class N8nClient {
         }
       }
 
-      if (endIdx === -1) break;
+      if (endIdx === -1) {
+        break;
+      }
 
       extracted.push(remainder.substring(startIdx, endIdx + 1));
       remainder = remainder.substring(endIdx + 1);
@@ -188,7 +193,7 @@ class N8nClient {
 
     try {
       const data = JSON.parse(chunkText);
-      
+
       // Skip metadata chunks
       if (data.type && ['begin', 'end', 'error', 'metadata'].includes(data.type)) {
         return null;

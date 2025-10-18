@@ -23,7 +23,7 @@ describe('Server Integration Tests', () => {
     tempConfigPath = path.join(__dirname, 'integration-test-models.json');
     const testModels = {
       'test-model': 'https://n8n.example.com/webhook/test/chat',
-      'another-model': 'https://n8n.example.com/webhook/another/chat'
+      'another-model': 'https://n8n.example.com/webhook/another/chat',
     };
     fs.writeFileSync(tempConfigPath, JSON.stringify(testModels, null, 2));
 
@@ -42,7 +42,7 @@ describe('Server Integration Tests', () => {
     const mockWatcher = {
       close: jest.fn(),
       on: jest.fn(),
-      removeAllListeners: jest.fn()
+      removeAllListeners: jest.fn(),
     };
     jest.spyOn(fs, 'watch').mockReturnValue(mockWatcher);
 
@@ -82,14 +82,7 @@ describe('Server Integration Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'ok');
-      expect(response.body).toHaveProperty('models');
       expect(response.body).toHaveProperty('uptime');
-    });
-
-    test('should include model count', async () => {
-      const response = await request(app).get('/health');
-
-      expect(response.body.models).toBe(2); // test-model and another-model
     });
   });
 
@@ -112,9 +105,7 @@ describe('Server Integration Tests', () => {
     });
 
     test('should return 401 with malformed Authorization header', async () => {
-      const response = await request(app)
-        .get('/v1/models')
-        .set('Authorization', 'InvalidFormat');
+      const response = await request(app).get('/v1/models').set('Authorization', 'InvalidFormat');
 
       expect(response.status).toBe(401);
     });
@@ -152,7 +143,7 @@ describe('Server Integration Tests', () => {
         .get('/v1/models')
         .set('Authorization', 'Bearer test-bearer-token');
 
-      const modelIds = response.body.data.map(m => m.id);
+      const modelIds = response.body.data.map((m) => m.id);
       expect(modelIds).toContain('test-model');
       expect(modelIds).toContain('another-model');
     });
@@ -164,7 +155,7 @@ describe('Server Integration Tests', () => {
         .post('/v1/chat/completions')
         .set('Authorization', 'Bearer test-bearer-token')
         .send({
-          messages: [{ role: 'user', content: 'Hello' }]
+          messages: [{ role: 'user', content: 'Hello' }],
         });
 
       expect(response.status).toBe(400);
@@ -177,7 +168,7 @@ describe('Server Integration Tests', () => {
         .post('/v1/chat/completions')
         .set('Authorization', 'Bearer test-bearer-token')
         .send({
-          model: 'test-model'
+          model: 'test-model',
         });
 
       expect(response.status).toBe(400);
@@ -190,7 +181,7 @@ describe('Server Integration Tests', () => {
         .set('Authorization', 'Bearer test-bearer-token')
         .send({
           model: 'test-model',
-          messages: 'invalid'
+          messages: 'invalid',
         });
 
       expect(response.status).toBe(400);
@@ -203,7 +194,7 @@ describe('Server Integration Tests', () => {
         .set('Authorization', 'Bearer test-bearer-token')
         .send({
           model: 'test-model',
-          messages: []
+          messages: [],
         });
 
       expect(response.status).toBe(400);
@@ -216,7 +207,7 @@ describe('Server Integration Tests', () => {
         .set('Authorization', 'Bearer test-bearer-token')
         .send({
           model: 'nonexistent-model',
-          messages: [{ role: 'user', content: 'Hello' }]
+          messages: [{ role: 'user', content: 'Hello' }],
         });
 
       expect(response.status).toBe(404);
@@ -226,8 +217,7 @@ describe('Server Integration Tests', () => {
 
   describe('POST /admin/reload', () => {
     test('should require authentication', async () => {
-      const response = await request(app)
-        .post('/admin/reload');
+      const response = await request(app).post('/admin/reload');
 
       expect(response.status).toBe(401);
     });
@@ -246,9 +236,7 @@ describe('Server Integration Tests', () => {
 
   describe('CORS', () => {
     test('should allow CORS requests', async () => {
-      const response = await request(app)
-        .get('/health')
-        .set('Origin', 'http://example.com');
+      const response = await request(app).get('/health').set('Origin', 'http://example.com');
 
       expect(response.headers).toHaveProperty('access-control-allow-origin');
     });

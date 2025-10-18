@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify lint lint-fix format format-check
 
 help:
 	@echo "Available commands:"
@@ -19,6 +19,12 @@ help:
 	@echo "  make test-image        - Run Docker image build validation tests"
 	@echo "  make test-all          - Alias for test"
 	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint              - Run ESLint to check code quality"
+	@echo "  make lint-fix          - Run ESLint and auto-fix issues"
+	@echo "  make format            - Format code with Prettier"
+	@echo "  make format-check      - Check if code is formatted correctly"
 
 rebuild: stop build start
 	@echo "Rebuild complete!"
@@ -97,22 +103,61 @@ test-image:
 
 # Test 3: Load testing with k6 (via docker-compose)
 test-load:
-	@echo ""
-	@echo "======================================"
-	@echo "Running Load Tests (20 users, 1min)"
-	@echo "======================================"
-	@echo ""
-	@echo "Building images..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build
-	@echo ""
-	@echo "Starting services (mock-n8n, bridge, k6)..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
-	@echo ""
-	@echo "Cleaning up..."
-	@docker compose -f docker/docker-compose.loadtest.yml down -v
-	@echo ""
-	@echo "✓ Load tests completed!"
-	@echo ""
-	@if [ -f tests/load/summary.json ]; then \
+	@bash -c ' \
+	set -e; \
+	CREATED_MODELS_JSON=false; \
+	cleanup() { \
+		echo ""; \
+		echo "Cleaning up..."; \
+		docker compose -f docker/docker-compose.loadtest.yml down -v 2>/dev/null || true; \
+		if [ "$$CREATED_MODELS_JSON" = "true" ]; then \
+			echo "Removing temporary models.json..."; \
+			rm -f tests/load/models.json; \
+		fi; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	echo ""; \
+	echo "======================================"; \
+	echo "Running Load Tests (20 users, 1min)"; \
+	echo "======================================"; \
+	echo ""; \
+	if [ ! -f tests/load/models.json ]; then \
+		echo "Creating tests/load/models.json from example..."; \
+		cp tests/load/models.json.example tests/load/models.json; \
+		CREATED_MODELS_JSON=true; \
+	fi; \
+	echo "Building images..."; \
+	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build; \
+	echo ""; \
+	echo "Starting services (mock-n8n, bridge, k6)..."; \
+	TEST_EXIT_CODE=0; \
+	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6 || TEST_EXIT_CODE=$$?; \
+	echo ""; \
+	if [ $$TEST_EXIT_CODE -eq 0 ]; then \
+		echo "✓ Load tests completed!"; \
+	else \
+		echo "✗ Load tests failed with exit code $$TEST_EXIT_CODE"; \
+	fi; \
+	echo ""; \
+	if [ -f tests/load/summary.json ]; then \
 		echo "📊 Detailed results saved to: tests/load/summary.json"; \
-	fi
+	fi; \
+	exit $$TEST_EXIT_CODE; \
+	'
+
+# Code Quality: Linting and Formatting
+lint:
+	@echo "Running ESLint..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run lint"
+
+lint-fix:
+	@echo "Running ESLint with auto-fix..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run lint:fix"
+
+format:
+	@echo "Formatting code with Prettier..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run format"
+
+format-check:
+	@echo "Checking code formatting..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run format:check"
