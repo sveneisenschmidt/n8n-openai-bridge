@@ -20,7 +20,7 @@ const requestId = require('../../src/middleware/requestId');
 
 // Mock uuid
 jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'mock-uuid-1234')
+  v4: jest.fn(() => 'mock-uuid-1234'),
 }));
 
 describe('requestId middleware', () => {
@@ -34,13 +34,13 @@ describe('requestId middleware', () => {
       app: {
         locals: {
           config: {
-            logRequests: false
-          }
-        }
-      }
+            logRequests: false,
+          },
+        },
+      },
     };
     res = {
-      setHeader: jest.fn()
+      setHeader: jest.fn(),
     };
     next = jest.fn();
 
@@ -190,7 +190,9 @@ describe('requestId middleware', () => {
       const middleware = requestId();
       middleware(req, res, next);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('[req-mock-uuid-1234] GET /test?query=param&foo=bar');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        '[req-mock-uuid-1234] GET /test?query=param&foo=bar',
+      );
 
       consoleLogSpy.mockRestore();
     });
