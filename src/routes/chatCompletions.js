@@ -23,6 +23,8 @@ const { extractUserContext } = require('../services/userService');
 const { validateChatCompletionRequest } = require('../services/validationService');
 const { createErrorResponse } = require('../utils/errorResponse');
 const { debugSessionDetection } = require('../utils/debugSession');
+const { handleStreaming } = require('../handlers/streamingHandler');
+const { handleNonStreaming } = require('../handlers/nonStreamingHandler');
 
 const router = express.Router();
 
@@ -107,104 +109,30 @@ router.post('/', async (req, res) => {
 
   try {
     if (stream) {
-      // Streaming response
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
-      try {
-        const streamGenerator = n8nClient.streamCompletion(
-          webhookUrl,
-          messages,
-          sessionId,
-          userContext,
-        );
-
-        for await (const content of streamGenerator) {
-          const chunk = {
-            id: `chatcmpl-${uuidv4()}`,
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model,
-            choices: [
-              {
-                index: 0,
-                delta: { content },
-                finish_reason: null,
-              },
-            ],
-          };
-
-          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-        }
-
-        // Send final chunk
-        const finalChunk = {
-          id: `chatcmpl-${uuidv4()}`,
-          object: 'chat.completion.chunk',
-          created: Math.floor(Date.now() / 1000),
-          model,
-          choices: [
-            {
-              index: 0,
-              delta: {},
-              finish_reason: 'stop',
-            },
-          ],
-        };
-
-        res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
-        res.write('data: [DONE]\n\n');
-        res.end();
-
-        if (config.logRequests) {
-          console.log(`Streaming completed for session: ${sessionId}`);
-        }
-      } catch (streamError) {
-        console.error('Stream error:', streamError);
-        const errorChunk = createErrorResponse('Error during streaming', 'server_error');
-        res.write(`data: ${JSON.stringify(errorChunk)}\n\n`);
-        res.end();
-      }
-    } else {
-      // Non-streaming response
-      const content = await n8nClient.nonStreamingCompletion(
+      await handleStreaming(
+        res,
+        n8nClient,
         webhookUrl,
         messages,
         sessionId,
         userContext,
-      );
-
-      const response = {
-        id: `chatcmpl-${uuidv4()}`,
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
         model,
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content,
-            },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-        },
-      };
-
-      if (config.logRequests) {
-        console.log(`Non-streaming completed for session: ${sessionId}`);
-      }
-
-      res.json(response);
+        config,
+      );
+    } else {
+      await handleNonStreaming(
+        res,
+        n8nClient,
+        webhookUrl,
+        messages,
+        sessionId,
+        userContext,
+        model,
+        config,
+      );
     }
-  } catch (err) {
-    console.error('Error:', err);
+  } catch (error) {
+    console.error('Error:', error);
 
     if (!res.headersSent) {
       res.status(500).json(createErrorResponse('Internal server error', 'server_error'));
