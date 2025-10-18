@@ -37,7 +37,7 @@ function requestId() {
     res.setHeader('X-Request-ID', req.id);
 
     // Log if enabled
-    if (req.app.locals.config?.logRequests) {
+    if (req.app?.locals?.config?.logRequests) {
       console.log(`[${req.id}] ${req.method} ${req.path}`);
     }
 

@@ -42,14 +42,14 @@ function createRateLimiters(config) {
       if (config.logRequests && req.id) {
         console.log(`[${req.id}] Rate limit exceeded for IP: ${req.ip}`);
       }
-      res.status(429).json(
-        createErrorResponse('Too many requests, please try again later', 'rate_limit_error')
-      );
+      res
+        .status(429)
+        .json(createErrorResponse('Too many requests, please try again later', 'rate_limit_error'));
     },
-    skip: (req) => {
+    skip: (_req) => {
       // Skip rate limiting if disabled via environment
       return process.env.DISABLE_RATE_LIMIT === 'true';
-    }
+    },
   });
 
   // Stricter rate limiter for chat completions endpoint
@@ -63,13 +63,18 @@ function createRateLimiters(config) {
       if (config.logRequests && req.id) {
         console.log(`[${req.id}] Chat completions rate limit exceeded for IP: ${req.ip}`);
       }
-      res.status(429).json(
-        createErrorResponse('Too many chat completion requests, please try again later', 'rate_limit_error')
-      );
+      res
+        .status(429)
+        .json(
+          createErrorResponse(
+            'Too many chat completion requests, please try again later',
+            'rate_limit_error',
+          ),
+        );
     },
-    skip: (req) => {
+    skip: (_req) => {
       return process.env.DISABLE_RATE_LIMIT === 'true';
-    }
+    },
   });
 
   // Very permissive rate limiter for health check
@@ -78,15 +83,15 @@ function createRateLimiters(config) {
     max: rateLimitMax * 10, // 10x the standard limit for health checks
     standardHeaders: false,
     legacyHeaders: false,
-    skip: (req) => {
+    skip: (_req) => {
       return process.env.DISABLE_RATE_LIMIT === 'true';
-    }
+    },
   });
 
   return {
     standard: standardLimiter,
     chatCompletions: chatCompletionsLimiter,
-    health: healthCheckLimiter
+    health: healthCheckLimiter,
   };
 }
 
