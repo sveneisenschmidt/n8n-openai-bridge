@@ -108,6 +108,10 @@ test-load:
 	@echo "Running Load Tests (20 users, 1min)"
 	@echo "======================================"
 	@echo ""
+	@if [ ! -f tests/load/models.json ]; then \
+		echo "Creating tests/load/models.json from example..."; \
+		cp tests/load/models.json.example tests/load/models.json; \
+	fi
 	@echo "Building images..."
 	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build
 	@echo ""
