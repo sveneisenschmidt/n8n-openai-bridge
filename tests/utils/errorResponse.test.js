@@ -53,7 +53,7 @@ describe('errorResponse utility', () => {
 
     it('should send error with default type', () => {
       sendError(res, 500, 'Internal error');
-      
+
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         error: {
@@ -65,7 +65,7 @@ describe('errorResponse utility', () => {
 
     it('should send error with custom type', () => {
       sendError(res, 401, 'Unauthorized', 'authentication_error');
-      
+
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         error: {
@@ -77,7 +77,7 @@ describe('errorResponse utility', () => {
 
     it('should send error with 404 status', () => {
       sendError(res, 404, 'Not found', 'not_found_error');
-      
+
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         error: {

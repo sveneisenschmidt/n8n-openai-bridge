@@ -25,7 +25,7 @@ describe('debugSession utility', () => {
 
   beforeEach(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    
+
     req = {
       body: {
         session_id: 'test-session-123',
@@ -58,8 +58,12 @@ describe('debugSession utility', () => {
       debugSessionDetection(req, config);
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('SESSION ID DETECTION'));
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('req.body.session_id: test-session-123'));
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('req.body.conversation_id: conv-456'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('req.body.session_id: test-session-123'),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('req.body.conversation_id: conv-456'),
+      );
     });
 
     it('should log NOT FOUND for missing values', () => {
@@ -67,15 +71,21 @@ describe('debugSession utility', () => {
       req.body = {};
       debugSessionDetection(req, config);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('req.body.session_id: NOT FOUND'));
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('req.body.conversation_id: NOT FOUND'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('req.body.session_id: NOT FOUND'),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('req.body.conversation_id: NOT FOUND'),
+      );
     });
 
     it('should log configured session ID headers', () => {
       config.logRequests = true;
       debugSessionDetection(req, config);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('x-session-id: header-session-789'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('x-session-id: header-session-789'),
+      );
     });
 
     it('should log all request body and header keys', () => {

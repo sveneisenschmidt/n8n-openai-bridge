@@ -48,8 +48,8 @@ make clean      # Remove everything (containers, images, volumes)
 ```bash
 make lint          # Check code quality with ESLint
 make lint-fix      # Auto-fix ESLint issues
-make format        # Format code with Prettier
-make format-check  # Check if code is formatted correctly
+make format        # Check if code is formatted correctly
+make format-fix    # Format code with Prettier
 ```
 
 ### Project Structure
@@ -207,13 +207,13 @@ This project uses ESLint and Prettier to enforce consistent code style.
 ```bash
 make lint          # Check for code quality issues
 make lint-fix      # Auto-fix ESLint issues
-make format        # Format code with Prettier
-make format-check  # Check if code is formatted
+make format        # Check if code is formatted
+make format-fix    # Format code with Prettier
 ```
 
 **Always run linting before committing:**
 ```bash
-make lint && make format-check
+make lint && make format
 ```
 
 **Code Style Rules:**
@@ -291,7 +291,7 @@ git status
 - [ ] All tests pass (`make test`)
 - [ ] Test coverage maintained (75%+)
 - [ ] Code passes linting (`make lint`)
-- [ ] Code is formatted (`make format-check`)
+- [ ] Code is formatted (`make format`)
 - [ ] Documentation updated (README.md, openapi.yaml)
 - [ ] No console.log() statements (use structured logging)
 - [ ] .env.example updated if new env vars added
@@ -509,7 +509,7 @@ Create tests similar to `tests/loaders/JsonFileModelLoader.test.js` for your new
 - Never add your name to any files, commits, or PRs
 - Keep communication professional: avoid decorative symbols in all project artifacts
 - Always follow the existing code style and conventions
-- Run `make lint && make format-check` before committing to ensure code quality
+- Run `make lint && make format` before committing to ensure code quality
 - Run `make test` before committing changes
 - Keep copyright headers unchanged
 - This project is AGPL-3.0 licensed - modified versions must remain open source

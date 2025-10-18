@@ -440,13 +440,13 @@ This project uses ESLint and Prettier to maintain consistent code style.
 ```bash
 make lint          # Check code quality with ESLint
 make lint-fix      # Auto-fix ESLint issues
-make format        # Format code with Prettier
-make format-check  # Check if code is formatted correctly
+make format        # Check if code is formatted correctly
+make format-fix    # Format code with Prettier
 ```
 
 **Before committing:**
 ```bash
-make lint && make format-check  # Ensure code passes quality checks
+make lint && make format  # Ensure code passes quality checks
 ```
 
 ## Troubleshooting
@@ -605,7 +605,7 @@ Contributions are welcome! Please follow these steps:
 Please ensure:
 - All tests pass (`make test`)
 - Code passes linting (`make lint`)
-- Code is properly formatted (`make format-check`)
+- Code is properly formatted (`make format`)
 - Docker build succeeds
 - Update documentation as needed
 
