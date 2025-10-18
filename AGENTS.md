@@ -43,6 +43,26 @@ make verify     # Check if server responds correctly
 make clean      # Remove everything (containers, images, volumes)
 ```
 
+### Package Management
+
+**IMPORTANT:** Always use Docker to run npm commands to ensure consistency:
+
+```bash
+# Install dependencies (via Docker)
+docker run --rm -v $(PWD):/app -w /app node:20-alpine npm install
+
+# Add a new package (via Docker)
+docker run --rm -v $(PWD):/app -w /app node:20-alpine npm install package-name
+
+# Remove a package (via Docker)
+docker run --rm -v $(PWD):/app -w /app node:20-alpine npm uninstall package-name
+
+# Update packages (via Docker)
+docker run --rm -v $(PWD):/app -w /app node:20-alpine npm update
+```
+
+**Never run `npm install` directly on your host machine** - this ensures all developers and CI/CD use the exact same Node.js version and environment.
+
 ### Code Quality Tools
 
 ```bash
