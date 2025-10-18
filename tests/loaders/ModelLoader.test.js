@@ -59,7 +59,9 @@ describe('ModelLoader', () => {
         '': 'https://example.com/webhook',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow('Model ID must be a non-empty string');
+      expect(() => loader.validateModels(invalidModels)).toThrow(
+        'Model ID must be a non-empty string',
+      );
     });
 
     it('should reject non-string model ID', () => {
@@ -76,7 +78,9 @@ describe('ModelLoader', () => {
         'model-1': '',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow('Webhook URL for model "model-1" must be a non-empty string');
+      expect(() => loader.validateModels(invalidModels)).toThrow(
+        'Webhook URL for model "model-1" must be a non-empty string',
+      );
     });
 
     it('should reject invalid webhook URL format', () => {
@@ -84,7 +88,9 @@ describe('ModelLoader', () => {
         'model-1': 'not-a-url',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow('Invalid webhook URL for model "model-1": not-a-url');
+      expect(() => loader.validateModels(invalidModels)).toThrow(
+        'Invalid webhook URL for model "model-1": not-a-url',
+      );
     });
 
     it('should accept various valid URL formats', () => {

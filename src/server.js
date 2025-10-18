@@ -171,7 +171,7 @@ app.post('/v1/chat/completions', async (req, res) => {
           webhookUrl,
           messages,
           sessionId,
-          userContext
+          userContext,
         );
 
         for await (const content of streamGenerator) {
@@ -229,7 +229,7 @@ app.post('/v1/chat/completions', async (req, res) => {
         webhookUrl,
         messages,
         sessionId,
-        userContext
+        userContext,
       );
 
       const response = {

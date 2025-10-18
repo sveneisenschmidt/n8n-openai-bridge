@@ -110,7 +110,7 @@ class Config {
       .then((models) => {
         this.models = models;
         console.log(
-          `[${new Date().toISOString()}] Models loaded successfully (${Object.keys(models).length} models)`
+          `[${new Date().toISOString()}] Models loaded successfully (${Object.keys(models).length} models)`,
         );
       })
       .catch((error) => {
@@ -123,7 +123,7 @@ class Config {
     try {
       this.models = await this.modelLoader.load();
       console.log(
-        `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`
+        `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(this.models).length} models)`,
       );
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Error reloading models: ${error.message}`);

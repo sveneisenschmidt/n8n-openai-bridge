@@ -5,9 +5,7 @@ describe('ValidationService', () => {
     test('should validate valid request', () => {
       const body = {
         model: 'test-model',
-        messages: [
-          { role: 'user', content: 'Hello' },
-        ],
+        messages: [{ role: 'user', content: 'Hello' }],
       };
 
       const result = validateChatCompletionRequest(body);
@@ -18,9 +16,7 @@ describe('ValidationService', () => {
 
     test('should reject request without model', () => {
       const body = {
-        messages: [
-          { role: 'user', content: 'Hello' },
-        ],
+        messages: [{ role: 'user', content: 'Hello' }],
       };
 
       const result = validateChatCompletionRequest(body);

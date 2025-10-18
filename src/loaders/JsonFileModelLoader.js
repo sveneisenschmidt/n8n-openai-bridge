@@ -85,14 +85,14 @@ class JsonFileModelLoader extends ModelLoader {
             try {
               const models = await this.load();
               console.log(
-                `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(models).length} models)`
+                `[${new Date().toISOString()}] Models reloaded successfully (${Object.keys(models).length} models)`,
               );
               if (this.watchCallback) {
                 this.watchCallback(models);
               }
             } catch (error) {
               console.error(
-                `[${new Date().toISOString()}] Error reloading models: ${error.message}`
+                `[${new Date().toISOString()}] Error reloading models: ${error.message}`,
               );
             }
           }, 100);
@@ -101,7 +101,7 @@ class JsonFileModelLoader extends ModelLoader {
       console.log(`[${new Date().toISOString()}] Watching ${this.filePath} for changes...`);
     } catch (error) {
       console.warn(
-        `[${new Date().toISOString()}] Could not watch ${this.filePath}: ${error.message}`
+        `[${new Date().toISOString()}] Could not watch ${this.filePath}: ${error.message}`,
       );
     }
   }

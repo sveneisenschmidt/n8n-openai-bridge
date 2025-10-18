@@ -84,7 +84,7 @@ describe('N8nClient', () => {
       const payload = client.buildPayload(messages, 'session-123', userContext);
 
       expect(payload.messages).toHaveLength(2);
-      expect(payload.messages.every(m => m.role !== 'system')).toBe(true);
+      expect(payload.messages.every((m) => m.role !== 'system')).toBe(true);
     });
 
     test('should handle empty messages array', () => {
@@ -97,9 +97,7 @@ describe('N8nClient', () => {
     });
 
     test('should only include userId when other user fields are null', () => {
-      const messages = [
-        { role: 'user', content: 'Hello' },
-      ];
+      const messages = [{ role: 'user', content: 'Hello' }];
 
       const userContext = {
         userId: 'user-456',
@@ -117,9 +115,7 @@ describe('N8nClient', () => {
     });
 
     test('should include only provided optional user fields', () => {
-      const messages = [
-        { role: 'user', content: 'Hello' },
-      ];
+      const messages = [{ role: 'user', content: 'Hello' }];
 
       const userContext = {
         userId: 'user-456',
