@@ -114,7 +114,7 @@ class N8nClient {
       });
 
       let buffer = '';
-      let collectedContent = [];
+      const collectedContent = [];
 
       for await (const chunk of response.data) {
         const text = chunk.toString();
@@ -156,13 +156,13 @@ class N8nClient {
 
     while (true) {
       const startIdx = remainder.indexOf('{');
-      if (startIdx === -1) break;
+      if (startIdx === -1) {break;}
 
       let braceCount = 0;
       let endIdx = -1;
 
       for (let i = startIdx; i < remainder.length; i++) {
-        if (remainder[i] === '{') braceCount++;
+        if (remainder[i] === '{') {braceCount++;}
         else if (remainder[i] === '}') {
           braceCount--;
           if (braceCount === 0) {
@@ -172,7 +172,7 @@ class N8nClient {
         }
       }
 
-      if (endIdx === -1) break;
+      if (endIdx === -1) {break;}
 
       extracted.push(remainder.substring(startIdx, endIdx + 1));
       remainder = remainder.substring(endIdx + 1);

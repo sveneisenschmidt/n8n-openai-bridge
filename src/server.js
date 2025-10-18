@@ -37,7 +37,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} ${req.method} ${req.path}`);
-  
+
   if (config.logRequests) {
     console.log('--- Incoming Request ---');
     console.log('Headers:', maskSensitiveHeaders(req.headers));
@@ -45,7 +45,7 @@ app.use((req, res, next) => {
     console.log('Query:', req.query);
     console.log('------------------------');
   }
-  
+
   next();
 });
 
@@ -53,9 +53,7 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    models: Object.keys(config.models).length,
     uptime: process.uptime(),
-    logging: config.logRequests
   });
 });
 
@@ -67,12 +65,16 @@ function authenticate(req, res, next) {
 
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: { message: 'Unauthorized', type: 'authentication_error' } });
+    return res
+      .status(401)
+      .json({ error: { message: 'Unauthorized', type: 'authentication_error' } });
   }
 
   const token = authHeader.substring(7);
   if (token !== config.bearerToken) {
-    return res.status(401).json({ error: { message: 'Invalid token', type: 'authentication_error' } });
+    return res
+      .status(401)
+      .json({ error: { message: 'Invalid token', type: 'authentication_error' } });
   }
 
   next();
@@ -84,10 +86,10 @@ app.use(authenticate);
 app.post('/admin/reload', (req, res) => {
   try {
     config.reloadModels();
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       message: 'Models reloaded',
-      models: Object.keys(config.models).length
+      models: Object.keys(config.models).length,
     });
   } catch (error) {
     res.status(500).json({ error: { message: error.message } });
@@ -114,13 +116,13 @@ app.post('/v1/chat/completions', async (req, res) => {
     console.log('  req.body.session_id:', req.body.session_id || 'NOT FOUND');
     console.log('  req.body.conversation_id:', req.body.conversation_id || 'NOT FOUND');
     console.log('  req.body.chat_id:', req.body.chat_id || 'NOT FOUND');
-    
+
     console.log('\nChecking configured session ID headers:');
-    config.sessionIdHeaders.forEach(headerName => {
+    config.sessionIdHeaders.forEach((headerName) => {
       const lowerHeaderName = headerName.toLowerCase();
       console.log(`  ${headerName}:`, req.headers[lowerHeaderName] || 'NOT FOUND');
     });
-    
+
     console.log('\nAll request body keys:', Object.keys(req.body));
     console.log('\nAll header keys:', Object.keys(req.headers));
     console.log('==========================================\n');
@@ -134,11 +136,11 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   const webhookUrl = config.getModelWebhookUrl(model);
   if (!webhookUrl) {
-    return res.status(404).json({ 
-      error: { 
+    return res.status(404).json({
+      error: {
         message: `Model '${model}' not found`,
-        type: 'invalid_request_error'
-      } 
+        type: 'invalid_request_error',
+      },
     });
   }
 
@@ -165,7 +167,12 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
 
       try {
-        const streamGenerator = n8nClient.streamCompletion(webhookUrl, messages, sessionId, userContext);
+        const streamGenerator = n8nClient.streamCompletion(
+          webhookUrl,
+          messages,
+          sessionId,
+          userContext
+        );
 
         for await (const content of streamGenerator) {
           const chunk = {
@@ -173,11 +180,13 @@ app.post('/v1/chat/completions', async (req, res) => {
             object: 'chat.completion.chunk',
             created: Math.floor(Date.now() / 1000),
             model,
-            choices: [{
-              index: 0,
-              delta: { content },
-              finish_reason: null,
-            }],
+            choices: [
+              {
+                index: 0,
+                delta: { content },
+                finish_reason: null,
+              },
+            ],
           };
 
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
@@ -189,11 +198,13 @@ app.post('/v1/chat/completions', async (req, res) => {
           object: 'chat.completion.chunk',
           created: Math.floor(Date.now() / 1000),
           model,
-          choices: [{
-            index: 0,
-            delta: {},
-            finish_reason: 'stop',
-          }],
+          choices: [
+            {
+              index: 0,
+              delta: {},
+              finish_reason: 'stop',
+            },
+          ],
         };
 
         res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
@@ -206,29 +217,36 @@ app.post('/v1/chat/completions', async (req, res) => {
         const errorChunk = {
           error: {
             message: 'Error during streaming',
-            type: 'server_error'
-          }
+            type: 'server_error',
+          },
         };
         res.write(`data: ${JSON.stringify(errorChunk)}\n\n`);
         res.end();
       }
     } else {
       // Non-streaming response
-      const content = await n8nClient.nonStreamingCompletion(webhookUrl, messages, sessionId, userContext);
+      const content = await n8nClient.nonStreamingCompletion(
+        webhookUrl,
+        messages,
+        sessionId,
+        userContext
+      );
 
       const response = {
         id: `chatcmpl-${uuidv4()}`,
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
         model,
-        choices: [{
-          index: 0,
-          message: {
-            role: 'assistant',
-            content,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content,
+            },
+            finish_reason: 'stop',
           },
-          finish_reason: 'stop',
-        }],
+        ],
         usage: {
           prompt_tokens: 0,
           completion_tokens: 0,
@@ -242,26 +260,26 @@ app.post('/v1/chat/completions', async (req, res) => {
     }
   } catch (error) {
     console.error('Error:', error);
-    
+
     if (!res.headersSent) {
-      res.status(500).json({ 
-        error: { 
+      res.status(500).json({
+        error: {
           message: 'Internal server error',
-          type: 'server_error'
-        } 
+          type: 'server_error',
+        },
       });
     }
   }
 });
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ 
-    error: { 
+  res.status(500).json({
+    error: {
       message: 'Internal server error',
-      type: 'server_error'
-    } 
+      type: 'server_error',
+    },
   });
 });
 
@@ -279,7 +297,7 @@ app.listen(PORT, () => {
   console.log('Available Models:');
   const modelsList = Object.keys(config.models);
   if (modelsList.length > 0) {
-    modelsList.forEach(modelId => {
+    modelsList.forEach((modelId) => {
       console.log(`  - ${modelId}`);
     });
   } else {
@@ -287,10 +305,10 @@ app.listen(PORT, () => {
   }
   console.log('='.repeat(60));
   console.log('Endpoints:');
-  console.log(`  GET  /health`);
-  console.log(`  GET  /v1/models`);
-  console.log(`  POST /v1/chat/completions`);
-  console.log(`  POST /admin/reload`);
+  console.log('  GET  /health');
+  console.log('  GET  /v1/models');
+  console.log('  POST /v1/chat/completions');
+  console.log('  POST /admin/reload');
   console.log('='.repeat(60));
 });
 

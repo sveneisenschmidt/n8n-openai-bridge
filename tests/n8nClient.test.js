@@ -51,14 +51,14 @@ describe('N8nClient', () => {
         { role: 'system', content: 'You are a helpful assistant' },
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
-        { role: 'user', content: 'How are you?' }
+        { role: 'user', content: 'How are you?' },
       ];
 
       const userContext = {
         userId: 'user-456',
         userEmail: 'user@example.com',
         userName: 'John Doe',
-        userRole: 'admin'
+        userRole: 'admin',
       };
 
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -77,7 +77,7 @@ describe('N8nClient', () => {
       const messages = [
         { role: 'system', content: 'System prompt' },
         { role: 'user', content: 'Hello' },
-        { role: 'assistant', content: 'Hi!' }
+        { role: 'assistant', content: 'Hi!' },
       ];
 
       const userContext = { userId: 'user-456' };
@@ -98,14 +98,14 @@ describe('N8nClient', () => {
 
     test('should only include userId when other user fields are null', () => {
       const messages = [
-        { role: 'user', content: 'Hello' }
+        { role: 'user', content: 'Hello' },
       ];
 
       const userContext = {
         userId: 'user-456',
         userEmail: null,
         userName: null,
-        userRole: null
+        userRole: null,
       };
 
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -118,14 +118,14 @@ describe('N8nClient', () => {
 
     test('should include only provided optional user fields', () => {
       const messages = [
-        { role: 'user', content: 'Hello' }
+        { role: 'user', content: 'Hello' },
       ];
 
       const userContext = {
         userId: 'user-456',
         userEmail: 'user@example.com',
         userName: null,
-        userRole: 'admin'
+        userRole: 'admin',
       };
 
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -146,11 +146,11 @@ describe('N8nClient', () => {
           yield Buffer.from('{"type":"item","content":"Hello "}');
           yield Buffer.from('{"type":"item","content":"World"}');
           yield Buffer.from('{"type":"end","metadata":{}}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({
-        data: mockStream
+        data: mockStream,
       });
 
       const userContext = { userId: 'user-456' };
@@ -158,7 +158,7 @@ describe('N8nClient', () => {
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('Hello World');
@@ -169,11 +169,11 @@ describe('N8nClient', () => {
         async *[Symbol.asyncIterator]() {
           yield Buffer.from('{"type":"item","content":"Complete response"}');
           yield Buffer.from('{"type":"end"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({
-        data: mockStream
+        data: mockStream,
       });
 
       const userContext = { userId: 'user-456' };
@@ -181,7 +181,7 @@ describe('N8nClient', () => {
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('Complete response');
@@ -193,11 +193,11 @@ describe('N8nClient', () => {
           yield Buffer.from('{"output":"Part 1 "}');
           yield Buffer.from('{"text":"Part 2 "}');
           yield Buffer.from('{"message":"Part 3"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({
-        data: mockStream
+        data: mockStream,
       });
 
       const userContext = { userId: 'user-456' };
@@ -205,7 +205,7 @@ describe('N8nClient', () => {
         'https://n8n.example.com/webhook/test/chat',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('Part 1 Part 2 Part 3');
@@ -220,8 +220,8 @@ describe('N8nClient', () => {
           'https://n8n.example.com/webhook/test/chat',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toThrow('Network error');
     });
   });

@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify lint lint-fix format format-check
 
 help:
 	@echo "Available commands:"
@@ -19,6 +19,12 @@ help:
 	@echo "  make test-image        - Run Docker image build validation tests"
 	@echo "  make test-all          - Alias for test"
 	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint              - Run ESLint to check code quality"
+	@echo "  make lint-fix          - Run ESLint and auto-fix issues"
+	@echo "  make format            - Format code with Prettier"
+	@echo "  make format-check      - Check if code is formatted correctly"
 
 rebuild: stop build start
 	@echo "Rebuild complete!"
@@ -116,3 +122,20 @@ test-load:
 	@if [ -f tests/load/summary.json ]; then \
 		echo "📊 Detailed results saved to: tests/load/summary.json"; \
 	fi
+
+# Code Quality: Linting and Formatting
+lint:
+	@echo "Running ESLint..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run lint"
+
+lint-fix:
+	@echo "Running ESLint with auto-fix..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run lint:fix"
+
+format:
+	@echo "Formatting code with Prettier..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run format"
+
+format-check:
+	@echo "Checking code formatting..."
+	@docker run --rm -v $(PWD):/app -w /app node:20-alpine sh -c "npm install --silent && npm run format:check"

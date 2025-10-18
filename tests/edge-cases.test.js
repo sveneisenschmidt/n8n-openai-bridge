@@ -26,7 +26,7 @@ describe('Edge Cases and Error Handling', () => {
     test('should handle timeout errors', async () => {
       axios.post.mockRejectedValue({
         code: 'ECONNABORTED',
-        message: 'timeout of 300000ms exceeded'
+        message: 'timeout of 300000ms exceeded',
       });
 
       const userContext = { userId: 'test-user' };
@@ -36,10 +36,10 @@ describe('Edge Cases and Error Handling', () => {
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
-        code: 'ECONNABORTED'
+        code: 'ECONNABORTED',
       });
     });
 
@@ -47,19 +47,19 @@ describe('Edge Cases and Error Handling', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           // Simulate long-running request
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           yield Buffer.from('{"content":"test"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
 
       const userContext = { userId: 'test-user' };
-      const result = await client.nonStreamingCompletion(
+      await client.nonStreamingCompletion(
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       // Verify timeout is configured
@@ -67,8 +67,8 @@ describe('Edge Cases and Error Handling', () => {
         expect.any(String),
         expect.any(Object),
         expect.objectContaining({
-          timeout: 300000 // 5 minutes
-        })
+          timeout: 300000, // 5 minutes
+        }),
       );
     });
   });
@@ -77,27 +77,29 @@ describe('Edge Cases and Error Handling', () => {
     test('should handle connection refused', async () => {
       axios.post.mockRejectedValue({
         code: 'ECONNREFUSED',
-        message: 'connect ECONNREFUSED 127.0.0.1:5678'
+        message: 'connect ECONNREFUSED 127.0.0.1:5678',
       });
 
       const userContext = { userId: 'test-user' };
 
       await expect(
-        client.streamCompletion(
-          'https://n8n.example.com/webhook/test',
-          [{ role: 'user', content: 'Hello' }],
-          'session-123',
-          userContext
-        ).next()
+        client
+          .streamCompletion(
+            'https://n8n.example.com/webhook/test',
+            [{ role: 'user', content: 'Hello' }],
+            'session-123',
+            userContext,
+          )
+          .next(),
       ).rejects.toMatchObject({
-        code: 'ECONNREFUSED'
+        code: 'ECONNREFUSED',
       });
     });
 
     test('should handle DNS resolution errors', async () => {
       axios.post.mockRejectedValue({
         code: 'ENOTFOUND',
-        message: 'getaddrinfo ENOTFOUND invalid-domain.example.com'
+        message: 'getaddrinfo ENOTFOUND invalid-domain.example.com',
       });
 
       const userContext = { userId: 'test-user' };
@@ -107,17 +109,17 @@ describe('Edge Cases and Error Handling', () => {
           'https://invalid-domain.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
-        code: 'ENOTFOUND'
+        code: 'ENOTFOUND',
       });
     });
 
     test('should handle SSL/TLS errors', async () => {
       axios.post.mockRejectedValue({
         code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
-        message: 'unable to verify the first certificate'
+        message: 'unable to verify the first certificate',
       });
 
       const userContext = { userId: 'test-user' };
@@ -127,10 +129,10 @@ describe('Edge Cases and Error Handling', () => {
           'https://self-signed.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
       });
     });
   });
@@ -140,7 +142,7 @@ describe('Edge Cases and Error Handling', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           // Empty stream
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -150,7 +152,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('');
@@ -162,7 +164,7 @@ describe('Edge Cases and Error Handling', () => {
           yield Buffer.from('{"type":"begin"}');
           yield Buffer.from('{"type":"metadata","data":{}}');
           yield Buffer.from('{"type":"end"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -172,7 +174,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('');
@@ -184,7 +186,7 @@ describe('Edge Cases and Error Handling', () => {
           yield Buffer.from('{"content":"valid"}');
           yield Buffer.from('{corrupted json}');
           yield Buffer.from('{"content":"also valid"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -194,7 +196,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       // Should only collect valid chunks
@@ -207,7 +209,7 @@ describe('Edge Cases and Error Handling', () => {
           yield Buffer.from('{"cont');
           yield Buffer.from('ent":"Hello ');
           yield Buffer.from('World"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -217,7 +219,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('Hello World');
@@ -233,7 +235,7 @@ describe('Edge Cases and Error Handling', () => {
             const chunk = largeContent.substring(i, i + chunkSize);
             yield Buffer.from(`{"content":"${chunk}"}`);
           }
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -243,7 +245,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result.length).toBeGreaterThan(90000);
@@ -255,7 +257,7 @@ describe('Edge Cases and Error Handling', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           yield Buffer.from('{"content":"Hello 世界 🌍"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -265,7 +267,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toBe('Hello 世界 🌍');
@@ -275,7 +277,7 @@ describe('Edge Cases and Error Handling', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           yield Buffer.from('{"content":"Line 1\\nLine 2\\tTabbed"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -285,7 +287,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toContain('Line 1');
@@ -296,7 +298,7 @@ describe('Edge Cases and Error Handling', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           yield Buffer.from('{"content":"She said \\"Hello\\" to me"}');
-        }
+        },
       };
 
       axios.post.mockResolvedValue({ data: mockStream });
@@ -306,7 +308,7 @@ describe('Edge Cases and Error Handling', () => {
         'https://n8n.example.com/webhook/test',
         [{ role: 'user', content: 'Hello' }],
         'session-123',
-        userContext
+        userContext,
       );
 
       expect(result).toContain('Hello');
@@ -318,8 +320,8 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockRejectedValue({
         response: {
           status: 401,
-          data: { error: 'Unauthorized' }
-        }
+          data: { error: 'Unauthorized' },
+        },
       });
 
       const userContext = { userId: 'test-user' };
@@ -329,12 +331,12 @@ describe('Edge Cases and Error Handling', () => {
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
         response: {
-          status: 401
-        }
+          status: 401,
+        },
       });
     });
 
@@ -342,8 +344,8 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockRejectedValue({
         response: {
           status: 500,
-          data: { error: 'Internal Server Error' }
-        }
+          data: { error: 'Internal Server Error' },
+        },
       });
 
       const userContext = { userId: 'test-user' };
@@ -353,12 +355,12 @@ describe('Edge Cases and Error Handling', () => {
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
         response: {
-          status: 500
-        }
+          status: 500,
+        },
       });
     });
 
@@ -366,8 +368,8 @@ describe('Edge Cases and Error Handling', () => {
       axios.post.mockRejectedValue({
         response: {
           status: 503,
-          data: { error: 'Service Unavailable' }
-        }
+          data: { error: 'Service Unavailable' },
+        },
       });
 
       const userContext = { userId: 'test-user' };
@@ -377,12 +379,12 @@ describe('Edge Cases and Error Handling', () => {
           'https://n8n.example.com/webhook/test',
           [{ role: 'user', content: 'Hello' }],
           'session-123',
-          userContext
-        )
+          userContext,
+        ),
       ).rejects.toMatchObject({
         response: {
-          status: 503
-        }
+          status: 503,
+        },
       });
     });
   });
@@ -425,9 +427,7 @@ describe('Edge Cases and Error Handling', () => {
   describe('buildPayload - Edge Cases', () => {
     test('should handle very long messages', () => {
       const longMessage = 'A'.repeat(10000);
-      const messages = [
-        { role: 'user', content: longMessage }
-      ];
+      const messages = [{ role: 'user', content: longMessage }];
 
       const userContext = { userId: 'test-user' };
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -437,9 +437,7 @@ describe('Edge Cases and Error Handling', () => {
     });
 
     test('should handle messages with special characters', () => {
-      const messages = [
-        { role: 'user', content: 'Test with \n newlines \t tabs and "quotes"' }
-      ];
+      const messages = [{ role: 'user', content: 'Test with \n newlines \t tabs and "quotes"' }];
 
       const userContext = { userId: 'test-user' };
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -450,15 +448,13 @@ describe('Edge Cases and Error Handling', () => {
     });
 
     test('should handle empty user context fields', () => {
-      const messages = [
-        { role: 'user', content: 'Hello' }
-      ];
+      const messages = [{ role: 'user', content: 'Hello' }];
 
       const userContext = {
         userId: '',
         userEmail: '',
         userName: '',
-        userRole: ''
+        userRole: '',
       };
 
       const payload = client.buildPayload(messages, 'session-123', userContext);
@@ -470,15 +466,13 @@ describe('Edge Cases and Error Handling', () => {
     });
 
     test('should handle undefined vs null user fields differently', () => {
-      const messages = [
-        { role: 'user', content: 'Hello' }
-      ];
+      const messages = [{ role: 'user', content: 'Hello' }];
 
       const userContext = {
         userId: 'test-user',
         userEmail: undefined,
         userName: null,
-        userRole: ''
+        userRole: '',
       };
 
       const payload = client.buildPayload(messages, 'session-123', userContext);

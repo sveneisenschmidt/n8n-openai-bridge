@@ -11,7 +11,11 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"tests/**/*.js\""
   },
   "dependencies": {
     "express": "^5.1.0",
@@ -23,7 +27,11 @@
   "devDependencies": {
     "nodemon": "^3.0.1",
     "jest": "^30.2.0",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^28.10.0"
   },
   "jest": {
     "testEnvironment": "node",
