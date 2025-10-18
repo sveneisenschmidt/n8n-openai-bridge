@@ -95,9 +95,9 @@ class N8nClient {
           yield content;
         }
       }
-    } catch (err) {
-      console.error('Streaming error:', err.message);
-      throw err;
+    } catch (error) {
+      console.error('Streaming error:', error.message);
+      throw error;
     }
   }
 
@@ -144,9 +144,9 @@ class N8nClient {
 
       // Return all collected content as a single string
       return collectedContent.join('');
-    } catch (err) {
-      console.error('Non-streaming error:', err.message);
-      throw err;
+    } catch (error) {
+      console.error('Non-streaming error:', error.message);
+      throw error;
     }
   }
 
