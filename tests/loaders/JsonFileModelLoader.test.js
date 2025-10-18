@@ -140,16 +140,16 @@ describe('JsonFileModelLoader', () => {
     });
 
     it('should not watch twice', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
       const loader = new JsonFileModelLoader(testFile);
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       loader.watch(() => {});
       loader.watch(() => {});
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Already watching'));
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Already watching'));
 
       loader.stopWatching();
-      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
     });
 
     it('should debounce multiple rapid changes', async () => {

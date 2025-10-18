@@ -96,7 +96,7 @@ class N8nClient {
         }
       }
     } catch (error) {
-      console.error('Streaming error:', error.message);
+      console.error(`[${new Date().toISOString()}] Streaming error: ${error.message}`);
       throw error;
     }
   }
@@ -145,7 +145,7 @@ class N8nClient {
       // Return all collected content as a single string
       return collectedContent.join('');
     } catch (error) {
-      console.error('Non-streaming error:', error.message);
+      console.error(`[${new Date().toISOString()}] Non-streaming error: ${error.message}`);
       throw error;
     }
   }
