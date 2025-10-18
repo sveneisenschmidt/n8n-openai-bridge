@@ -21,6 +21,7 @@ const axios = require('axios');
 class N8nClient {
   constructor(config) {
     this.config = config;
+    this.MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB max buffer size
   }
 
   getHeaders() {
@@ -58,6 +59,46 @@ class N8nClient {
     return payload;
   }
 
+  /**
+   * Process response stream and extract JSON chunks
+   * Shared method to eliminate duplication between streaming and non-streaming
+   * @private
+   */
+  async *processResponseStream(response) {
+    let buffer = '';
+
+    for await (const chunk of response.data) {
+      const text = chunk.toString();
+      buffer += text;
+
+      // Check buffer size to prevent memory exhaustion
+      if (buffer.length > this.MAX_BUFFER_SIZE) {
+        throw new Error(`Response buffer exceeded maximum size of ${this.MAX_BUFFER_SIZE} bytes`);
+      }
+
+      // Process JSON chunks
+      if (buffer.includes('{') && buffer.includes('}')) {
+        const chunks = this.extractJsonChunks(buffer);
+        buffer = chunks.remainder;
+
+        for (const jsonChunk of chunks.extracted) {
+          const content = this.parseN8nChunk(jsonChunk);
+          if (content) {
+            yield content;
+          }
+        }
+      }
+    }
+
+    // Process remaining buffer
+    if (buffer.trim()) {
+      const content = this.parseN8nChunk(buffer.trim());
+      if (content) {
+        yield content;
+      }
+    }
+  }
+
   async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
     const payload = this.buildPayload(messages, sessionId, userContext);
 
@@ -68,33 +109,8 @@ class N8nClient {
         timeout: 300000, // 5 minutes
       });
 
-      let buffer = '';
-
-      for await (const chunk of response.data) {
-        const text = chunk.toString();
-        buffer += text;
-
-        // Process JSON chunks
-        if (buffer.includes('{') && buffer.includes('}')) {
-          const chunks = this.extractJsonChunks(buffer);
-          buffer = chunks.remainder;
-
-          for (const jsonChunk of chunks.extracted) {
-            const content = this.parseN8nChunk(jsonChunk);
-            if (content) {
-              yield content;
-            }
-          }
-        }
-      }
-
-      // Process remaining buffer
-      if (buffer.trim()) {
-        const content = this.parseN8nChunk(buffer.trim());
-        if (content) {
-          yield content;
-        }
-      }
+      // Use the shared stream processing method
+      yield* this.processResponseStream(response);
     } catch (error) {
       console.error('Streaming error:', error.message);
       throw error;
@@ -113,33 +129,11 @@ class N8nClient {
         timeout: 300000, // 5 minutes
       });
 
-      let buffer = '';
       const collectedContent = [];
 
-      for await (const chunk of response.data) {
-        const text = chunk.toString();
-        buffer += text;
-
-        // Process JSON chunks
-        if (buffer.includes('{') && buffer.includes('}')) {
-          const chunks = this.extractJsonChunks(buffer);
-          buffer = chunks.remainder;
-
-          for (const jsonChunk of chunks.extracted) {
-            const content = this.parseN8nChunk(jsonChunk);
-            if (content) {
-              collectedContent.push(content);
-            }
-          }
-        }
-      }
-
-      // Process remaining buffer
-      if (buffer.trim()) {
-        const content = this.parseN8nChunk(buffer.trim());
-        if (content) {
-          collectedContent.push(content);
-        }
+      // Use the shared stream processing method
+      for await (const content of this.processResponseStream(response)) {
+        collectedContent.push(content);
       }
 
       // Return all collected content as a single string

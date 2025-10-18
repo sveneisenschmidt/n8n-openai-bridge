@@ -39,11 +39,13 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Multi-model support via JSON configuration
 - Session tracking for conversation memory
 - User context forwarding (ID, email, name, role)
-- Bearer token authentication
+- Bearer token authentication with timing-safe comparison
+- Rate limiting with configurable thresholds per endpoint
+- Request ID tracking for distributed tracing
 - Docker ready with health checks
 - Hot-reload models without restart
 - Complete OpenAPI 3.1 documentation
-- 78%+ test coverage with 147 unit tests
+- 95%+ test coverage with 208 unit tests
 
 ## Model Loading System
 
@@ -517,9 +519,34 @@ curl -X POST -H "Authorization: Bearer your-token" http://localhost:3333/admin/r
 ```
 n8n-openai-bridge/
 ├── src/
-│   ├── server.js          # Express server & OpenAI API endpoints
+│   ├── server.js          # Express server setup
 │   ├── n8nClient.js       # n8n webhook client (streaming & non-streaming)
-│   └── config.js          # Configuration & models loader
+│   ├── config.js          # Configuration & models loader
+│   ├── routes/            # API endpoints
+│   │   ├── health.js      # Health check endpoint
+│   │   ├── models.js      # List models endpoint
+│   │   ├── chatCompletions.js  # Chat completions endpoint
+│   │   └── adminReload.js      # Admin reload endpoint
+│   ├── handlers/          # Request handlers
+│   │   ├── streamingHandler.js     # SSE streaming handler
+│   │   └── nonStreamingHandler.js  # Non-streaming handler
+│   ├── middleware/        # Express middleware
+│   │   ├── authenticate.js    # Bearer token authentication
+│   │   ├── requestLogger.js   # Request logging
+│   │   ├── requestId.js       # Request ID tracking
+│   │   └── rateLimiter.js     # Rate limiting
+│   ├── services/          # Business logic services
+│   │   ├── sessionService.js  # Session ID extraction
+│   │   ├── userService.js     # User context extraction
+│   │   └── validationService.js  # Request validation
+│   ├── loaders/           # Model loader architecture
+│   │   ├── ModelLoader.js     # Abstract base class
+│   │   └── JsonFileModelLoader.js  # JSON file loader
+│   └── utils/             # Utility functions
+│       ├── errorResponse.js   # Error formatting
+│       ├── openaiResponse.js  # OpenAI response formatting
+│       ├── masking.js         # Sensitive data masking
+│       └── debugSession.js    # Session debug logging
 ├── tests/
 │   ├── server.test.js     # Server endpoint tests
 │   ├── n8nClient.test.js  # n8n client tests

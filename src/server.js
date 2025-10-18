@@ -25,6 +25,8 @@ const { createErrorResponse } = require('./utils/errorResponse');
 // Middleware
 const requestLogger = require('./middleware/requestLogger');
 const authenticate = require('./middleware/authenticate');
+const requestId = require('./middleware/requestId');
+const createRateLimiters = require('./middleware/rateLimiter');
 
 // Routes
 const healthRoute = require('./routes/health');
@@ -39,23 +41,29 @@ const n8nClient = new N8nClient(config);
 app.locals.config = config;
 app.locals.n8nClient = n8nClient;
 
+// Create rate limiters
+const rateLimiters = createRateLimiters(config);
+
 // Basic middleware
 app.use(cors());
 app.use(express.json());
+
+// Request ID tracking (must be early in the chain)
+app.use(requestId());
 
 // Request logging middleware
 app.use(requestLogger(config));
 
 // Public routes (no authentication required)
-app.use('/health', healthRoute);
+app.use('/health', rateLimiters.health, healthRoute);
 
 // Apply authentication to all subsequent routes
 app.use(authenticate(config));
 
 // Protected routes (authentication required)
-app.use('/admin/reload', adminReloadRoute);
-app.use('/v1/models', modelsRoute);
-app.use('/v1/chat/completions', chatCompletionsRoute);
+app.use('/admin/reload', rateLimiters.standard, adminReloadRoute);
+app.use('/v1/models', rateLimiters.standard, modelsRoute);
+app.use('/v1/chat/completions', rateLimiters.chatCompletions, chatCompletionsRoute);
 
 // Error handler
 app.use((err, _req, res, _next) => {

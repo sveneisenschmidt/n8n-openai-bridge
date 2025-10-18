@@ -35,6 +35,9 @@ class Config {
     // Initialize ModelLoader (default: JsonFileModelLoader)
     this.modelLoader = this.createModelLoader();
 
+    // Track loading promise to prevent race conditions
+    this.loadingPromise = null;
+
     // Load models synchronously on startup to ensure they're available immediately
     try {
       this.models = this.modelLoader.loadSync();
@@ -104,26 +107,33 @@ class Config {
     return this.parseHeadersFromEnv('USER_ROLE_HEADERS', ['X-User-Role']);
   }
 
-  loadModels() {
-    this.modelLoader
+  async loadModels() {
+    // Prevent concurrent loads with promise tracking
+    if (this.loadingPromise) {
+      return this.loadingPromise;
+    }
+
+    this.loadingPromise = this.modelLoader
       .load()
       .then((models) => {
         this.models = models;
         console.log(`Models loaded successfully (${Object.keys(models).length} models)`);
+        this.loadingPromise = null;
+        return models;
       })
       .catch((error) => {
         console.error(`Error loading models: ${error.message}`);
         this.models = {};
+        this.loadingPromise = null;
+        throw error;
       });
+
+    return this.loadingPromise;
   }
 
   async reloadModels() {
-    try {
-      this.models = await this.modelLoader.load();
-      console.log(`Models reloaded successfully (${Object.keys(this.models).length} models)`);
-    } catch (error) {
-      console.error(`Error reloading models: ${error.message}`);
-    }
+    // Use the same loadModels() to prevent race conditions
+    return this.loadModels();
   }
 
   getModelWebhookUrl(modelId) {
