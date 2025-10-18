@@ -21,6 +21,8 @@ const { v4: uuidv4 } = require('uuid');
 const { extractSessionId } = require('../services/sessionService');
 const { extractUserContext } = require('../services/userService');
 const { validateChatCompletionRequest } = require('../services/validationService');
+const { createErrorResponse } = require('../utils/errorResponse');
+const { debugSessionDetection } = require('../utils/debugSession');
 
 const router = express.Router();
 
@@ -71,23 +73,7 @@ router.post('/', async (req, res) => {
   const { model, messages, stream = false } = req.body;
 
   // SESSION ID DETECTION (Debug logging)
-  if (config.logRequests) {
-    console.log('========== SESSION ID DETECTION ==========');
-    console.log('Checking request body for session identifiers:');
-    console.log(`  req.body.session_id: ${req.body.session_id || 'NOT FOUND'}`);
-    console.log(`  req.body.conversation_id: ${req.body.conversation_id || 'NOT FOUND'}`);
-    console.log(`  req.body.chat_id: ${req.body.chat_id || 'NOT FOUND'}`);
-
-    console.log('Checking configured session ID headers:');
-    config.sessionIdHeaders.forEach((headerName) => {
-      const lowerHeaderName = headerName.toLowerCase();
-      console.log(`  ${headerName}: ${req.headers[lowerHeaderName] || 'NOT FOUND'}`);
-    });
-
-    console.log(`All request body keys: ${Object.keys(req.body).join(', ')}`);
-    console.log(`All header keys: ${Object.keys(req.headers).join(', ')}`);
-    console.log('==========================================');
-  }
+  debugSessionDetection(req, config);
 
   // Validation
   const validation = validateChatCompletionRequest(req.body);
@@ -97,12 +83,9 @@ router.post('/', async (req, res) => {
 
   const webhookUrl = config.getModelWebhookUrl(model);
   if (!webhookUrl) {
-    return res.status(404).json({
-      error: {
-        message: `Model '${model}' not found`,
-        type: 'invalid_request_error',
-      },
-    });
+    return res
+      .status(404)
+      .json(createErrorResponse(`Model '${model}' not found`, 'invalid_request_error'));
   }
 
   // Extract session ID using service
@@ -178,13 +161,8 @@ router.post('/', async (req, res) => {
           console.log(`Streaming completed for session: ${sessionId}`);
         }
       } catch (streamError) {
-        console.error(`[${new Date().toISOString()}] Stream error:`, streamError);
-        const errorChunk = {
-          error: {
-            message: 'Error during streaming',
-            type: 'server_error',
-          },
-        };
+        console.error('Stream error:', streamError);
+        const errorChunk = createErrorResponse('Error during streaming', 'server_error');
         res.write(`data: ${JSON.stringify(errorChunk)}\n\n`);
         res.end();
       }
@@ -225,16 +203,11 @@ router.post('/', async (req, res) => {
 
       res.json(response);
     }
-  } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error:`, error);
+  } catch (err) {
+    console.error('Error:', err);
 
     if (!res.headersSent) {
-      res.status(500).json({
-        error: {
-          message: 'Internal server error',
-          type: 'server_error',
-        },
-      });
+      res.status(500).json(createErrorResponse('Internal server error', 'server_error'));
     }
   }
 });

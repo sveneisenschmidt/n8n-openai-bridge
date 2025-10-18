@@ -93,6 +93,57 @@ make test-load         # Load tests with k6 (20 users, 1min)
 - Tests must pass before merging to main
 - Use descriptive test names: `should [expected behavior] when [condition]`
 
+### Writing Clean Tests
+
+**Console Output Suppression:**
+- Mock `console.error`, `console.warn`, `console.log` in tests that intentionally trigger logging
+- Place spies in `beforeEach`/`beforeAll`, restore in `afterEach`/`afterAll`
+- Example:
+```javascript
+describe('MyComponent', () => {
+  let consoleErrorSpy;
+  
+  beforeAll(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+  });
+  
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+});
+```
+
+**Resource Cleanup:**
+- Stop file watchers, timers, and connections in `afterEach` to prevent Jest worker hangs
+- Track all resources (loaders, connections, intervals) in arrays for cleanup
+- Example:
+```javascript
+describe('watch()', () => {
+  let loaders = [];
+  
+  beforeEach(() => {
+    loaders = [];
+  });
+  
+  afterEach(() => {
+    loaders.forEach(loader => loader.stopWatching());
+    loaders = [];
+  });
+  
+  it('should watch file', () => {
+    const loader = new FileLoader();
+    loaders.push(loader);  // Track for cleanup
+    loader.watch(() => {});
+  });
+});
+```
+
+**Common Mistakes:**
+- ❌ Forgetting to stop file watchers → "worker failed to exit gracefully"
+- ❌ Not mocking console in error tests → cluttered test output
+- ❌ Mocking console per-test instead of per-suite → verbose setup code
+- ❌ Manual cleanup calls in tests → use `afterEach` for centralized cleanup
+
 ### Running Specific Tests
 
 ```bash

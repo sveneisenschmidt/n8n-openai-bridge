@@ -24,8 +24,12 @@ describe('chatCompletions route', () => {
   let app;
   let mockConfig;
   let mockN8nClient;
+  let consoleErrorSpy;
 
   beforeEach(() => {
+    // Mock console.error to avoid cluttering test output
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
     // Create Express app with route
     app = express();
     app.use(express.json());
@@ -53,6 +57,13 @@ describe('chatCompletions route', () => {
 
     // Mount route
     app.use('/', chatCompletionsRoute);
+  });
+
+  afterEach(() => {
+    // Restore console.error
+    if (consoleErrorSpy) {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   describe('POST /', () => {

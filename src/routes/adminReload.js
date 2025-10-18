@@ -17,6 +17,7 @@
  */
 
 const express = require('express');
+const { createErrorResponse } = require('../utils/errorResponse');
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.post('/', (req, res) => {
       models: Object.keys(config.models).length,
     });
   } catch (error) {
-    res.status(500).json({ error: { message: error.message } });
+    res.status(500).json(createErrorResponse(error.message));
   }
 });
 

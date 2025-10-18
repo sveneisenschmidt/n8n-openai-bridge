@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const { sendError } = require('../utils/errorResponse');
+
 /**
  * Authentication middleware
  * Validates Bearer token from Authorization header
@@ -31,16 +33,12 @@ function authenticate(config) {
 
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res
-        .status(401)
-        .json({ error: { message: 'Unauthorized', type: 'authentication_error' } });
+      return sendError(res, 401, 'Unauthorized', 'authentication_error');
     }
 
     const token = authHeader.substring(7);
     if (token !== config.bearerToken) {
-      return res
-        .status(401)
-        .json({ error: { message: 'Invalid token', type: 'authentication_error' } });
+      return sendError(res, 401, 'Invalid token', 'authentication_error');
     }
 
     next();

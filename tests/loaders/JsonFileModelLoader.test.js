@@ -23,15 +23,22 @@ const JsonFileModelLoader = require('../../src/loaders/JsonFileModelLoader');
 describe('JsonFileModelLoader', () => {
   const testDir = path.join(__dirname, '..', 'test-data');
   const testFile = path.join(testDir, 'test-models.json');
+  let consoleLogSpy;
 
   beforeAll(() => {
     // Create test directory if it doesn't exist
     if (!fs.existsSync(testDir)) {
       fs.mkdirSync(testDir, { recursive: true });
     }
+    // Mock console.log globally to suppress file watching logs
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
   });
 
   afterAll(() => {
+    // Restore console.log
+    if (consoleLogSpy) {
+      consoleLogSpy.mockRestore();
+    }
     // Cleanup test directory
     if (fs.existsSync(testDir)) {
       fs.rmSync(testDir, { recursive: true, force: true });
@@ -109,8 +116,25 @@ describe('JsonFileModelLoader', () => {
   });
 
   describe('watch()', () => {
+    let loaders = [];
+
+    beforeEach(() => {
+      loaders = [];
+    });
+
+    afterEach(() => {
+      // Stop all watchers to prevent resource leaks
+      loaders.forEach((loader) => {
+        if (loader && loader.watcher) {
+          loader.stopWatching();
+        }
+      });
+      loaders = [];
+    });
+
     it('should call callback when file changes', async () => {
       const loader = new JsonFileModelLoader(testFile);
+      loaders.push(loader);
 
       const callbackPromise = new Promise((resolve) => {
         const callback = jest.fn((models) => {
@@ -118,7 +142,6 @@ describe('JsonFileModelLoader', () => {
             'updated-model': 'https://example.com/updated',
           });
           expect(callback).toHaveBeenCalledTimes(1);
-          loader.stopWatching();
           resolve();
         });
         loader.watch(callback);
@@ -135,25 +158,29 @@ describe('JsonFileModelLoader', () => {
     }, 10000);
 
     it('should not throw when watching non-existent file', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
       const loader = new JsonFileModelLoader(path.join(testDir, 'nonexistent.json'));
+      loaders.push(loader);
       expect(() => loader.watch(() => {})).not.toThrow();
+      consoleWarnSpy.mockRestore();
     });
 
     it('should not watch twice', () => {
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
       const loader = new JsonFileModelLoader(testFile);
+      loaders.push(loader);
 
       loader.watch(() => {});
       loader.watch(() => {});
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Already watching'));
 
-      loader.stopWatching();
       consoleWarnSpy.mockRestore();
     });
 
     it('should debounce multiple rapid changes', async () => {
       const loader = new JsonFileModelLoader(testFile);
+      loaders.push(loader);
       const callback = jest.fn();
 
       loader.watch(callback);
@@ -172,7 +199,6 @@ describe('JsonFileModelLoader', () => {
 
       // Should only be called once due to debouncing
       expect(callback).toHaveBeenCalledTimes(1);
-      loader.stopWatching();
     }, 10000);
   });
 

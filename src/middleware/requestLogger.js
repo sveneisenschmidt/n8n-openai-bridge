@@ -27,8 +27,7 @@ const { maskSensitiveHeaders, maskSensitiveBody } = require('../utils/masking');
  */
 function requestLogger(config) {
   return (req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ${req.method} ${req.path}`);
+    console.log(`${req.method} ${req.path}`);
 
     if (config.logRequests) {
       console.log('--- Incoming Request ---');

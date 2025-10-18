@@ -105,6 +105,7 @@ describe('adminReload route', () => {
       expect(response.body).toEqual({
         error: {
           message: 'Failed to read models.json',
+          type: 'server_error',
         },
       });
     });

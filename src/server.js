@@ -20,6 +20,7 @@ const express = require('express');
 const cors = require('cors');
 const config = require('./config');
 const N8nClient = require('./n8nClient');
+const { createErrorResponse } = require('./utils/errorResponse');
 
 // Middleware
 const requestLogger = require('./middleware/requestLogger');
@@ -45,26 +46,21 @@ app.use(express.json());
 // Request logging middleware
 app.use(requestLogger(config));
 
-// Health check (before authentication middleware)
+// Public routes (no authentication required)
 app.use('/health', healthRoute);
 
-// Authentication middleware (applies to all routes below)
+// Apply authentication to all subsequent routes
 app.use(authenticate(config));
 
-// Authenticated routes
+// Protected routes (authentication required)
 app.use('/admin/reload', adminReloadRoute);
 app.use('/v1/models', modelsRoute);
 app.use('/v1/chat/completions', chatCompletionsRoute);
 
 // Error handler
 app.use((err, _req, res, _next) => {
-  console.error(`[${new Date().toISOString()}] Unhandled error:`, err);
-  res.status(500).json({
-    error: {
-      message: 'Internal server error',
-      type: 'server_error',
-    },
-  });
+  console.error('Unhandled error:', err);
+  res.status(500).json(createErrorResponse('Internal server error', 'server_error'));
 });
 
 // Start server
