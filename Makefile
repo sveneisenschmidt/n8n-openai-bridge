@@ -103,29 +103,47 @@ test-image:
 
 # Test 3: Load testing with k6 (via docker-compose)
 test-load:
-	@echo ""
-	@echo "======================================"
-	@echo "Running Load Tests (20 users, 1min)"
-	@echo "======================================"
-	@echo ""
-	@if [ ! -f tests/load/models.json ]; then \
+	@bash -c ' \
+	set -e; \
+	CREATED_MODELS_JSON=false; \
+	cleanup() { \
+		echo ""; \
+		echo "Cleaning up..."; \
+		docker compose -f docker/docker-compose.loadtest.yml down -v 2>/dev/null || true; \
+		if [ "$$CREATED_MODELS_JSON" = "true" ]; then \
+			echo "Removing temporary models.json..."; \
+			rm -f tests/load/models.json; \
+		fi; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	echo ""; \
+	echo "======================================"; \
+	echo "Running Load Tests (20 users, 1min)"; \
+	echo "======================================"; \
+	echo ""; \
+	if [ ! -f tests/load/models.json ]; then \
 		echo "Creating tests/load/models.json from example..."; \
 		cp tests/load/models.json.example tests/load/models.json; \
-	fi
-	@echo "Building images..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build
-	@echo ""
-	@echo "Starting services (mock-n8n, bridge, k6)..."
-	@VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6
-	@echo ""
-	@echo "Cleaning up..."
-	@docker compose -f docker/docker-compose.loadtest.yml down -v
-	@echo ""
-	@echo "✓ Load tests completed!"
-	@echo ""
-	@if [ -f tests/load/summary.json ]; then \
+		CREATED_MODELS_JSON=true; \
+	fi; \
+	echo "Building images..."; \
+	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build; \
+	echo ""; \
+	echo "Starting services (mock-n8n, bridge, k6)..."; \
+	TEST_EXIT_CODE=0; \
+	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6 || TEST_EXIT_CODE=$$?; \
+	echo ""; \
+	if [ $$TEST_EXIT_CODE -eq 0 ]; then \
+		echo "✓ Load tests completed!"; \
+	else \
+		echo "✗ Load tests failed with exit code $$TEST_EXIT_CODE"; \
+	fi; \
+	echo ""; \
+	if [ -f tests/load/summary.json ]; then \
 		echo "📊 Detailed results saved to: tests/load/summary.json"; \
-	fi
+	fi; \
+	exit $$TEST_EXIT_CODE; \
+	'
 
 # Code Quality: Linting and Formatting
 lint:
