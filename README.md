@@ -86,7 +86,7 @@ curl -H "Authorization: Bearer your-secret-api-key-here" \
 ### Development
 
 - **[Development Guide](docs/DEVELOPMENT.md)** - Project structure, make commands, and workflow
-- **[Testing Guide](docs/TESTING.md)** - Unit tests, image tests, and load tests
+- **[Testing Guide](docs/TESTING.md)** - Unit tests and image tests
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Additional Resources

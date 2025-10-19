@@ -53,9 +53,7 @@ n8n-openai-bridge/
 ├── docker/
 │   ├── Dockerfile.build          # Production Docker image
 │   ├── Dockerfile.test           # Test Docker image
-│   ├── Dockerfile.mock-n8n       # Mock n8n server for load testing
-│   ├── docker-compose.dev.yml    # Development Docker Compose
-│   └── docker-compose.loadtest.yml # Load testing Docker Compose
+│   └── docker-compose.dev.yml    # Development Docker Compose
 ├── models.json            # Model-to-webhook mapping (create from .example)
 ├── models.json.example    # Example models configuration
 ├── .env                   # Environment variables (create from .example)
@@ -85,7 +83,6 @@ make clean       # Stop and remove containers, images, and volumes
 make test              # Run all tests (unit + image validation)
 make test-unit         # Run unit tests for server logic only
 make test-image        # Run Docker image build validation tests
-make test-load         # Run load tests with k6 (20 users, 1min)
 ```
 
 ### Code Quality Commands
@@ -219,23 +216,7 @@ Available scenarios in `tests/image-tests/`:
 - `04-array-models-validation` - Array models validation
 - `05-hot-reload` - Model hot-reload functionality
 
-### Load Tests
 
-Performance testing with k6 simulates concurrent users:
-
-```bash
-make test-load         # Run k6 load tests (20 users, 1min)
-```
-
-**Test scenarios:**
-- Streaming and non-streaming responses
-- Authentication and rate limiting
-- Concurrent user simulation
-- Throughput measurement
-
-**Results:**
-- Console output shows pass/fail summary
-- Detailed results saved to `tests/load/summary.json`
 
 ## Code Quality
 
