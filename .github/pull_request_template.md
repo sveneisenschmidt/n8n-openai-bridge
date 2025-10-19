@@ -23,12 +23,11 @@ Fixes #(issue)
 
 <!-- Describe the tests you ran to verify your changes -->
 
-- [ ] Unit tests pass (`npm test`)
+- [ ] Unit tests pass (`make test`)
 - [ ] Docker build succeeds
 - [ ] Manual testing performed
 
 **Test Configuration:**
-- Node version:
 - Docker version:
 - OS:
 

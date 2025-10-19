@@ -122,11 +122,11 @@ make test-load         # Load tests with k6 (20 users, 1min)
 ```javascript
 describe('MyComponent', () => {
   let consoleErrorSpy;
-  
+
   beforeAll(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
   });
-  
+
   afterAll(() => {
     consoleErrorSpy.mockRestore();
   });
@@ -140,16 +140,16 @@ describe('MyComponent', () => {
 ```javascript
 describe('watch()', () => {
   let loaders = [];
-  
+
   beforeEach(() => {
     loaders = [];
   });
-  
+
   afterEach(() => {
     loaders.forEach(loader => loader.stopWatching());
     loaders = [];
   });
-  
+
   it('should watch file', () => {
     const loader = new FileLoader();
     loaders.push(loader);  // Track for cleanup
@@ -387,10 +387,10 @@ The bridge uses a flexible loader pattern for model configuration:
 constructor() {
   // Initialize ModelLoader (default: JsonFileModelLoader)
   this.modelLoader = this.createModelLoader();
-  
+
   // Load models synchronously on startup
   this.models = this.modelLoader.loadSync();
-  
+
   // Setup file watcher for hot-reload
   this.setupFileWatcher();
 }
@@ -458,6 +458,7 @@ Changes to models.json are automatically detected and reloaded without restart.
 - **docs/api.html**: Interactive Swagger UI
 - **LICENSE**: AGPL-3.0 license details
 - **.github/workflows/README.md**: CI/CD documentation
+- **.github/pull_request_template.md**: Pull Request template
 
 ## Extending ModelLoader
 
@@ -502,7 +503,7 @@ class HttpModelLoader extends ModelLoader {
 ```javascript
 createModelLoader() {
   const loaderType = process.env.MODEL_LOADER_TYPE || 'json';
-  
+
   switch (loaderType) {
     case 'json':
       return new JsonFileModelLoader(this.modelsConfig);
