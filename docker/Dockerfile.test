@@ -2,6 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install Docker CLI and buildx for container tests
+# Docker socket will be mounted at runtime via -v /var/run/docker.sock:/var/run/docker.sock
+RUN apk add --no-cache docker-cli docker-cli-buildx
+
 # Copy package files
 COPY package*.json ./
 

@@ -43,8 +43,8 @@ class JsonFileModelLoader extends ModelLoader {
     try {
       const data = fs.readFileSync(this.filePath, 'utf8');
       const models = JSON.parse(data);
-      this.validateModels(models);
-      return models;
+      const validatedModels = this.validateModels(models);
+      return validatedModels;
     } catch (error) {
       if (error.code === 'ENOENT') {
         throw new Error(`Models file not found: ${this.filePath}`);

@@ -88,8 +88,7 @@ n8n-openai-bridge/
 ├── docker/
 │   ├── Dockerfile.build          # Production image
 │   ├── Dockerfile.test           # Test image
-│   ├── docker-compose.dev.yml    # Development compose
-│   └── docker-compose.loadtest.yml # Load testing
+│   └── docker-compose.dev.yml    # Development compose
 └── .github/workflows/     # CI/CD automation
 ```
 
@@ -101,7 +100,6 @@ n8n-openai-bridge/
 make test              # All tests (unit + Docker image validation)
 make test-unit         # Unit tests only (Jest with coverage)
 make test-image        # Docker image build validation
-make test-load         # Load tests with k6 (20 users, 1min)
 ```
 
 **Important:** Tests always run in Docker containers to ensure consistency. npm/jest commands won't work directly on the host.

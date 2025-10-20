@@ -47,32 +47,39 @@ class ModelLoader {
   /**
    * Validate the loaded models structure
    * @param {Object} models Models object to validate
-   * @returns {boolean} True if valid
-   * @throws {Error} If validation fails
+   * @returns {Object} Validated models object (with invalid entries filtered out)
+   * @throws {Error} If models structure is completely invalid
    */
   validateModels(models) {
     if (!models || typeof models !== 'object' || Array.isArray(models)) {
       throw new Error('Models must be an object');
     }
 
+    const validatedModels = {};
+
     for (const [modelId, webhookUrl] of Object.entries(models)) {
+      // Skip invalid model IDs
       if (typeof modelId !== 'string' || !modelId.trim()) {
-        throw new Error('Model ID must be a non-empty string');
+        console.warn(`Skipping invalid model ID: ${modelId}`);
+        continue;
       }
 
+      // Skip invalid webhook URLs
       if (typeof webhookUrl !== 'string' || !webhookUrl.trim()) {
-        throw new Error(`Webhook URL for model "${modelId}" must be a non-empty string`);
+        console.warn(`Skipping model "${modelId}": webhook URL must be a non-empty string`);
+        continue;
       }
 
       // Basic URL validation
       try {
         new URL(webhookUrl);
+        validatedModels[modelId] = webhookUrl;
       } catch {
-        throw new Error(`Invalid webhook URL for model "${modelId}": ${webhookUrl}`);
+        console.warn(`Skipping model "${modelId}": invalid webhook URL: ${webhookUrl}`);
       }
     }
 
-    return true;
+    return validatedModels;
   }
 }
 

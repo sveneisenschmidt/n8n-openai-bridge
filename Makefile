@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all test-load verify lint lint-fix format format-fix
+.PHONY: help build rebuild start stop restart clean logs test test-unit test-integration test-container test-all verify lint lint-fix format format-fix
 
 help:
 	@echo "Available commands:"
@@ -14,10 +14,10 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test              - Run all tests (unit + image build)"
-	@echo "  make test-unit         - Run unit tests for server logic only"
-	@echo "  make test-image        - Run Docker image build validation tests"
-	@echo "  make test-load         - Run load tests with k6 (20 users, 1min)"
+	@echo "  make test              - Run all tests (unit + integration + container)"
+	@echo "  make test-unit         - Run unit tests only"
+	@echo "  make test-integration  - Run integration/API tests"
+	@echo "  make test-container    - Run container/image tests"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint              - Run ESLint to check code quality"
@@ -69,7 +69,7 @@ verify:
 	fi || echo "✗ Error: Could not reach models endpoint"
 
 # Test: Run all tests
-test: test-unit test-image
+test: test-unit test-integration test-container
 	@echo ""
 	@echo "======================================"
 	@echo "✓ All tests passed successfully!"
@@ -77,72 +77,55 @@ test: test-unit test-image
 
 test-all: test
 
-# Test 1: Unit tests for server logic
+# Test 1: Unit tests
 test-unit:
 	@echo "======================================"
-	@echo "Running Unit Tests (Server Logic)"
+	@echo "Running Unit Tests"
 	@echo "======================================"
 	@echo ""
 	@echo "Building test image with latest changes..."
 	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
 	@echo ""
 	@echo "Running unit tests in Docker..."
-	@docker run --rm n8n-openai-bridge-test
+	@docker run --rm -e NPM_CONFIG_UPDATE_NOTIFIER=false n8n-openai-bridge-test npm run test:unit
 	@echo ""
 	@echo "✓ Unit tests passed!"
 
-# Test 2: Docker image build validation (Bash - no external dependencies)
-test-image:
+# Test 2: Integration/API tests
+test-integration:
 	@echo ""
 	@echo "======================================"
-	@echo "Running Docker Image Tests"
+	@echo "Running Integration Tests"
 	@echo "======================================"
 	@echo ""
-	@bash tests/test-image-build.sh
+	@echo "Building test image with latest changes..."
+	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
+	@echo ""
+	@echo "Running integration tests in Docker..."
+	@docker run --rm -e NPM_CONFIG_UPDATE_NOTIFIER=false n8n-openai-bridge-test npm run test:integration
+	@echo ""
+	@echo "✓ Integration tests passed!"
 
-# Test 3: Load testing with k6 (via docker-compose)
-test-load:
-	@bash -c ' \
-	set -e; \
-	CREATED_MODELS_JSON=false; \
-	cleanup() { \
-		echo ""; \
-		echo "Cleaning up..."; \
-		docker compose -f docker/docker-compose.loadtest.yml down -v 2>/dev/null || true; \
-		if [ "$$CREATED_MODELS_JSON" = "true" ]; then \
-			echo "Removing temporary models.json..."; \
-			rm -f tests/load/models.json; \
-		fi; \
-	}; \
-	trap cleanup EXIT INT TERM; \
-	echo ""; \
-	echo "======================================"; \
-	echo "Running Load Tests (20 users, 1min)"; \
-	echo "======================================"; \
-	echo ""; \
-	if [ ! -f tests/load/models.json ]; then \
-		echo "Creating tests/load/models.json from example..."; \
-		cp tests/load/models.json.example tests/load/models.json; \
-		CREATED_MODELS_JSON=true; \
-	fi; \
-	echo "Building images..."; \
-	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml build; \
-	echo ""; \
-	echo "Starting services (mock-n8n, bridge, k6)..."; \
-	TEST_EXIT_CODE=0; \
-	VUS=20 DURATION=1m docker compose -f docker/docker-compose.loadtest.yml up --abort-on-container-exit --exit-code-from k6 || TEST_EXIT_CODE=$$?; \
-	echo ""; \
-	if [ $$TEST_EXIT_CODE -eq 0 ]; then \
-		echo "✓ Load tests completed!"; \
-	else \
-		echo "✗ Load tests failed with exit code $$TEST_EXIT_CODE"; \
-	fi; \
-	echo ""; \
-	if [ -f tests/load/summary.json ]; then \
-		echo "📊 Detailed results saved to: tests/load/summary.json"; \
-	fi; \
-	exit $$TEST_EXIT_CODE; \
-	'
+# Test 3: Container/image tests
+test-container:
+	@echo ""
+	@echo "======================================"
+	@echo "Running Container Tests"
+	@echo "======================================"
+	@echo ""
+	@echo "Building test image with latest changes..."
+	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
+	@echo ""
+	@echo "Running container tests in Docker..."
+	@docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD):/build-context:ro \
+		-e NPM_CONFIG_UPDATE_NOTIFIER=false \
+		n8n-openai-bridge-test npm run test:container
+	@echo ""
+	@echo "✓ Container tests passed!"
+
+
 
 # Code Quality: Linting and Formatting
 lint:
