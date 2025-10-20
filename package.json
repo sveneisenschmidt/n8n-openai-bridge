@@ -12,7 +12,7 @@
     "dev": "nodemon src/server.js",
     "test": "jest --coverage",
     "test:unit": "jest tests/unit --coverage",
-    "test:integration": "jest tests/integration --runInBand",
+    "test:integration": "jest tests/integration --runInBand --coverage",
     "test:container": "jest tests/container --runInBand",
     "test:watch": "jest --watch",
     "lint": "eslint src/ tests/",
