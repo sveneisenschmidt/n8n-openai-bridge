@@ -75,6 +75,7 @@ curl -H "Authorization: Bearer your-secret-api-key-here" \
 
 - **[Installation Guide](docs/INSTALLATION.md)** - Docker and source installation
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Environment variables and models setup
+- **[ModelLoader Documentation](docs/MODELLOADER.md)** - Model loading system architecture and configuration
 - **[n8n Workflow Setup](docs/N8N_SETUP.md)** - Configure n8n workflows
 
 ### Usage
