@@ -40,46 +40,44 @@ DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 
 ## Model Configuration
 
-### models.json Format
+Models are loaded via a **ModelLoader** system that abstracts the model source. The bridge includes a built-in **JsonFileModelLoader** for loading models from JSON files.
 
+### Built-in: JsonFileModelLoader
+
+The default model loader reads from a JSON file (configured via `MODELS_CONFIG`).
+
+#### File Format
+
+`models.json`:
 ```json
 {
-  "model-name": "https://n8n.example.com/webhook/abc123/chat"
+  "model-id": "https://n8n.example.com/webhook/abc123/chat",
+  "gpt-4": "https://n8n.example.com/webhook/gpt4/chat"
 }
 ```
 
-### Validation Rules
+#### How It Works
 
-**Model Configuration Format:**
-```json
-{
-  "model-id": "https://n8n.example.com/webhook/abc123/chat"
-}
-```
+**Startup:**
+- Reads `models.json` synchronously
+- Validates each model (ID must be non-empty string, URL must be valid HTTP/HTTPS)
+- Invalid models filtered out with warnings
+- Throws error if: file not found OR invalid JSON syntax
 
-**Model Validation:**
-- Models must be a JSON object (not an array)
-- Each model URL must be a valid HTTP/HTTPS URL
-- Invalid models are logged but don't prevent server startup
-- Server starts with empty model list if validation fails
+**Hot-Reload:**
+- Watches `models.json` for changes via file system events
+- 100ms debounce prevents reload storms from multiple file events
+- Reloads and validates on file change
+- Invalid reload attempts keep old models, error logged
+- Can be manually triggered: `curl -X POST -H "Authorization: Bearer token" http://localhost:3333/admin/reload`
 
-## Model Loading System
+**Error Handling:**
+- Invalid model entries → Skipped with warning, server continues with valid models
+- File not found → Error thrown, blocks startup
+- Invalid JSON → Error thrown with details, blocks startup
+- Watch setup failure → Warning logged, server runs without hot-reload
 
-The bridge uses a flexible ModelLoader architecture that supports different model sources:
-
-- **JsonFileModelLoader** (default): Loads models from `models.json`
-- Hot-reload: Changes to `models.json` are detected automatically (100ms debounce)
-- Validation: Models must be an object with valid webhook URLs
-- Graceful degradation: Server continues running even if model loading fails
-
-### Hot Reload
-
-Models are automatically reloaded when `models.json` is modified. You can also manually trigger reload:
-
-```bash
-curl -X POST -H "Authorization: Bearer your-token" \
-  http://localhost:3333/admin/reload
-```
+For detailed documentation including troubleshooting and architecture, see [MODELLOADER.md](MODELLOADER.md).
 
 ## Session Management
 
