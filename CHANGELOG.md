@@ -7,42 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8] - 2025-10-20
+
 ### Added
-- Complete OpenAPI 3.1 specification (openapi.yaml)
-- Interactive API documentation with Swagger UI (docs/api.html)
-- Comprehensive test suite with 147 unit tests
-- Integration tests for all API endpoints
-- Edge case tests (network errors, malformed data, special characters)
-- Service layer architecture:
-  - sessionService: Session ID extraction logic
-  - userService: User context extraction logic
-  - validationService: Request validation logic
-  - masking utils: Sensitive data masking
+- Flexible ModelLoader architecture with validation and hot-reload support
+- Complete ModelLoader system documentation (MODELLOADER.md)
+- Comprehensive unit tests for health and models routes (41 new tests)
+- Test coverage increased to 96.76% (303 tests passing)
 
 ### Changed
-- Refactored server.js to use service layer (416 → 282 lines, -32%)
-- Improved code organization with separation of concerns
-- Enhanced testability with modular architecture
-- Better error handling and logging
+- Simplified test architecture with flat structure and logical grouping
+- Reorganized Docker files for better clarity
+- Extracted endpoints to separate route files for better maintainability
+- Removed load/performance tests (moved to separate repository)
+- Improved logging configuration and request logging
+
+### Fixed
+- Test resource cleanup issues ("worker process failed to exit gracefully")
+- ESLint errors in test files (jest/expect-expect compliance)
 
 ### Documentation
-- Added OpenAPI 3.1 specification
-- Created interactive Swagger UI documentation
-- Updated README.md with API documentation links
-- Added test coverage information to features section
+- Added ModelLoader architecture and configuration guide
+- Enhanced CONFIGURATION.md with error handling and recovery procedures
+- Updated README.md with ModelLoader documentation links
+- Comprehensive inline comments in ModelLoader components
 
-### Testing
-- Test coverage: 40.1% → 78.86% (+38.76%)
-- 147 tests passing across 9 test suites
-- Service modules: 100% test coverage
-- server.js: 0% → 56.25% coverage
-- n8nClient.js: 75.26% → 80.64% coverage
+### Dependencies
+- Updated all dependencies to latest versions
 
-### Code Quality
-- Applied DRY principle throughout codebase
-- Removed ~150 lines of duplicate code
-- Improved maintainability with SOLID principles
-- All business logic now fully tested
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.7...v0.0.8
+
+## [0.0.7] - 2025-10-16
+
+### Changed
+- Prepared codebase for open-source release
+- Enhanced test coverage and documentation
+- Code quality improvements and refactoring
+
+### Documentation
+- Comprehensive testing guide
+- Release process documentation
+- CI/CD workflow documentation
+
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.6...v0.0.7
 
 ## [0.0.6] - 2025-10-15
 
@@ -72,12 +79,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended .env.example with new header configuration variables
 - Updated n8n webhook payload documentation with user context fields
 
+### Integration Support
+- OpenWebUI (X-OpenWebUI-User-*) via configurable header lists
+- LibreChat (LIBRECHAT_USER_*) via template variables
+
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.5...v0.0.6
+
 ## [0.0.5] - 2025-10-15
 
 ### Fixed
 - Release workflow permissions for Docker image publishing
 - Removed automatic release body update that caused permission issues
 - Simplified release workflow for more reliable deployments
+
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.4...v0.0.5
 
 ## [0.0.4] - 2025-10-15
 
@@ -98,6 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced container startup validation with better error logging
 - More robust health check implementation in CI tests
 - Better Docker build caching in CI for faster builds
+
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.3...v0.0.4
 
 ## [0.0.3] - 2025-10-11
 
