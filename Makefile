@@ -1,4 +1,4 @@
-.PHONY: help build rebuild start stop restart clean logs test test-unit test-image test-all verify lint lint-fix format format-fix
+.PHONY: help build rebuild start stop restart clean logs test verify lint lint-fix format format-fix
 
 help:
 	@echo "Available commands:"
@@ -14,15 +14,13 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test              - Run all tests (unit + image build)"
-	@echo "  make test-unit         - Run unit tests for server logic only"
-	@echo "  make test-image        - Run Docker image build validation tests"
+	@echo "  make test        - Run all tests (unit + integration + container) with coverage"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint              - Run ESLint to check code quality"
-	@echo "  make lint-fix          - Run ESLint and auto-fix issues"
-	@echo "  make format            - Check if code is formatted correctly"
-	@echo "  make format-fix        - Format code with Prettier"
+	@echo "  make lint        - Run ESLint to check code quality"
+	@echo "  make lint-fix    - Run ESLint and auto-fix issues"
+	@echo "  make format      - Check if code is formatted correctly"
+	@echo "  make format-fix  - Format code with Prettier"
 
 rebuild: stop build start
 	@echo "Rebuild complete!"
@@ -67,38 +65,26 @@ verify:
 		curl -s -H "Authorization: Bearer $$BEARER_TOKEN" http://localhost:$$PORT/v1/models && echo "\n✓ Models endpoint is responding!"; \
 	fi || echo "✗ Error: Could not reach models endpoint"
 
-# Test: Run all tests
-test: test-unit test-image
+# Test: Run all tests (unit + integration + container) with coverage
+test:
+	@echo "======================================"
+	@echo "Running All Tests"
+	@echo "======================================"
+	@echo ""
+	@echo "Building test image..."
+	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test . -q
+	@echo "✓ Test image built"
+	@echo ""
+	@echo "Running all tests in Docker..."
+	@docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD):/build-context:ro \
+		-e NPM_CONFIG_UPDATE_NOTIFIER=false \
+		n8n-openai-bridge-test npm test -- --detectOpenHandles
 	@echo ""
 	@echo "======================================"
 	@echo "✓ All tests passed successfully!"
 	@echo "======================================"
-
-test-all: test
-
-# Test 1: Unit tests for server logic
-test-unit:
-	@echo "======================================"
-	@echo "Running Unit Tests (Server Logic)"
-	@echo "======================================"
-	@echo ""
-	@echo "Building test image with latest changes..."
-	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
-	@echo ""
-	@echo "Running unit tests in Docker..."
-	@docker run --rm n8n-openai-bridge-test
-	@echo ""
-	@echo "✓ Unit tests passed!"
-
-# Test 2: Docker image build validation (Bash - no external dependencies)
-test-image:
-	@echo ""
-	@echo "======================================"
-	@echo "Running Docker Image Tests"
-	@echo "======================================"
-	@echo ""
-	@bash tests/test-image-build.sh
-
 
 
 # Code Quality: Linting and Formatting

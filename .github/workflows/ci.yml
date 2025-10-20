@@ -28,10 +28,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Build test image
+        run: DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test .
 
-      - name: Upload coverage
+      - name: Run all tests (unit + integration + container) with coverage
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/build-context:ro \
+            -e NPM_CONFIG_UPDATE_NOTIFIER=false \
+            n8n-openai-bridge-test npm test
+
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
         with:

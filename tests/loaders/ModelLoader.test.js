@@ -40,7 +40,8 @@ describe('ModelLoader', () => {
       };
 
       expect(() => loader.validateModels(validModels)).not.toThrow();
-      expect(loader.validateModels(validModels)).toBe(true);
+      const result = loader.validateModels(validModels);
+      expect(result).toEqual(validModels);
     });
 
     it('should reject null or undefined', () => {
@@ -54,14 +55,13 @@ describe('ModelLoader', () => {
       expect(() => loader.validateModels([])).toThrow('Models must be an object');
     });
 
-    it('should reject empty model ID', () => {
+    it('should filter out empty model ID', () => {
       const invalidModels = {
         '': 'https://example.com/webhook',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow(
-        'Model ID must be a non-empty string',
-      );
+      const result = loader.validateModels(invalidModels);
+      expect(result).toEqual({});
     });
 
     it('should reject non-string model ID', () => {
@@ -73,24 +73,22 @@ describe('ModelLoader', () => {
       expect(() => loader.validateModels(invalidModels)).not.toThrow();
     });
 
-    it('should reject empty webhook URL', () => {
+    it('should filter out empty webhook URL', () => {
       const invalidModels = {
         'model-1': '',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow(
-        'Webhook URL for model "model-1" must be a non-empty string',
-      );
+      const result = loader.validateModels(invalidModels);
+      expect(result).toEqual({});
     });
 
-    it('should reject invalid webhook URL format', () => {
+    it('should filter out invalid webhook URL format', () => {
       const invalidModels = {
         'model-1': 'not-a-url',
       };
 
-      expect(() => loader.validateModels(invalidModels)).toThrow(
-        'Invalid webhook URL for model "model-1": not-a-url',
-      );
+      const result = loader.validateModels(invalidModels);
+      expect(result).toEqual({});
     });
 
     it('should accept various valid URL formats', () => {
@@ -107,6 +105,21 @@ describe('ModelLoader', () => {
 
     it('should accept empty models object', () => {
       expect(() => loader.validateModels({})).not.toThrow();
+    });
+
+    it('should filter out invalid models while keeping valid ones', () => {
+      const mixedModels = {
+        'valid-model': 'https://example.com/webhook',
+        'invalid-url': 'not-a-url',
+        'empty-url': '',
+        'valid-model-2': 'https://example.com/webhook2',
+      };
+
+      const result = loader.validateModels(mixedModels);
+      expect(result).toEqual({
+        'valid-model': 'https://example.com/webhook',
+        'valid-model-2': 'https://example.com/webhook2',
+      });
     });
   });
 

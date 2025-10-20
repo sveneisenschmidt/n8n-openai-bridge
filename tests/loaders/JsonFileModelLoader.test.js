@@ -96,15 +96,19 @@ describe('JsonFileModelLoader', () => {
       await expect(loader.load()).rejects.toThrow('Invalid JSON in models file');
     });
 
-    it('should throw error for invalid models structure', async () => {
+    it('should filter out models with invalid URLs', async () => {
       fs.writeFileSync(
         testFile,
         JSON.stringify({
           'model-1': 'not-a-valid-url',
+          'model-2': 'https://valid.example.com/webhook',
         }),
       );
       const loader = new JsonFileModelLoader(testFile);
-      await expect(loader.load()).rejects.toThrow('Invalid webhook URL');
+      const models = await loader.load();
+      expect(models).toEqual({
+        'model-2': 'https://valid.example.com/webhook',
+      });
     });
 
     it('should accept empty models object', async () => {

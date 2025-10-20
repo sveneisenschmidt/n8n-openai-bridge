@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# Set production environment
+ENV NODE_ENV=production
+
 WORKDIR /app
 
 # Copy package files first (for better caching)
@@ -17,6 +20,9 @@ COPY src/ ./src/
 # These will be used if no external configs are mounted
 COPY docker/.env ./.env
 COPY docker/models.json ./models.json
+
+# Switch to non-root user for security
+USER node
 
 # Expose port
 EXPOSE 3333

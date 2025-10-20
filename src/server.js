@@ -73,8 +73,7 @@ app.use((err, _req, res, _next) => {
 
 // Start server
 const PORT = config.port;
-
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('='.repeat(60));
   console.log('n8n OpenAI Bridge');
   console.log('='.repeat(60));
@@ -101,3 +100,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+module.exports.server = server;
