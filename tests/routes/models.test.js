@@ -37,7 +37,7 @@ describe('Models Route - GET /v1/models', () => {
       },
       getAllModels: jest.fn(function () {
         const now = Math.floor(Date.now() / 1000);
-        return Object.entries(this.models).map(([id, url]) => ({
+        return Object.entries(this.models).map(([id, _url]) => ({
           id,
           object: 'model',
           created: now,
@@ -55,11 +55,15 @@ describe('Models Route - GET /v1/models', () => {
 
   describe('Response Structure', () => {
     test('should return 200 status', async () => {
-      await request(app).get('/').expect(200);
+      const response = await request(app).get('/');
+
+      expect(response.status).toBe(200);
     });
 
     test('should return JSON content-type', async () => {
-      await request(app).get('/').expect('Content-Type', /json/);
+      const response = await request(app).get('/');
+
+      expect(response.headers['content-type']).toMatch(/json/);
     });
 
     test('should return object with "list" type', async () => {
@@ -200,19 +204,27 @@ describe('Models Route - GET /v1/models', () => {
 
   describe('HTTP Methods', () => {
     test('should only accept GET method', async () => {
-      await request(app).post('/').expect(404);
+      const response = await request(app).post('/');
+
+      expect(response.status).toBe(404);
     });
 
     test('should reject PUT method', async () => {
-      await request(app).put('/').expect(404);
+      const response = await request(app).put('/');
+
+      expect(response.status).toBe(404);
     });
 
     test('should reject DELETE method', async () => {
-      await request(app).delete('/').expect(404);
+      const response = await request(app).delete('/');
+
+      expect(response.status).toBe(404);
     });
 
     test('should reject PATCH method', async () => {
-      await request(app).patch('/').expect(404);
+      const response = await request(app).patch('/');
+
+      expect(response.status).toBe(404);
     });
   });
 
