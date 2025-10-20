@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const authenticate = require('../../../src/middleware/authenticate');
+const authenticate = require('../../src/middleware/authenticate');
 
 describe('authenticate middleware', () => {
   let req;

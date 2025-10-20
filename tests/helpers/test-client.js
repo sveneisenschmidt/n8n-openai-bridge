@@ -6,7 +6,7 @@
  * Licensed under AGPL-3.0
  */
 
-const N8nClient = require('../../../src/n8nClient');
+const N8nClient = require('../../src/n8nClient');
 
 /**
  * Create test client with default config

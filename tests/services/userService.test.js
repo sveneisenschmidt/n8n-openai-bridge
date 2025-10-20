@@ -1,4 +1,4 @@
-const { extractUserContext, extractFromHeaders } = require('../../../src/services/userService');
+const { extractUserContext, extractFromHeaders } = require('../../src/services/userService');
 
 describe('UserService', () => {
   const mockConfig = {

@@ -11,7 +11,7 @@ global.console = {
 // Mock axios
 jest.mock('axios');
 
-const N8nClient = require('../../src/n8nClient');
+const N8nClient = require('../src/n8nClient');
 
 describe('N8nClient', () => {
   let client;

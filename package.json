@@ -10,11 +10,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage",
-    "test:unit": "jest tests/unit --coverage",
-    "test:integration": "jest tests/integration --runInBand --coverage",
-    "test:container": "jest tests/container --runInBand",
-    "test:watch": "jest --watch",
+    "test": "jest tests/ --coverage --silent",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\"",

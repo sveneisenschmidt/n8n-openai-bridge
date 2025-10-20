@@ -1,4 +1,4 @@
-const { extractSessionId } = require('../../../src/services/sessionService');
+const { extractSessionId } = require('../../src/services/sessionService');
 
 describe('SessionService', () => {
   const mockUuidGenerator = () => 'mock-uuid-12345';

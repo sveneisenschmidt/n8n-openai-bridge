@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const requestId = require('../../../src/middleware/requestId');
+const requestId = require('../../src/middleware/requestId');
 
 // Mock uuid
 jest.mock('uuid', () => ({

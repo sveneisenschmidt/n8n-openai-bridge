@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const JsonFileModelLoader = require('../../../src/loaders/JsonFileModelLoader');
+const JsonFileModelLoader = require('../../src/loaders/JsonFileModelLoader');
 
 describe('JsonFileModelLoader', () => {
   const testDir = path.join(__dirname, '..', 'test-data');

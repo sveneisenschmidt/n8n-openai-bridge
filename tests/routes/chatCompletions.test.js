@@ -18,7 +18,7 @@
 
 const express = require('express');
 const request = require('supertest');
-const chatCompletionsRoute = require('../../../src/routes/chatCompletions');
+const chatCompletionsRoute = require('../../src/routes/chatCompletions');
 
 describe('chatCompletions route', () => {
   let app;

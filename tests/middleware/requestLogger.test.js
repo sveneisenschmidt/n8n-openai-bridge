@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const requestLogger = require('../../../src/middleware/requestLogger');
+const requestLogger = require('../../src/middleware/requestLogger');
 
 describe('requestLogger middleware', () => {
   let req;

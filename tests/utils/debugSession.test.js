@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { debugSessionDetection } = require('../../../src/utils/debugSession');
+const { debugSessionDetection } = require('../../src/utils/debugSession');
 
 describe('debugSession utility', () => {
   let consoleLogSpy;

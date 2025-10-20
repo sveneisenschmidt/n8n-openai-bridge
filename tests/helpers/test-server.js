@@ -51,9 +51,9 @@ function setupTestServer() {
   jest.resetModules();
 
   // Mock n8nClient before requiring server
-  jest.mock('../../../src/n8nClient');
+  jest.mock('../../src/n8nClient');
 
-  const app = require('../../../src/server');
+  const app = require('../../src/server');
 
   // Cleanup function
   const cleanup = async () => {

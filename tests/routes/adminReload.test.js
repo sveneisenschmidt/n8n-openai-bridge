@@ -18,7 +18,7 @@
 
 const express = require('express');
 const request = require('supertest');
-const adminReloadRoute = require('../../../src/routes/adminReload');
+const adminReloadRoute = require('../../src/routes/adminReload');
 
 describe('adminReload route', () => {
   let app;

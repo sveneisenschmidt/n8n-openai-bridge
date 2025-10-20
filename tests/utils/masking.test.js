@@ -1,4 +1,4 @@
-const { maskSensitiveHeaders, maskSensitiveBody } = require('../../../src/utils/masking');
+const { maskSensitiveHeaders, maskSensitiveBody } = require('../../src/utils/masking');
 
 describe('Masking Utils', () => {
   describe('maskSensitiveHeaders', () => {

@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const createRateLimiters = require('../../../src/middleware/rateLimiter');
+const createRateLimiters = require('../../src/middleware/rateLimiter');
 
 // Mock express-rate-limit
 jest.mock('express-rate-limit', () => {

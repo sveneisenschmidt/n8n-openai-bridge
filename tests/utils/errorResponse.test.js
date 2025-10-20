@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { createErrorResponse, sendError } = require('../../../src/utils/errorResponse');
+const { createErrorResponse, sendError } = require('../../src/utils/errorResponse');
 
 describe('errorResponse utility', () => {
   describe('createErrorResponse', () => {

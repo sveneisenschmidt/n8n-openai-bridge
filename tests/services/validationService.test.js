@@ -1,4 +1,4 @@
-const { validateChatCompletionRequest } = require('../../../src/services/validationService');
+const { validateChatCompletionRequest } = require('../../src/services/validationService');
 
 describe('ValidationService', () => {
   describe('validateChatCompletionRequest', () => {
