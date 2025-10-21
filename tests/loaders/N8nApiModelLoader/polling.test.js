@@ -66,8 +66,8 @@ describe('N8nApiModelLoader - Polling', () => {
               active: true,
               nodes: [
                 {
-                  type: 'n8n-nodes-base.webhook',
-                  parameters: { path: 'test' },
+                  type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                  webhookId: 'test-webhook-id',
                 },
               ],
             },
@@ -98,7 +98,7 @@ describe('N8nApiModelLoader - Polling', () => {
 
       expect(mockGet).toHaveBeenCalled();
       expect(callback).toHaveBeenCalledWith({
-        test: 'https://n8n.example.com/webhook/test',
+        test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
       });
     });
 
@@ -151,8 +151,8 @@ describe('N8nApiModelLoader - Polling', () => {
                 active: true,
                 nodes: [
                   {
-                    type: 'n8n-nodes-base.webhook',
-                    parameters: { path: 'test' },
+                    type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                    webhookId: 'test-webhook-id',
                   },
                 ],
               },
@@ -184,7 +184,7 @@ describe('N8nApiModelLoader - Polling', () => {
       await jest.advanceTimersByTimeAsync(300 * 1000);
 
       expect(callback).toHaveBeenCalledWith({
-        test: 'https://n8n.example.com/webhook/test',
+        test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
       });
     });
   });

@@ -39,26 +39,24 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
     });
   });
 
-  test('should extract webhook URL from active workflow', () => {
+  test('should extract webhook URL from active workflow with chatTrigger', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
       active: true,
       nodes: [
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {
-            path: 'my-webhook',
-          },
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 'my-webhook-id',
         },
       ],
     };
 
     const url = loader.extractWebhookUrl(workflow);
-    expect(url).toBe('https://n8n.example.com/webhook/my-webhook');
+    expect(url).toBe('https://n8n.example.com/webhook/my-webhook-id/chat');
   });
 
-  test('should return null when no webhook node found', () => {
+  test('should return null when no chatTrigger node found', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
@@ -75,15 +73,14 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
     expect(url).toBeNull();
   });
 
-  test('should return null when webhook node has no path parameter', () => {
+  test('should return null when chatTrigger node has no webhookId', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
       active: true,
       nodes: [
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {},
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
         },
       ],
     };
@@ -92,17 +89,15 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
     expect(url).toBeNull();
   });
 
-  test('should return null when path parameter is not a string', () => {
+  test('should return null when webhookId is not a string', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
       active: true,
       nodes: [
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {
-            path: 123,
-          },
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 123,
         },
       ],
     };
@@ -118,10 +113,8 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
       active: false,
       nodes: [
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {
-            path: 'my-webhook',
-          },
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 'my-webhook-id',
         },
       ],
     };
@@ -130,29 +123,25 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
     expect(url).toBeNull();
   });
 
-  test('should use first webhook node when multiple exist', () => {
+  test('should use first chatTrigger node when multiple exist', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
       active: true,
       nodes: [
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {
-            path: 'first-webhook',
-          },
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 'first-webhook-id',
         },
         {
-          type: 'n8n-nodes-base.webhook',
-          parameters: {
-            path: 'second-webhook',
-          },
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 'second-webhook-id',
         },
       ],
     };
 
     const url = loader.extractWebhookUrl(workflow);
-    expect(url).toBe('https://n8n.example.com/webhook/first-webhook');
+    expect(url).toBe('https://n8n.example.com/webhook/first-webhook-id/chat');
   });
 
   test('should handle missing nodes array', () => {

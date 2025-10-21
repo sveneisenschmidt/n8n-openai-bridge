@@ -41,8 +41,8 @@ describe('N8nApiModelLoader - load', () => {
         active: true,
         nodes: [
           {
-            type: 'n8n-nodes-base.webhook',
-            parameters: { path: 'gpt4' },
+            type: '@n8n/n8n-nodes-langchain.chatTrigger',
+            webhookId: 'gpt4-webhook-id',
           },
         ],
       },
@@ -64,7 +64,7 @@ describe('N8nApiModelLoader - load', () => {
     const models = await loader.load();
 
     expect(models).toEqual({
-      'gpt-4': 'https://n8n.example.com/webhook/gpt4',
+      'gpt-4': 'https://n8n.example.com/webhook/gpt4-webhook-id/chat',
     });
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('Fetched 1 workflows from n8n'),
