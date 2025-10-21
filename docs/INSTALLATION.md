@@ -86,29 +86,36 @@ curl -H "Authorization: Bearer your-token" http://localhost:3333/v1/models
 git clone git@github.com:sveneisenschmidt/n8n-openai-bridge.git
 cd n8n-openai-bridge
 
-# Create configuration files from examples
-cp .env.example .env
-cp models.json.example models.json
+# Setup development environment
+make setup
+```
 
-# Edit configuration
+This will:
+- Create `.env` from `.env.example`
+- Create `models.json` from `models.json.example`
+- Install Git hooks for code quality checks
+- Build Docker image
+- Run tests to validate setup
+
+**Then edit configuration:**
+
+```bash
 nano .env           # Add your BEARER_TOKEN
 nano models.json    # Add your n8n webhook URLs
 ```
 
-### Start with Docker Compose
+### Development Commands
 
 ```bash
 make rebuild  # Stops, rebuilds, starts (recommended)
 make start    # Just start
 make stop     # Stop containers
 make logs     # View logs
-make test     # Run unit tests (always uses latest code)
+make test     # Run all tests
 make verify   # Check if server responds
 make clean    # Remove everything
 make help     # Show all commands
 ```
-
-Or manually: `docker compose -f docker/docker-compose.dev.yml up -d`
 
 ## Next Steps
 
