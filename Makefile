@@ -1,4 +1,4 @@
-.PHONY: help setup build rebuild start stop restart clean logs test verify lint lint-fix format format-fix
+.PHONY: help setup build rebuild start stop restart clean logs test test-file verify lint lint-fix format format-fix
 
 help:
 	@echo "Available commands:"
@@ -17,7 +17,8 @@ help:
 	@echo "  make clean       - Stop and remove containers, images, and volumes"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test        - Run all tests (unit + integration + container) with coverage"
+	@echo "  make test           - Run all tests (unit + integration + container) with coverage"
+	@echo "  make test-file FILE=<path> - Run specific test file(s), e.g. make test-file FILE=tests/loaders/"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint        - Run ESLint to check code quality"
@@ -79,23 +80,37 @@ verify:
 
 # Test: Run all tests (unit + integration + container) with coverage
 test:
+	@$(MAKE) test-file FILE=tests/
+
+# Test: Run specific test file(s)
+# Usage: make test-file FILE=tests/loaders/N8nApiModelLoader/ or make test-file FILE=tests/loaders/JsonFileModelLoader/watch.test.js
+test-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: FILE parameter is required"; \
+		echo "Usage: make test-file FILE=<path>"; \
+		echo "Examples:"; \
+		echo "  make test-file FILE=tests/loaders/N8nApiModelLoader/"; \
+		echo "  make test-file FILE=tests/loaders/JsonFileModelLoader/watch.test.js"; \
+		echo "  make test-file FILE=tests/loaders"; \
+		exit 1; \
+	fi
 	@echo "======================================"
-	@echo "Running All Tests"
+	@echo "Running Tests: $(FILE)"
 	@echo "======================================"
 	@echo ""
 	@echo "Building test image..."
 	@DOCKER_BUILDKIT=1 docker build -f docker/Dockerfile.test -t n8n-openai-bridge-test . -q
 	@echo "✓ Test image built"
 	@echo ""
-	@echo "Running all tests in Docker..."
+	@echo "Running tests in Docker..."
 	@docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(PWD):/build-context:ro \
 		-e NPM_CONFIG_UPDATE_NOTIFIER=false \
-		n8n-openai-bridge-test npm test
+		n8n-openai-bridge-test npm test -- --testPathPatterns="$(FILE)"
 	@echo ""
 	@echo "======================================"
-	@echo "✓ All tests passed successfully!"
+	@echo "✓ Tests passed!"
 	@echo "======================================"
 
 

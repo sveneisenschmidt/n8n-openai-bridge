@@ -148,10 +148,15 @@ async function startServer() {
 }
 
 // Start server and handle startup errors
-startServer().catch((error) => {
-  console.error('Fatal error starting server:', error);
-  process.exit(1);
-});
+startServer()
+  .then((server) => {
+    app.server = server;
+    module.exports.server = server;
+  })
+  .catch((error) => {
+    console.error('Fatal error starting server:', error);
+    process.exit(1);
+  });
 
 module.exports = app;
 module.exports.server = null; // Will be set after startServer() completes
