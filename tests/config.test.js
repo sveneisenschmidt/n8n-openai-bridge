@@ -120,7 +120,7 @@ describe('Config', () => {
       jest.resetModules();
       jest.spyOn(console, 'warn').mockImplementation();
 
-      const config = require('../src/config');
+      require('../src/config');
 
       expect(console.warn).toHaveBeenCalledWith(
         'N8N_BEARER_TOKEN is deprecated, please use N8N_WEBHOOK_BEARER_TOKEN instead',
