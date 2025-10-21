@@ -235,20 +235,20 @@ class N8nApiModelLoader extends ModelLoader {
    *
    * Process:
    * 1. Extract webhook URL from each workflow
-   * 2. Generate model ID from workflow (uses original unsanitized name as default)
+   * 2. Generate model ID from workflow name (unsanitized)
    * 3. Build models object { modelId: webhookUrl }
    * 4. Handle duplicates and invalid workflows
    *
-   * Model ID priority (see generateModelId for details):
-   * - Custom "model:" tag (optional override)
-   * - Original workflow name (default)
-   * - Workflow ID (fallback if name is empty)
+   * Model IDs are the original workflow names from n8n:
+   * - No sanitization or transformation
+   * - Duplicates are skipped (first one wins)
+   * - Workflow ID used as fallback if name is empty
    *
    * Example output:
    * {
    *   "GPT-4 Agent": "https://n8n.example.com/webhook/...",
-   *   "Claude 3 Sonnet": "https://n8n.example.com/webhook/...",
-   *   "my-custom-model": "https://n8n.example.com/webhook/..."  (with model: tag override)
+   *   "Claude 3.5 Sonnet": "https://n8n.example.com/webhook/...",
+   *   "My Custom Model": "https://n8n.example.com/webhook/..."
    * }
    *
    * @param {Array} workflows Array of workflow objects from n8n API
@@ -296,37 +296,27 @@ class N8nApiModelLoader extends ModelLoader {
   /**
    * Generate model ID from workflow
    *
-   * Priority order:
-   * 1. Custom tag: "model:custom-id" → "custom-id"
-   * 2. Workflow name (unsanitized): "GPT-4 Agent" → "GPT-4 Agent"
-   * 3. Workflow ID: fallback if name is empty
+   * Strategy:
+   * 1. Use original workflow name (unsanitized): "GPT-4 Agent" → "GPT-4 Agent"
+   * 2. Fallback to workflow ID if name is empty
    *
    * Why unsanitized name?
    * - Preserves original workflow name from n8n
    * - Users see exactly what they named in n8n
    * - No information loss or transformation
-   * - Custom model tags still allow overrides if needed
+   * - Users manage model IDs directly in n8n workflow names
    *
    * @param {Object} workflow Workflow object from n8n API
    * @returns {string} Model ID
    * @private
    */
   generateModelId(workflow) {
-    // Priority 1: Custom "model:" tag
-    const modelTag = (workflow.tags || []).find((t) => t.name && t.name.startsWith('model:'));
-    if (modelTag) {
-      const customId = modelTag.name.substring(6).trim(); // Remove "model:" prefix
-      if (customId) {
-        return customId;
-      }
-    }
-
-    // Priority 2: Original workflow name (unsanitized)
+    // Use original workflow name (unsanitized)
     if (workflow.name && workflow.name.trim()) {
       return workflow.name.trim();
     }
 
-    // Priority 3: Workflow ID (fallback)
+    // Fallback to workflow ID if name is empty
     return workflow.id;
   }
 

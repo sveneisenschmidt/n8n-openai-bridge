@@ -39,21 +39,21 @@ describe('N8nApiModelLoader - generateModelId', () => {
     });
   });
 
-  test('should use custom model tag as priority', () => {
+  test('should use workflow name regardless of tags', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test Workflow',
       tags: [
         { id: 'tag-1', name: 'n8n-openai-bridge' },
-        { id: 'tag-2', name: 'model:custom-gpt-4' },
+        { id: 'tag-2', name: 'some-other-tag' },
       ],
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('custom-gpt-4');
+    expect(modelId).toBe('Test Workflow');
   });
 
-  test('should use unsanitized workflow name when no custom tag present', () => {
+  test('should use unsanitized workflow name', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'GPT-4 Agent Workflow',
@@ -128,17 +128,6 @@ describe('N8nApiModelLoader - generateModelId', () => {
 
     const modelId = loader.generateModelId(workflow);
     expect(modelId).toBe('workflow-456');
-  });
-
-  test('should handle model tag with empty value', () => {
-    const workflow = {
-      id: 'workflow-1',
-      name: 'Test Workflow',
-      tags: [{ id: 'tag-1', name: 'model:' }],
-    };
-
-    const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('Test Workflow');
   });
 
   test('should handle missing tags array', () => {
