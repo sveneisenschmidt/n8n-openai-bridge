@@ -234,6 +234,34 @@ make format-fix    # Format code with Prettier
 make lint && make format  # Ensure code passes quality checks
 ```
 
+## Git Hooks
+
+### Setup
+
+After cloning the repository, run:
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+This installs pre-commit hooks that automatically check code quality.
+
+### Pre-Commit Hook
+
+The pre-commit hook automatically runs before each commit:
+
+**What it does:**
+- Runs `make lint` to check for ESLint violations
+- Runs `make format` to verify Prettier formatting
+- Blocks commit if any check fails
+
+**Bypass (not recommended):**
+```bash
+git commit --no-verify
+```
+
+The hook ensures consistent code quality without requiring manual setup or npm on the host machine.
+
 ## Git Workflow
 
 ### Branch Strategy
