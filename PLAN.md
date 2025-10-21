@@ -357,14 +357,21 @@ startServer().catch(error => {
 17. ✅ Check test coverage (target: >75%) - Currently: 78.74%
 
 ### Phase 5: Documentation
-18. ⏳ Create `docs/AUTO_DISCOVERY.md` (TODO)
-19. ⏳ Update existing docs (TODO)
-20. ⏳ Code comments & JSDoc (TODO)
+18. ⏳ Add auto-discovery info box to `README.md` with link to MODELLOADER.md (TODO)
+19. ⏳ Update `MODELLOADER.md` with loader registry, all loaders, and setup guides (TODO)
+20. ⏳ Update `CONFIGURATION.md` with MODEL_LOADER_TYPE and loader-specific ENV vars (TODO)
+21. ⏳ Update `AGENTS.md` if needed for loader architecture (TODO)
+22. ⏳ Add JSDoc comments to all new methods (TODO)
 
-### Phase 6: Polish
-21. ⏳ Linting & Formatting (`make lint`, `make format`) (TODO)
-22. ⏳ Docker tests (`make test-image`) (TODO)
-23. ⏳ End-to-End test with real n8n (TODO)
+### Phase 6: Docker & CI/CD
+23. ⏳ Verify Dockerfile compatibility with new loaders (TODO)
+24. ⏳ Update `docker-compose.dev.yml` with new ENV vars (TODO)
+25. ⏳ Check GitHub workflows (ci.yml, release-on-merge.yml) for compatibility (TODO)
+26. ⏳ Docker tests (`make test-image`) (TODO)
+
+### Phase 7: Polish
+27. ⏳ Linting & Formatting (`make lint`, `make format`) (TODO)
+28. ⏳ End-to-End test with real n8n (TODO)
 
 ---
 
@@ -556,27 +563,29 @@ try {
 
 ## Documentation Updates Required
 
-1. **`docs/AUTO_DISCOVERY.md`** (new)
-   - Setup guide for n8n API key
+1. **`README.md`**
+   - Add info box about model loaders (file, n8n-api, static)
+   - Highlight auto-discovery feature
+   - Link to `MODELLOADER.md` for setup details
+   - Quick start example with MODEL_LOADER_TYPE
+
+2. **`docs/MODELLOADER.md`**
+   - Document loader registry pattern
+   - Document all three loaders: JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader
+   - Setup guide for n8n API key (for N8nApiModelLoader)
    - Workflow tagging best practices
-   - Troubleshooting
-
-2. **`docs/CONFIGURATION.md`**
-   - New section: "Auto-Discovery Mode"
-   - Configuration examples
-   - Comparison: JsonFile vs. Auto-Discovery
-
-3. **`docs/MODELLOADER.md`**
-   - Documentation for `N8nApiModelLoader`
-   - Architecture diagram
    - Webhook extraction logic
+   - Troubleshooting section
 
-4. **`README.md`**
-   - Quick start with auto-discovery
-   - Feature list update
+3. **`docs/CONFIGURATION.md`**
+   - Document MODEL_LOADER_TYPE variable
+   - Loader-specific ENV variables section
+   - Configuration examples for each loader type
+   - Migration guide from file to n8n-api loader
 
-5. **`AGENTS.md`**
-   - Developer guide for auto-discovery
+4. **`AGENTS.md`** (if needed)
+   - Developer guide for loader architecture
+   - How to create custom loaders
    - Code examples
 
 ---
@@ -778,8 +787,10 @@ try {
 - ⏳ Polling mechanism tests
 
 **Phase 5 - Documentation:**
-- ⏳ Create `docs/AUTO_DISCOVERY.md`
-- ⏳ Update existing documentation
+- ⏳ Add auto-discovery info box to README.md with setup link
+- ⏳ Update MODELLOADER.md with all loaders and setup guides
+- ⏳ Update CONFIGURATION.md with MODEL_LOADER_TYPE and ENV vars
+- ⏳ Update AGENTS.md if needed
 - ⏳ Add JSDoc comments to all methods
 
 **Phase 6 - Polish:**
