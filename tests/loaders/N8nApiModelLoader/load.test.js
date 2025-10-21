@@ -37,7 +37,7 @@ describe('N8nApiModelLoader - load', () => {
     const mockWorkflows = [
       {
         id: 'workflow-1',
-        name: 'GPT-4',
+        name: 'GPT-4 Agent',
         active: true,
         nodes: [
           {
@@ -64,7 +64,7 @@ describe('N8nApiModelLoader - load', () => {
     const models = await loader.load();
 
     expect(models).toEqual({
-      'gpt-4': 'https://n8n.example.com/webhook/gpt4-webhook-id/chat',
+      'GPT-4 Agent': 'https://n8n.example.com/webhook/gpt4-webhook-id/chat',
     });
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('Fetched 1 workflows from n8n'),

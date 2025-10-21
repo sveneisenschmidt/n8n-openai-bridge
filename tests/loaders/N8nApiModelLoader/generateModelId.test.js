@@ -53,7 +53,7 @@ describe('N8nApiModelLoader - generateModelId', () => {
     expect(modelId).toBe('custom-gpt-4');
   });
 
-  test('should sanitize workflow name when no custom tag present', () => {
+  test('should use unsanitized workflow name when no custom tag present', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'GPT-4 Agent Workflow',
@@ -61,10 +61,21 @@ describe('N8nApiModelLoader - generateModelId', () => {
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('gpt-4-agent-workflow');
+    expect(modelId).toBe('GPT-4 Agent Workflow');
   });
 
-  test('should convert spaces to hyphens', () => {
+  test('should preserve special characters in workflow name', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Claude 3.5 Sonnet - Latest',
+      tags: [],
+    };
+
+    const modelId = loader.generateModelId(workflow);
+    expect(modelId).toBe('Claude 3.5 Sonnet - Latest');
+  });
+
+  test('should preserve spaces in workflow name', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'My Test Model',
@@ -72,10 +83,10 @@ describe('N8nApiModelLoader - generateModelId', () => {
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('my-test-model');
+    expect(modelId).toBe('My Test Model');
   });
 
-  test('should remove invalid characters', () => {
+  test('should preserve all characters in workflow name', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'Test@Model#123!',
@@ -83,18 +94,18 @@ describe('N8nApiModelLoader - generateModelId', () => {
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('testmodel123');
+    expect(modelId).toBe('Test@Model#123!');
   });
 
-  test('should preserve hyphens and underscores', () => {
+  test('should trim whitespace from workflow name', () => {
     const workflow = {
       id: 'workflow-1',
-      name: 'test-model_v2',
+      name: '  Test Model  ',
       tags: [],
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('test-model_v2');
+    expect(modelId).toBe('Test Model');
   });
 
   test('should fallback to workflow ID when name is empty', () => {
@@ -108,10 +119,10 @@ describe('N8nApiModelLoader - generateModelId', () => {
     expect(modelId).toBe('workflow-123');
   });
 
-  test('should fallback to workflow ID when name becomes empty after sanitization', () => {
+  test('should fallback to workflow ID when name is only whitespace', () => {
     const workflow = {
       id: 'workflow-456',
-      name: '@#$%^&*()',
+      name: '   ',
       tags: [],
     };
 
@@ -127,7 +138,7 @@ describe('N8nApiModelLoader - generateModelId', () => {
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('test-workflow');
+    expect(modelId).toBe('Test Workflow');
   });
 
   test('should handle missing tags array', () => {
@@ -137,6 +148,6 @@ describe('N8nApiModelLoader - generateModelId', () => {
     };
 
     const modelId = loader.generateModelId(workflow);
-    expect(modelId).toBe('test-workflow');
+    expect(modelId).toBe('Test Workflow');
   });
 });

@@ -43,11 +43,11 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
     });
   });
 
-  test('should convert workflows to models object', () => {
+  test('should convert workflows to models object with unsanitized names', () => {
     const workflows = [
       {
         id: 'workflow-1',
-        name: 'GPT-4',
+        name: 'GPT-4 Agent',
         active: true,
         nodes: [
           {
@@ -58,7 +58,7 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
       },
       {
         id: 'workflow-2',
-        name: 'Claude',
+        name: 'Claude 3.5 Sonnet',
         active: true,
         nodes: [
           {
@@ -72,8 +72,8 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
     const models = loader.workflowsToModels(workflows);
 
     expect(models).toEqual({
-      'gpt-4': 'https://n8n.example.com/webhook/gpt4-webhook-id/chat',
-      claude: 'https://n8n.example.com/webhook/claude-webhook-id/chat',
+      'GPT-4 Agent': 'https://n8n.example.com/webhook/gpt4-webhook-id/chat',
+      'Claude 3.5 Sonnet': 'https://n8n.example.com/webhook/claude-webhook-id/chat',
     });
   });
 
@@ -106,7 +106,7 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
     const models = loader.workflowsToModels(workflows);
 
     expect(models).toEqual({
-      'active-workflow': 'https://n8n.example.com/webhook/active-webhook-id/chat',
+      'Active Workflow': 'https://n8n.example.com/webhook/active-webhook-id/chat',
     });
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Skipping inactive workflow'),
@@ -142,7 +142,7 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
     const models = loader.workflowsToModels(workflows);
 
     expect(models).toEqual({
-      'valid-workflow': 'https://n8n.example.com/webhook/valid-webhook-id/chat',
+      'Valid Workflow': 'https://n8n.example.com/webhook/valid-webhook-id/chat',
     });
     expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('No webhook node found'));
   });
@@ -177,10 +177,10 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
 
     // Only first one should be included
     expect(models).toEqual({
-      'test-model': 'https://n8n.example.com/webhook/test1-webhook-id/chat',
+      'Test Model': 'https://n8n.example.com/webhook/test1-webhook-id/chat',
     });
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Duplicate model ID "test-model"'),
+      expect.stringContaining('Duplicate model ID "Test Model"'),
     );
   });
 

@@ -98,7 +98,7 @@ describe('N8nApiModelLoader - Polling', () => {
 
       expect(mockGet).toHaveBeenCalled();
       expect(callback).toHaveBeenCalledWith({
-        test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
+        Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
       });
     });
 
@@ -184,7 +184,7 @@ describe('N8nApiModelLoader - Polling', () => {
       await jest.advanceTimersByTimeAsync(300 * 1000);
 
       expect(callback).toHaveBeenCalledWith({
-        test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
+        Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
       });
     });
   });

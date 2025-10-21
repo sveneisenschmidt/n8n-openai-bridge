@@ -235,12 +235,20 @@ class N8nApiModelLoader extends ModelLoader {
    *
    * Process:
    * 1. Extract webhook URL from each workflow
-   * 2. Generate model ID (priority: custom tag > name > workflow ID)
+   * 2. Generate model ID (priority: custom tag > unsanitized name > workflow ID)
    * 3. Build models object { modelId: webhookUrl }
-   * 4. Handle duplicates and invalid workflows
+   * 4. Model IDs preserve original workflow names (no sanitization)
+   * 5. Handle duplicates and invalid workflows
+   *
+   * Example:
+   * {
+   *   "GPT-4 Agent": "https://n8n.example.com/webhook/...",
+   *   "Claude 3 Sonnet": "https://n8n.example.com/webhook/...",
+   *   "my-custom-model": "https://n8n.example.com/webhook/..."  (with model: tag)
+   * }
    *
    * @param {Array} workflows Array of workflow objects from n8n API
-   * @returns {Object} Models object { model_id: webhook_url }
+   * @returns {Object} Models object { workflow_name: webhook_url }
    * @private
    */
   workflowsToModels(workflows) {
@@ -286,13 +294,14 @@ class N8nApiModelLoader extends ModelLoader {
    *
    * Priority order:
    * 1. Custom tag: "model:custom-id" → "custom-id"
-   * 2. Workflow name: "GPT-4 Agent" → "gpt-4-agent"
-   * 3. Workflow ID: fallback if name is invalid
+   * 2. Workflow name (unsanitized): "GPT-4 Agent" → "GPT-4 Agent"
+   * 3. Workflow ID: fallback if name is empty
    *
-   * Sanitization:
-   * - Lowercase
-   * - Spaces → Hyphens
-   * - Remove non-alphanumeric (except hyphens and underscores)
+   * Why unsanitized name?
+   * - Preserves original workflow name from n8n
+   * - Users see exactly what they named in n8n
+   * - No information loss or transformation
+   * - Custom model tags still allow overrides if needed
    *
    * @param {Object} workflow Workflow object from n8n API
    * @returns {string} Model ID
@@ -308,17 +317,9 @@ class N8nApiModelLoader extends ModelLoader {
       }
     }
 
-    // Priority 2: Sanitized workflow name
-    if (workflow.name) {
-      const sanitized = workflow.name
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-') // Spaces to hyphens
-        .replace(/[^a-z0-9-_]/g, ''); // Remove invalid chars
-
-      if (sanitized) {
-        return sanitized;
-      }
+    // Priority 2: Original workflow name (unsanitized)
+    if (workflow.name && workflow.name.trim()) {
+      return workflow.name.trim();
     }
 
     // Priority 3: Workflow ID (fallback)
