@@ -18,6 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const ModelLoader = require('./ModelLoader');
 
 /**
@@ -78,6 +79,12 @@ class JsonFileModelLoader extends ModelLoader {
         required: false,
         defaultValue: null,
       },
+      {
+        name: 'MODELS_WATCH_INTERVAL',
+        description: 'File watch polling interval in milliseconds',
+        required: false,
+        defaultValue: '1000',
+      },
     ];
   }
 
@@ -99,9 +106,13 @@ class JsonFileModelLoader extends ModelLoader {
 
     // Always convert to absolute path for consistency and debugging
     this.filePath = path.resolve(filePath);
-    this.watcher = null;
+    this.pollingInterval = null;
     this.watchCallback = null;
-    this.reloadTimeout = null;
+    this.lastHash = null;
+
+    // Watch interval from env or default
+    const watchIntervalEnv = envValues.MODELS_WATCH_INTERVAL || '1000';
+    this.watchInterval = parseInt(watchIntervalEnv, 10);
 
     console.log(`JsonFileModelLoader: Using file ${this.filePath}`);
   }
@@ -167,82 +178,91 @@ class JsonFileModelLoader extends ModelLoader {
   }
 
   /**
+   * Calculate hash of file content
+   *
+   * @returns {string|null} Hash of file content, or null if file doesn't exist
+   */
+  getFileHash() {
+    try {
+      const content = fs.readFileSync(this.filePath, 'utf8');
+      return crypto.createHash('md5').update(content).digest('hex');
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Watch the JSON file for changes and reload automatically
    *
    * This enables hot-reload: changes to models.json are automatically detected
    * and loaded without restarting the application.
    *
    * Watch Flow:
-   * 1. File system emits 'change' event (may emit multiple times)
-   * 2. Clear any pending reload timeout (debounce)
-   * 3. Start new 100ms timeout
-   * 4. Timeout fires → load() → validateModels() → callback fires
-   * 5. Callback receives new models, config updates in-memory
+   * 1. Calculate initial file hash
+   * 2. Poll file at configured interval (default: 1000ms)
+   * 3. Calculate new hash and compare with previous
+   * 4. If different: load() → validateModels() → callback fires
+   * 5. Update hash and continue polling
    *
-   * Why Debounce (100ms)?
-   * - File systems often emit multiple events for a single write
-   * - Without debounce: 5+ reloads for one file write
-   * - 100ms window: Batches events into single reload
-   * - 100ms is short enough for perceived "instant" reload
-   * - 100ms is long enough for multiple events to batch
+   * Why Simple Hash-Based Polling?
+   * - fs.watch() is unreliable in Docker/CI environments
+   * - fs.watchFile() has internal Node.js complexity
+   * - Simple hash comparison is deterministic and works everywhere
+   * - No timing issues, no file system events needed
    *
    * Error Handling:
    * - Invalid models (bad URL, etc): Logged as warnings, not thrown
-   * - File deleted during watch: Error logged, callback not fired
-   * - File permission changed: Watcher continues, error on next reload
-   * - Watch setup failure: Logged but doesn't throw (graceful degradation)
+   * - File deleted during watch: Hash returns null, no reload
+   * - File permission changed: Hash returns null, no reload
    *
    * Platform Notes:
-   * - fs.watch() uses OS-level file system notifications (most efficient)
-   * - Cross-platform but behavior may vary (some OS batch events differently)
-   * - Not 100% reliable on network filesystems (but rare use case)
+   * - Works reliably in all environments (Docker, CI, network filesystems)
+   * - Reload latency: ~watchInterval ms after file change
    *
    * @param {Function} callback Function to call when models change
    *                            Signature: (models: Object) => void
    *                            Receives new models object
    */
   watch(callback) {
-    // Prevent double-watch (could cause multiple reloads)
-    if (this.watcher) {
+    // Prevent double-watch
+    if (this.pollingInterval) {
       console.warn(`Already watching ${this.filePath}`);
       return;
     }
 
     this.watchCallback = callback;
 
-    try {
-      // Set up file system watcher
-      this.watcher = fs.watch(this.filePath, (eventType) => {
-        // Only handle 'change' events (ignore 'rename' events)
-        if (eventType === 'change') {
-          // Debounce mechanism: clear previous timeout and start new one
-          // This batches rapid file changes into a single reload
-          clearTimeout(this.reloadTimeout);
-          this.reloadTimeout = setTimeout(async () => {
-            console.log(`${this.filePath} changed, reloading...`);
-            try {
-              // Load and validate new models
-              const models = await this.load();
-              console.log(`Models reloaded successfully (${Object.keys(models).length} models)`);
+    // Get initial hash
+    this.lastHash = this.getFileHash();
+    console.log(`Watching ${this.filePath} for changes (polling every ${this.watchInterval}ms)...`);
 
-              // Notify config about the change
-              if (this.watchCallback) {
-                this.watchCallback(models);
-              }
-            } catch (error) {
-              // Log error but don't throw - watcher continues running
-              // This allows fixing the file and it will reload on next save
-              console.error(`Error reloading models: ${error.message}`);
-            }
-          }, 100); // 100ms debounce window
+    // Start polling
+    this.pollingInterval = setInterval(async () => {
+      const currentHash = this.getFileHash();
+
+      // Check if file content changed
+      if (currentHash && currentHash !== this.lastHash) {
+        console.log(`${this.filePath} changed, reloading...`);
+
+        try {
+          // Load and validate new models
+          const models = await this.load();
+          console.log(`Models reloaded successfully (${Object.keys(models).length} models)`);
+
+          // Update hash
+          this.lastHash = currentHash;
+
+          // Notify config about the change
+          if (this.watchCallback) {
+            this.watchCallback(models);
+          }
+        } catch (error) {
+          // Log error but don't throw - watcher continues running
+          // This allows fixing the file and it will reload on next save
+          console.error(`Error reloading models: ${error.message}`);
         }
-      });
-      console.log(`Watching ${this.filePath} for changes...`);
-    } catch (error) {
-      // Watch setup failed - log but don't throw
-      // Application can still use loader without hot-reload
-      console.warn(`Could not watch ${this.filePath}: ${error.message}`);
-    }
+      }
+    }, this.watchInterval);
   }
 
   /**
@@ -251,24 +271,18 @@ class JsonFileModelLoader extends ModelLoader {
    * Called during application shutdown to cleanup resources.
    *
    * Cleanup Steps:
-   * 1. Clear any pending reload timeout
-   * 2. Close file system watcher
-   * 3. Nullify all references
+   * 1. Clear polling interval
+   * 2. Nullify all references
    *
    * Safe to call multiple times (idempotent).
    */
   stopWatching() {
-    // Clear any pending reload timeout
-    if (this.reloadTimeout) {
-      clearTimeout(this.reloadTimeout);
-      this.reloadTimeout = null;
-    }
-
-    // Close file system watcher if active
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
+    // Stop polling interval if active
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
       this.watchCallback = null;
+      this.lastHash = null;
       console.log(`Stopped watching ${this.filePath}`);
     }
   }

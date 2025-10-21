@@ -64,9 +64,9 @@ describe('JsonFileModelLoader - stopWatching', () => {
     loaders.push(loader);
     loader.watch(() => {});
 
-    expect(loader.watcher).not.toBeNull();
+    expect(loader.pollingInterval).not.toBeNull();
     loader.stopWatching();
-    expect(loader.watcher).toBeNull();
+    expect(loader.pollingInterval).toBeNull();
   });
 
   test('should not throw when called without active watcher', () => {
@@ -74,19 +74,4 @@ describe('JsonFileModelLoader - stopWatching', () => {
     loaders.push(loader);
     expect(() => loader.stopWatching()).not.toThrow();
   });
-
-  test('should clear reload timeout', async () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
-    loaders.push(loader);
-    loader.watch(() => {});
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    fs.writeFileSync(testFile, JSON.stringify({ test: 'https://example.com' }));
-
-    // Stop watching immediately after triggering change
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    loader.stopWatching();
-    expect(loader.reloadTimeout).toBeNull();
-  }, 10000);
 });

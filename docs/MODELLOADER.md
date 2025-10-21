@@ -6,13 +6,17 @@ The bridge uses a flexible **ModelLoader architecture** to load models from diff
 
 ### JsonFileModelLoader (Type: `file`)
 
-Default loader. Reads models from a JSON file with automatic hot-reload.
+Default loader. Reads models from a JSON file with automatic hot-reload via hash-based polling.
 
 **Configuration:**
 ```bash
 MODEL_LOADER_TYPE=file
-MODELS_CONFIG=./models.json
+MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
+MODELS_WATCH_INTERVAL=1000          # Polling interval in ms (default: 1000)
 ```
+
+**Deprecated:**
+- `MODELS_CONFIG` - Use `MODELS_CONFIG_FILE` instead (still supported with warning)
 
 **File Format:**
 ```json
@@ -24,9 +28,10 @@ MODELS_CONFIG=./models.json
 
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON
-- Hot-reload: Watches file (100ms debounce), reloads on changes
+- Hot-reload: Polls file content (hash-based), reloads on changes
+- Polling interval: Configurable via `MODELS_WATCH_INTERVAL` (default: 1000ms)
 - Invalid models: Filtered out with warnings, server continues
-- Watch failure: Logged as warning, server runs without auto-reload
+- Hash comparison: Only reloads when file content actually changed
 
 **Validation:**
 - Model ID: Non-empty string

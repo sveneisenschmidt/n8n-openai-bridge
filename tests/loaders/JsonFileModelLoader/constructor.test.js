@@ -61,4 +61,17 @@ describe('JsonFileModelLoader - Constructor', () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
     consoleWarnSpy.mockRestore();
   });
+
+  test('should use default watchInterval of 1000ms', () => {
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: './models.json' });
+    expect(loader.watchInterval).toBe(1000);
+  });
+
+  test('should accept watchInterval via MODELS_WATCH_INTERVAL env var', () => {
+    const loader = new JsonFileModelLoader({
+      MODELS_CONFIG_FILE: './models.json',
+      MODELS_WATCH_INTERVAL: '2000',
+    });
+    expect(loader.watchInterval).toBe(2000);
+  });
 });

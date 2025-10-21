@@ -24,6 +24,7 @@ describe('JsonFileModelLoader - watch', () => {
   let testSetup;
   let testFile;
   let consoleLogSpy;
+  let activeLoaders = [];
 
   beforeAll(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -36,6 +37,7 @@ describe('JsonFileModelLoader - watch', () => {
   });
 
   beforeEach(() => {
+    activeLoaders = [];
     const validModels = {
       'test-model-1': 'https://example.com/webhook1',
       'test-model-2': 'https://example.com/webhook2',
@@ -44,6 +46,13 @@ describe('JsonFileModelLoader - watch', () => {
   });
 
   afterEach(() => {
+    // Stop all active watchers before cleanup
+    activeLoaders.forEach((loader) => {
+      if (loader && loader.pollingInterval) {
+        loader.stopWatching();
+      }
+    });
+    activeLoaders = [];
     testSetup.cleanup();
   });
 
@@ -52,14 +61,15 @@ describe('JsonFileModelLoader - watch', () => {
     const loader = new JsonFileModelLoader({
       MODELS_CONFIG_FILE: testSetup.getTestFilePath('nonexistent.json'),
     });
+    activeLoaders.push(loader);
     expect(() => loader.watch(() => {})).not.toThrow();
-    loader.stopWatching();
     consoleWarnSpy.mockRestore();
   });
 
   test('should not watch twice', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
+    activeLoaders.push(loader);
 
     loader.watch(() => {});
     loader.watch(() => {});
@@ -72,31 +82,58 @@ describe('JsonFileModelLoader - watch', () => {
     });
     expect(hasWarning).toBe(true);
 
-    loader.stopWatching();
     consoleWarnSpy.mockRestore();
   });
 
-  test('should call callback when file changes', () => {
-    return new Promise((resolve) => {
-      const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
+  test('should call callback when file changes', async () => {
+    // Use 200ms polling interval for faster test execution
+    const loader = new JsonFileModelLoader({
+      MODELS_CONFIG_FILE: testFile,
+      MODELS_WATCH_INTERVAL: '200',
+    });
+    activeLoaders.push(loader);
 
-      const callback = jest.fn((models) => {
-        expect(models).toEqual({
-          'updated-model': 'https://example.com/updated',
-        });
-        loader.stopWatching();
-        resolve();
+    let callbackCalled = false;
+    const startTime = Date.now();
+
+    const callbackPromise = new Promise((resolve, reject) => {
+      loader.watch((models) => {
+        if (callbackCalled) {
+          return; // Prevent double-call
+        }
+        callbackCalled = true;
+
+        const elapsed = Date.now() - startTime;
+        console.log(`Callback fired after ${elapsed}ms`);
+
+        try {
+          expect(models).toEqual({
+            'updated-model': 'https://example.com/updated',
+          });
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
       });
 
-      loader.watch(callback);
+      console.log('Polling started, initial hash:', loader.lastHash);
 
-      // Give watcher time to initialize
+      // Wait a bit for polling to start, then change file
       setTimeout(() => {
+        console.log('Writing file...');
         const newModels = {
           'updated-model': 'https://example.com/updated',
         };
         fs.writeFileSync(testFile, JSON.stringify(newModels));
+        console.log('File written, new hash should be:', loader.getFileHash());
+      }, 50);
+
+      // Debug: Log if polling interval exists
+      setTimeout(() => {
+        console.log('Polling interval active?', loader.pollingInterval !== null);
       }, 100);
     });
-  });
+
+    await callbackPromise;
+  }, 5000); // 5s timeout for debugging
 });

@@ -43,8 +43,12 @@ MODEL_LOADER_TYPE=file           # Options: file (default), n8n-api, static
 #### File-based Loader (MODEL_LOADER_TYPE=file)
 
 ```bash
-MODELS_CONFIG=./models.json      # Path to models JSON file
+MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
+MODELS_WATCH_INTERVAL=1000          # File polling interval in ms (default: 1000)
 ```
+
+**Deprecated:**
+- `MODELS_CONFIG` - Use `MODELS_CONFIG_FILE` instead (still supported with warning)
 
 For detailed setup, see [File Loader Documentation](MODELLOADER.md#jsonfilemodelloadertype-file).
 
