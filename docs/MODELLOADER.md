@@ -59,18 +59,18 @@ AUTO_DISCOVERY_POLLING=300
 1. Fetches workflows from n8n API
 2. Filters by `AUTO_DISCOVERY_TAG` tag (default: `n8n-openai-bridge`)
 3. Only active workflows are exposed
-4. Extracts webhook URL from first webhook node
-5. Generates model ID from workflow name (or `model:custom-id` tag if present)
+4. Extracts webhook URL from chatTrigger node (`@n8n/n8n-nodes-langchain.chatTrigger`)
+5. Generates model ID from original workflow name (no sanitization)
 
 **Model ID Generation:**
-- Priority 1: Custom tag `model:custom-id` → use `custom-id`
-- Priority 2: Workflow name → sanitize and lowercase (e.g., "GPT-4 Agent" → `gpt-4-agent`)
-- Priority 3: Workflow ID (fallback)
+- Workflow name (exactly as named in n8n): `"GPT-4 Agent"` → `"GPT-4 Agent"`
+- Workflow ID used as fallback if name is empty
+- No sanitization or transformation
 
 **Setup Steps:**
 1. Create n8n API key: Settings > n8n API > Create API Key
-2. Tag workflows: Add `n8n-openai-bridge` tag to workflows you want exposed
-3. Optionally add `model:custom-id` tag for custom model IDs
+2. Create workflow with chatTrigger node (required for webhook extraction)
+3. Tag workflow: Add `n8n-openai-bridge` tag to workflows you want exposed
 4. Mark workflows as Active in n8n
 5. Configure bridge with environment variables
 6. Restart bridge
@@ -202,7 +202,8 @@ Manually reload models. Requires `BEARER_TOKEN`.
 |---------|-------|----------|
 | "File not found" error | `models.json` missing | Create file or check `MODELS_CONFIG` path |
 | "Invalid JSON" error | Syntax error in `models.json` | Validate with `cat models.json \| jq` |
-| "No models discovered" | No workflows tagged | Tag workflows in n8n with `n8n-openai-bridge` tag |
+| "No models discovered" | No workflows tagged or no chatTrigger node | Ensure workflows have `n8n-openai-bridge` tag AND chatTrigger node |
+| "No webhook node found" | Missing chatTrigger node | Add `@n8n/n8n-nodes-langchain.chatTrigger` node to workflow |
 | "Invalid token" (401) | Token invalid/expired | Regenerate in n8n Settings > n8n API |
 | Models don't update | Polling disabled | Check `AUTO_DISCOVERY_POLLING` value (0 disables) |
 | Inactive workflows shown | Check workflow status | Only active workflows are exposed |
