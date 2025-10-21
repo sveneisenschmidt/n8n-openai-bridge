@@ -15,6 +15,18 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Docker ready with health checks
 - Hot-reload models without restart
 
+## Compatible Chat Frontends
+
+Turn your n8n workflows into powerful AI assistants that work with leading chat interfaces:
+
+### Open WebUI
+Modern, feature-rich web interface for AI chat with full user context tracking. Configure your n8n agents as OpenAI-compatible models with automatic session management and user information forwarding.
+
+### LibreChat
+Enterprise-grade chat platform with support for multiple AI providers. Seamlessly integrate your n8n workflows alongside other AI models with built-in conversation history and role-based access.
+
+**Getting Started:** See the [Integration Guide](docs/INTEGRATIONS.md) for step-by-step setup instructions.
+
 ## Architecture
 
 ```
