@@ -88,7 +88,7 @@ class N8nApiModelLoader extends ModelLoader {
         defaultValue: 'n8n-openai-bridge',
       },
       {
-        name: 'AUTO_DISCOVERY_POLLING',
+        name: 'AUTO_DISCOVERY_POLL_INTERVAL',
         description: 'Polling interval in seconds (60-600, 0=disabled)',
         required: false,
         defaultValue: '300',
@@ -108,7 +108,7 @@ class N8nApiModelLoader extends ModelLoader {
     const n8nBaseUrl = envValues.N8N_BASE_URL;
     const apiToken = envValues.N8N_API_BEARER_TOKEN;
     const tag = envValues.AUTO_DISCOVERY_TAG;
-    const pollingIntervalStr = envValues.AUTO_DISCOVERY_POLLING;
+    const pollingIntervalStr = envValues.AUTO_DISCOVERY_POLL_INTERVAL;
 
     // Remove trailing slash from base URL for consistency
     this.n8nBaseUrl = n8nBaseUrl.replace(/\/$/, '');
@@ -383,7 +383,7 @@ class N8nApiModelLoader extends ModelLoader {
    */
   watch(callback) {
     if (this.pollingInterval === 0) {
-      console.log('Polling disabled (AUTO_DISCOVERY_POLLING=0)');
+      console.log('Polling disabled (AUTO_DISCOVERY_POLL_INTERVAL=0)');
       return;
     }
 

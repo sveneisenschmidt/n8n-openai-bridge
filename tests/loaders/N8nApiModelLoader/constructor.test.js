@@ -44,7 +44,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     expect(loader.n8nBaseUrl).toBe('https://n8n.example.com');
@@ -58,7 +58,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com/',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     expect(loader.n8nBaseUrl).toBe('https://n8n.example.com');
@@ -69,7 +69,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '30',
+      AUTO_DISCOVERY_POLL_INTERVAL: '30',
     });
 
     expect(loader.pollingInterval).toBe(60);
@@ -83,7 +83,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '1000',
+      AUTO_DISCOVERY_POLL_INTERVAL: '1000',
     });
 
     expect(loader.pollingInterval).toBe(600);
@@ -97,7 +97,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '0',
+      AUTO_DISCOVERY_POLL_INTERVAL: '0',
     });
 
     expect(loader.pollingInterval).toBe(0);
@@ -109,7 +109,7 @@ describe('N8nApiModelLoader - Constructor', () => {
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
         AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-        AUTO_DISCOVERY_POLLING: '-10',
+        AUTO_DISCOVERY_POLL_INTERVAL: '-10',
       });
     }).toThrow('Polling interval must be >= 0');
   });
@@ -124,7 +124,7 @@ describe('N8nApiModelLoader - Constructor', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token-123',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     expect(mockAxiosCreate).toHaveBeenCalledWith({

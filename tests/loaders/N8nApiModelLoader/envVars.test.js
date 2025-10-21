@@ -40,7 +40,7 @@ describe('N8nApiModelLoader - Environment Variables', () => {
       defaultValue: 'n8n-openai-bridge',
     });
     expect(envVars).toContainEqual({
-      name: 'AUTO_DISCOVERY_POLLING',
+      name: 'AUTO_DISCOVERY_POLL_INTERVAL',
       description: 'Polling interval in seconds (60-600, 0=disabled)',
       required: false,
       defaultValue: '300',

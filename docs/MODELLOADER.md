@@ -12,7 +12,7 @@ Default loader. Reads models from a JSON file with automatic hot-reload via hash
 ```bash
 MODEL_LOADER_TYPE=file
 MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
-MODELS_WATCH_INTERVAL=1000          # Polling interval in ms (default: 1000)
+MODELS_POLL_INTERVAL=1000          # Polling interval in ms (default: 1000)
 ```
 
 **Deprecated:**
@@ -29,7 +29,7 @@ MODELS_WATCH_INTERVAL=1000          # Polling interval in ms (default: 1000)
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON
 - Hot-reload: Polls file content (hash-based), reloads on changes
-- Polling interval: Configurable via `MODELS_WATCH_INTERVAL` (default: 1000ms)
+- Polling interval: Configurable via `MODELS_POLL_INTERVAL` (default: 1000ms)
 - Invalid models: Filtered out with warnings, server continues
 - Hash comparison: Only reloads when file content actually changed
 
@@ -48,7 +48,7 @@ MODEL_LOADER_TYPE=n8n-api
 N8N_BASE_URL=https://your-n8n-instance.com
 N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
 AUTO_DISCOVERY_TAG=n8n-openai-bridge
-AUTO_DISCOVERY_POLLING=300
+AUTO_DISCOVERY_POLL_INTERVAL=300
 ```
 
 **Environment Variables:**
@@ -58,7 +58,7 @@ AUTO_DISCOVERY_POLLING=300
 | `N8N_BASE_URL` | Yes | - | Base URL of n8n instance |
 | `N8N_API_BEARER_TOKEN` | Yes | - | n8n API token (from Settings > n8n API) |
 | `AUTO_DISCOVERY_TAG` | No | `n8n-openai-bridge` | Tag to filter workflows |
-| `AUTO_DISCOVERY_POLLING` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
+| `AUTO_DISCOVERY_POLL_INTERVAL` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
 
 **How It Works:**
 1. Fetches workflows from n8n API
@@ -83,7 +83,7 @@ AUTO_DISCOVERY_POLLING=300
 **Polling:**
 - Runs at startup, then at configured interval
 - On failure: Logs error, keeps existing models, retries later
-- Disabled when `AUTO_DISCOVERY_POLLING=0`
+- Disabled when `AUTO_DISCOVERY_POLL_INTERVAL=0`
 
 **Security:**
 - API token has read/write access to n8n
@@ -210,7 +210,7 @@ Manually reload models. Requires `BEARER_TOKEN`.
 | "No models discovered" | No workflows tagged or no chatTrigger node | Ensure workflows have `n8n-openai-bridge` tag AND chatTrigger node |
 | "No webhook node found" | Missing chatTrigger node | Add `@n8n/n8n-nodes-langchain.chatTrigger` node to workflow |
 | "Invalid token" (401) | Token invalid/expired | Regenerate in n8n Settings > n8n API |
-| Models don't update | Polling disabled | Check `AUTO_DISCOVERY_POLLING` value (0 disables) |
+| Models don't update | Polling disabled | Check `AUTO_DISCOVERY_POLL_INTERVAL` value (0 disables) |
 | Inactive workflows shown | Check workflow status | Only active workflows are exposed |
 
 ---

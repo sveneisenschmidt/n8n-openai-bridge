@@ -52,7 +52,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     loader.axiosInstance = { get: mockGet };
@@ -77,7 +77,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     loader.axiosInstance = { get: mockGet };
@@ -96,7 +96,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
       AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
-      AUTO_DISCOVERY_POLLING: '300',
+      AUTO_DISCOVERY_POLL_INTERVAL: '300',
     });
 
     loader.axiosInstance = { get: mockGet };

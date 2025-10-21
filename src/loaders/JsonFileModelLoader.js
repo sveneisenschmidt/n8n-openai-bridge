@@ -80,7 +80,7 @@ class JsonFileModelLoader extends ModelLoader {
         defaultValue: null,
       },
       {
-        name: 'MODELS_WATCH_INTERVAL',
+        name: 'MODELS_POLL_INTERVAL',
         description: 'File watch polling interval in milliseconds',
         required: false,
         defaultValue: '1000',
@@ -111,7 +111,7 @@ class JsonFileModelLoader extends ModelLoader {
     this.lastHash = null;
 
     // Watch interval from env or default
-    const watchIntervalEnv = envValues.MODELS_WATCH_INTERVAL || '1000';
+    const watchIntervalEnv = envValues.MODELS_POLL_INTERVAL || '1000';
     this.watchInterval = parseInt(watchIntervalEnv, 10);
 
     console.log(`JsonFileModelLoader: Using file ${this.filePath}`);
