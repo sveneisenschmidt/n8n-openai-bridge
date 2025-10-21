@@ -21,6 +21,11 @@ COPY src/ ./src/
 COPY docker/.env ./.env
 COPY docker/models.json ./models.json
 
+# Set correct ownership and permissions for node user
+RUN chown -R node:node /app && \
+    chmod -R u+rw,go+r /app && \
+    chmod +x /app/src/server.js
+
 # Switch to non-root user for security
 USER node
 
