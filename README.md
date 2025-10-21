@@ -15,6 +15,22 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Docker ready with health checks
 - Hot-reload models without restart
 
+## Compatibility
+
+Works with any OpenAI-compatible client or middleware.
+
+**Chat Frontends (tested):**
+- [Open WebUI](https://github.com/open-webui/open-webui)
+- [LibreChat](https://github.com/danny-avila/LibreChat)
+- [AnythingLLM](https://github.com/Mintplex-Labs/anything-llm)
+
+**Middleware (tested):**
+- [LiteLLM](https://github.com/BerriAI/litellm)
+
+Compatible with [OpenRouter](https://openrouter.ai/) and other OpenAI-compatible services.
+
+See [Integration Guide](docs/INTEGRATIONS.md) for setup.
+
 ## Architecture
 
 ```
