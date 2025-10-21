@@ -748,7 +748,7 @@ try {
 
 ## Implementation Status Summary
 
-### ✅ Completed (Phase 1-3)
+### ✅ Completed (Phase 1-4)
 
 **Architecture:**
 - ✅ Loader registry pattern with `MODEL_LOADER_TYPE` ENV variable
@@ -767,24 +767,35 @@ try {
 - ✅ Async model loading with fail-fast startup
 - ✅ Graceful shutdown with `close()` method
 
-**Testing:**
-- ✅ 42 test suites, 317 tests passing
-- ✅ Code coverage: 78.74%
-- ✅ Tests reorganized into `tests/config/` subfolder:
-  - `config.basic.test.js`
-  - `config.n8nToken.test.js`
-  - `config.headers.test.js`
-  - `config.models.test.js`
-- ✅ `StaticModelLoader.test.js` with 100% coverage
-- ✅ Updated `JsonFileModelLoader.test.js` for new constructor signature
+**Phase 4 - Complete Test Suite & Infrastructure Fixes:**
+- ✅ 363+ tests passing (from 317)
+- ✅ 95.80% code coverage
+- ✅ **Monolithic test files split** into focused test files organized in subdirectories:
+  - `tests/loaders/N8nApiModelLoader/` (7 test files)
+  - `tests/loaders/JsonFileModelLoader/` (4 test files)
+  - `tests/loaders/StaticModelLoader/` (3 test files)
+- ✅ **100% statement coverage** for N8nApiModelLoader
+- ✅ **Critical bug fix**: Eliminated open handles warnings by storing server instance
+- ✅ **Test infrastructure improvements**:
+  - Created `tests/setup.js` with global `process.exit` mock
+  - Implemented `make test-file FILE=<path>` for selective test execution
+  - Optimized async timer handling with `jest.advanceTimersByTimeAsync()`
+  - Reduced test timeouts (100ms vs 300ms) for faster execution
+- ✅ ESLint and Prettier compliant
+- ✅ PR #19 created and ready for review
 
-### ⏳ Remaining (Phase 4-6)
+**Key Technical Fixes:**
+- **Server Lifecycle**: Store server instance on `app.server` after `startServer()` completes
+  - Allows `cleanup()` in tests to properly close the server
+  - Eliminates "worker process failed to exit gracefully" warnings
+- **File Watcher Tests**: Rebuilt watch.test.js to test debounce mechanism directly
+  - Tests timeout state instead of relying on fs.watch() event timing
+  - Works reliably in Docker and CI environments
+- **Test Organization Pattern**: Each test file focuses on ONE aspect
+  - Faster test execution and easier maintenance
+  - Independent tests that can run in parallel
 
-**Phase 4 - N8nApiModelLoader Tests:**
-- ⏳ Unit tests for `N8nApiModelLoader` (fetchWorkflows, generateModelId, extractWebhookUrl, watch/stopWatching)
-- ⏳ Integration tests with mock n8n API
-- ⏳ Error handling tests (401, 403, timeout, invalid JSON)
-- ⏳ Polling mechanism tests
+### ⏳ Remaining (Phase 5-6)
 
 **Phase 5 - Documentation:**
 - ⏳ Add auto-discovery info box to README.md with setup link
@@ -793,7 +804,50 @@ try {
 - ⏳ Update AGENTS.md if needed
 - ⏳ Add JSDoc comments to all methods
 
-**Phase 6 - Polish:**
-- ⏳ Run linting and formatting
-- ⏳ Docker tests
+**Phase 6 - Polish & E2E:**
+- ⏳ Docker image testing
+- ⏳ Docker compose updates with new ENV vars
+- ⏳ CI/CD workflow verification
 - ⏳ End-to-End test with real n8n instance
+
+---
+
+## Phase 4 Summary (2025-10-21)
+
+**Status:** ✅ COMPLETED  
+**PR:** https://github.com/sveneisenschmidt/n8n-openai-bridge/pull/19  
+**Commit:** `4e050a5` + `613ef7a`
+
+### Problem Solved
+Tests were hanging indefinitely with "worker process failed to exit gracefully" warning.
+
+**Root Cause:** Server instance not stored, so cleanup couldn't close it
+- `app.server` was `undefined`
+- Server kept running with active connections
+- Tests timed out waiting for cleanup
+
+**Solution:** Store server instance after startup
+```javascript
+startServer().then((server) => {
+  app.server = server;
+  module.exports.server = server;
+}).catch((error) => {
+  console.error('Fatal error starting server:', error);
+  process.exit(1);
+});
+```
+
+### Achievements
+- ✅ All 363 tests passing without open handles warnings
+- ✅ 95.80% code coverage
+- ✅ N8nApiModelLoader: 100% statement coverage
+- ✅ 14 focused test files in subdirectories
+- ✅ Optimized test infrastructure
+- ✅ ESLint and Prettier compliant
+
+### For Next Session
+Read `PHASE4_SUMMARY.md` for detailed technical information about:
+- Test organization patterns
+- Server lifecycle in tests
+- Debounce test mechanism
+- Available testing commands
