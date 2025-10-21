@@ -235,16 +235,20 @@ class N8nApiModelLoader extends ModelLoader {
    *
    * Process:
    * 1. Extract webhook URL from each workflow
-   * 2. Generate model ID (priority: custom tag > unsanitized name > workflow ID)
+   * 2. Generate model ID from workflow (uses original unsanitized name as default)
    * 3. Build models object { modelId: webhookUrl }
-   * 4. Model IDs preserve original workflow names (no sanitization)
-   * 5. Handle duplicates and invalid workflows
+   * 4. Handle duplicates and invalid workflows
    *
-   * Example:
+   * Model ID priority (see generateModelId for details):
+   * - Custom "model:" tag (optional override)
+   * - Original workflow name (default)
+   * - Workflow ID (fallback if name is empty)
+   *
+   * Example output:
    * {
    *   "GPT-4 Agent": "https://n8n.example.com/webhook/...",
    *   "Claude 3 Sonnet": "https://n8n.example.com/webhook/...",
-   *   "my-custom-model": "https://n8n.example.com/webhook/..."  (with model: tag)
+   *   "my-custom-model": "https://n8n.example.com/webhook/..."  (with model: tag override)
    * }
    *
    * @param {Array} workflows Array of workflow objects from n8n API
