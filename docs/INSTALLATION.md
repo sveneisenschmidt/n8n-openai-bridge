@@ -51,7 +51,7 @@ services:
       - "3333:3333"
     environment:
       - BEARER_TOKEN=your-secret-api-key-here
-      - N8N_BEARER_TOKEN=
+      - N8N_WEBHOOK_BEARER_TOKEN=
       - LOG_REQUESTS=false
       - SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
     volumes:
