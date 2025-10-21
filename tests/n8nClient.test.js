@@ -27,7 +27,7 @@ describe('N8nClient', () => {
 
   describe('getHeaders', () => {
     test('should return headers with Authorization when token is set', () => {
-      mockConfig.n8nBearerToken = 'test-token';
+      mockConfig.n8nWebhookBearerToken = 'test-token';
 
       const headers = client.getHeaders();
 
@@ -36,7 +36,7 @@ describe('N8nClient', () => {
     });
 
     test('should return headers without Authorization when token is empty', () => {
-      mockConfig.n8nBearerToken = '';
+      mockConfig.n8nWebhookBearerToken = '';
 
       const headers = client.getHeaders();
 

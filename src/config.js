@@ -23,7 +23,7 @@ class Config {
   constructor() {
     this.port = process.env.PORT || 3333;
     this.bearerToken = process.env.BEARER_TOKEN || '';
-    this.n8nBearerToken = process.env.N8N_BEARER_TOKEN || '';
+    this.n8nWebhookBearerToken = this.resolveN8nWebhookBearerToken();
     this.modelsConfigPath = process.env.MODELS_CONFIG || './models.json';
     this.logRequests = process.env.LOG_REQUESTS === 'true';
     this.sessionIdHeaders = this.parseSessionIdHeaders();
@@ -47,6 +47,26 @@ class Config {
     }
 
     this.setupFileWatcher();
+  }
+
+  /**
+   * Resolve n8n webhook bearer token with backwards compatibility
+   * Prefers N8N_WEBHOOK_BEARER_TOKEN, falls back to N8N_BEARER_TOKEN (deprecated)
+   * @returns {string} The resolved bearer token or empty string
+   */
+  resolveN8nWebhookBearerToken() {
+    // Prefer new name
+    if (process.env.N8N_WEBHOOK_BEARER_TOKEN) {
+      return process.env.N8N_WEBHOOK_BEARER_TOKEN;
+    }
+
+    // Fall back to old name for backwards compatibility
+    if (process.env.N8N_BEARER_TOKEN) {
+      console.warn('N8N_BEARER_TOKEN is deprecated, please use N8N_WEBHOOK_BEARER_TOKEN instead');
+      return process.env.N8N_BEARER_TOKEN;
+    }
+
+    return '';
   }
 
   /**
