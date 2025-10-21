@@ -329,9 +329,9 @@ class N8nApiModelLoader extends ModelLoader {
    * Extract webhook URL from workflow nodes
    *
    * Logic:
-   * 1. Find first webhook node (type: "n8n-nodes-base.webhook")
-   * 2. Extract webhook path from node parameters
-   * 3. Construct production webhook URL
+   * 1. Find first chatTrigger node (type: "@n8n/n8n-nodes-langchain.chatTrigger")
+   * 2. Extract webhookId from node
+   * 3. Construct production webhook URL with /chat endpoint
    * 4. Only return URL if workflow is active
    *
    * Note: Only production webhook URLs are used.
@@ -342,18 +342,18 @@ class N8nApiModelLoader extends ModelLoader {
    * @private
    */
   extractWebhookUrl(workflow) {
-    // Find first webhook node
-    const webhookNode = (workflow.nodes || []).find(
-      (node) => node.type === 'n8n-nodes-base.webhook',
+    // Find first chatTrigger node
+    const chatTriggerNode = (workflow.nodes || []).find(
+      (node) => node.type === '@n8n/n8n-nodes-langchain.chatTrigger',
     );
 
-    if (!webhookNode) {
+    if (!chatTriggerNode) {
       return null;
     }
 
-    // Extract webhook path from node parameters
-    const path = webhookNode.parameters?.path;
-    if (!path || typeof path !== 'string') {
+    // Extract webhookId from node
+    const webhookId = chatTriggerNode.webhookId;
+    if (!webhookId || typeof webhookId !== 'string') {
       return null;
     }
 
@@ -362,9 +362,9 @@ class N8nApiModelLoader extends ModelLoader {
       return null;
     }
 
-    // Construct production webhook URL
-    // Format: https://n8n.example.com/webhook/<path>
-    return `${this.n8nBaseUrl}/webhook/${path}`;
+    // Construct production webhook URL for chat endpoint
+    // Format: https://n8n.example.com/webhook/<webhookId>/chat
+    return `${this.n8nBaseUrl}/webhook/${webhookId}/chat`;
   }
 
   /**
