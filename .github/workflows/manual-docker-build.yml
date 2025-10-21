@@ -7,6 +7,11 @@ on:
         description: 'Version tag (e.g., v0.0.7)'
         required: true
         type: string
+      push_latest:
+        description: 'Also push as latest tag'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -44,6 +49,22 @@ jobs:
           echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
           echo "minor=$(echo $VERSION | cut -d. -f1,2)" >> $GITHUB_OUTPUT
 
+          # Determine tags to push
+          TAGS="ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:$VERSION"
+          TAGS="$TAGS
+          ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:$(echo $VERSION | cut -d. -f1,2)"
+          TAGS="$TAGS
+          ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:$(echo $VERSION | cut -d. -f1)"
+
+          if [[ "${{ inputs.push_latest }}" == "true" ]]; then
+            TAGS="ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:latest
+          $TAGS"
+          fi
+
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -51,19 +72,20 @@ jobs:
           file: ./docker/Dockerfile.build
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:latest
-            ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.version }}
-            ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.minor }}
-            ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.major }}
+          tags: ${{ steps.version.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Summary
         run: |
-          echo "✅ Docker images published for ${{ inputs.version_tag }}:"
+          echo "Docker images published for ${{ inputs.version_tag }}:"
           echo ""
-          echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:latest"
-          echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.version }}"
-          echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.minor }}"
-          echo "- ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.major }}"
+          echo "${{ steps.version.outputs.tags }}" | while IFS= read -r tag; do
+            echo "✓ $tag"
+          done
+          echo ""
+          if [[ "${{ inputs.push_latest }}" == "true" ]]; then
+            echo "Latest tag included"
+          else
+            echo "Pre-release (no latest tag)"
+          fi
