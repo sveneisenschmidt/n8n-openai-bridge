@@ -23,7 +23,7 @@ const ModelLoader = require('./ModelLoader');
  * Loads models from n8n workflows via n8n REST API
  *
  * This loader enables automatic discovery of OpenAI models by querying
- * n8n workflows that are tagged with a specific tag (default: "openai-model").
+ * n8n workflows that are tagged with a specific tag (default: "n8n-openai-bridge").
  * It eliminates the need for manual models.json maintenance.
  *
  * Features:
@@ -85,7 +85,7 @@ class N8nApiModelLoader extends ModelLoader {
         name: 'AUTO_DISCOVERY_TAG',
         description: 'Tag to filter workflows',
         required: false,
-        defaultValue: 'openai-model',
+        defaultValue: 'n8n-openai-bridge',
       },
       {
         name: 'AUTO_DISCOVERY_POLLING',

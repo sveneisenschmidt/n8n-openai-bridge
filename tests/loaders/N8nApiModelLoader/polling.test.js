@@ -78,7 +78,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);
@@ -106,7 +106,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '0',
       });
       loaders.push(loader);
@@ -122,7 +122,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);
@@ -164,7 +164,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);
@@ -194,7 +194,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);
@@ -216,7 +216,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);
@@ -228,7 +228,7 @@ describe('N8nApiModelLoader - Polling', () => {
       const loader = new N8nApiModelLoader({
         N8N_BASE_URL: 'https://n8n.example.com',
         N8N_API_BEARER_TOKEN: 'test-token',
-        AUTO_DISCOVERY_TAG: 'openai-model',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
         AUTO_DISCOVERY_POLLING: '300',
       });
       loaders.push(loader);

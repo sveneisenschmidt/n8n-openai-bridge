@@ -42,7 +42,7 @@ Auto-discovers n8n workflows as OpenAI models. Workflows tagged with a specific 
 MODEL_LOADER_TYPE=n8n-api
 N8N_BASE_URL=https://your-n8n-instance.com
 N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
-AUTO_DISCOVERY_TAG=openai-model
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
 AUTO_DISCOVERY_POLLING=300
 ```
 
@@ -52,12 +52,12 @@ AUTO_DISCOVERY_POLLING=300
 |----------|----------|---------|-------------|
 | `N8N_BASE_URL` | Yes | - | Base URL of n8n instance |
 | `N8N_API_BEARER_TOKEN` | Yes | - | n8n API token (from Settings > n8n API) |
-| `AUTO_DISCOVERY_TAG` | No | `openai-model` | Tag to filter workflows |
+| `AUTO_DISCOVERY_TAG` | No | `n8n-openai-bridge` | Tag to filter workflows |
 | `AUTO_DISCOVERY_POLLING` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
 
 **How It Works:**
 1. Fetches workflows from n8n API
-2. Filters by `AUTO_DISCOVERY_TAG` tag
+2. Filters by `AUTO_DISCOVERY_TAG` tag (default: `n8n-openai-bridge`)
 3. Only active workflows are exposed
 4. Extracts webhook URL from first webhook node
 5. Generates model ID from workflow name (or `model:custom-id` tag if present)
@@ -69,7 +69,7 @@ AUTO_DISCOVERY_POLLING=300
 
 **Setup Steps:**
 1. Create n8n API key: Settings > n8n API > Create API Key
-2. Tag workflows: Add `openai-model` tag to workflows you want exposed
+2. Tag workflows: Add `n8n-openai-bridge` tag to workflows you want exposed
 3. Optionally add `model:custom-id` tag for custom model IDs
 4. Mark workflows as Active in n8n
 5. Configure bridge with environment variables
@@ -202,7 +202,7 @@ Manually reload models. Requires `BEARER_TOKEN`.
 |---------|-------|----------|
 | "File not found" error | `models.json` missing | Create file or check `MODELS_CONFIG` path |
 | "Invalid JSON" error | Syntax error in `models.json` | Validate with `cat models.json \| jq` |
-| "No models discovered" | No workflows tagged | Tag workflows in n8n with configured tag |
+| "No models discovered" | No workflows tagged | Tag workflows in n8n with `n8n-openai-bridge` tag |
 | "Invalid token" (401) | Token invalid/expired | Regenerate in n8n Settings > n8n API |
 | Models don't update | Polling disabled | Check `AUTO_DISCOVERY_POLLING` value (0 disables) |
 | Inactive workflows shown | Check workflow status | Only active workflows are exposed |

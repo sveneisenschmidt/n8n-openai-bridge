@@ -39,7 +39,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
         id: 'workflow-1',
         name: 'Test Workflow 1',
         active: true,
-        tags: [{ id: 'tag-1', name: 'openai-model' }],
+        tags: [{ id: 'tag-1', name: 'n8n-openai-bridge' }],
         nodes: [],
       },
     ];
@@ -51,7 +51,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
     const loader = new N8nApiModelLoader({
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
-      AUTO_DISCOVERY_TAG: 'openai-model',
+      AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
       AUTO_DISCOVERY_POLLING: '300',
     });
 
@@ -62,7 +62,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
     expect(mockGet).toHaveBeenCalledWith('/api/v1/workflows', {
       params: {
         active: true,
-        tags: 'openai-model',
+        tags: 'n8n-openai-bridge',
       },
     });
     expect(workflows).toEqual(mockWorkflows);
@@ -76,7 +76,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
     const loader = new N8nApiModelLoader({
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
-      AUTO_DISCOVERY_TAG: 'openai-model',
+      AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
       AUTO_DISCOVERY_POLLING: '300',
     });
 
@@ -95,7 +95,7 @@ describe('N8nApiModelLoader - fetchWorkflows', () => {
     const loader = new N8nApiModelLoader({
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
-      AUTO_DISCOVERY_TAG: 'openai-model',
+      AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
       AUTO_DISCOVERY_POLLING: '300',
     });
 

@@ -34,7 +34,7 @@ describe('N8nApiModelLoader - generateModelId', () => {
     loader = new N8nApiModelLoader({
       N8N_BASE_URL: 'https://n8n.example.com',
       N8N_API_BEARER_TOKEN: 'test-token',
-      AUTO_DISCOVERY_TAG: 'openai-model',
+      AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
       AUTO_DISCOVERY_POLLING: '300',
     });
   });
@@ -44,7 +44,7 @@ describe('N8nApiModelLoader - generateModelId', () => {
       id: 'workflow-1',
       name: 'Test Workflow',
       tags: [
-        { id: 'tag-1', name: 'openai-model' },
+        { id: 'tag-1', name: 'n8n-openai-bridge' },
         { id: 'tag-2', name: 'model:custom-gpt-4' },
       ],
     };
@@ -57,7 +57,7 @@ describe('N8nApiModelLoader - generateModelId', () => {
     const workflow = {
       id: 'workflow-1',
       name: 'GPT-4 Agent Workflow',
-      tags: [{ id: 'tag-1', name: 'openai-model' }],
+      tags: [{ id: 'tag-1', name: 'n8n-openai-bridge' }],
     };
 
     const modelId = loader.generateModelId(workflow);

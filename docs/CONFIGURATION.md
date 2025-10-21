@@ -53,7 +53,7 @@ For detailed setup, see [File Loader Documentation](MODELLOADER.md#jsonfilemodel
 ```bash
 N8N_BASE_URL=https://your-n8n-instance.com
 N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
-AUTO_DISCOVERY_TAG=openai-model
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
 AUTO_DISCOVERY_POLLING=300
 ```
 
@@ -61,7 +61,7 @@ AUTO_DISCOVERY_POLLING=300
 |----------|----------|---------|-------------|
 | `N8N_BASE_URL` | Yes | - | Base URL of your n8n instance |
 | `N8N_API_BEARER_TOKEN` | Yes | - | n8n API token (Settings > n8n API) |
-| `AUTO_DISCOVERY_TAG` | No | `openai-model` | Tag to filter workflows |
+| `AUTO_DISCOVERY_TAG` | No | `n8n-openai-bridge` | Tag to filter workflows |
 | `AUTO_DISCOVERY_POLLING` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
 
 For detailed setup, see [Auto-Discovery Loader Documentation](MODELLOADER.md#n8napi-modelloader-type-n8n-api).
@@ -113,11 +113,11 @@ Models in `models.json` are automatically reloaded when file changes (100ms debo
 MODEL_LOADER_TYPE=n8n-api
 N8N_BASE_URL=https://your-n8n-instance.com
 N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
-AUTO_DISCOVERY_TAG=openai-model
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
 AUTO_DISCOVERY_POLLING=300
 ```
 
-Tag workflows with `openai-model` in n8n UI and they are automatically discovered as models.
+Tag workflows with `n8n-openai-bridge` in n8n UI and they are automatically discovered as models.
 
 ## Session Management
 

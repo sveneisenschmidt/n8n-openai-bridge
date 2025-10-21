@@ -37,7 +37,7 @@ describe('N8nApiModelLoader - Environment Variables', () => {
       name: 'AUTO_DISCOVERY_TAG',
       description: 'Tag to filter workflows',
       required: false,
-      defaultValue: 'openai-model',
+      defaultValue: 'n8n-openai-bridge',
     });
     expect(envVars).toContainEqual({
       name: 'AUTO_DISCOVERY_POLLING',
