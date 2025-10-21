@@ -60,7 +60,7 @@ describe('JsonFileModelLoader - stopWatching', () => {
   });
 
   test('should stop watching file', () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     loaders.push(loader);
     loader.watch(() => {});
 
@@ -70,13 +70,13 @@ describe('JsonFileModelLoader - stopWatching', () => {
   });
 
   test('should not throw when called without active watcher', () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     loaders.push(loader);
     expect(() => loader.stopWatching()).not.toThrow();
   });
 
   test('should clear reload timeout', async () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     loaders.push(loader);
     loader.watch(() => {});
 

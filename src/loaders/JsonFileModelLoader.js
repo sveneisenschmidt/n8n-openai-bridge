@@ -67,10 +67,16 @@ class JsonFileModelLoader extends ModelLoader {
   static getRequiredEnvVars() {
     return [
       {
-        name: 'MODELS_CONFIG',
+        name: 'MODELS_CONFIG_FILE',
         description: 'Path to models.json file',
         required: false,
         defaultValue: './models.json',
+      },
+      {
+        name: 'MODELS_CONFIG',
+        description: 'Path to models.json file (deprecated, use MODELS_CONFIG_FILE)',
+        required: false,
+        defaultValue: null,
       },
     ];
   }
@@ -83,8 +89,13 @@ class JsonFileModelLoader extends ModelLoader {
   constructor(envValues) {
     super();
 
-    // Extract filePath from MODELS_CONFIG env var
-    const filePath = envValues.MODELS_CONFIG;
+    // Prefer MODELS_CONFIG_FILE, fall back to MODELS_CONFIG (deprecated)
+    let filePath = envValues.MODELS_CONFIG_FILE;
+
+    if (!filePath && envValues.MODELS_CONFIG) {
+      console.warn('MODELS_CONFIG is deprecated, please use MODELS_CONFIG_FILE instead');
+      filePath = envValues.MODELS_CONFIG;
+    }
 
     // Always convert to absolute path for consistency and debugging
     this.filePath = path.resolve(filePath);

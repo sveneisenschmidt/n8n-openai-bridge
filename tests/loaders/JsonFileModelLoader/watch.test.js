@@ -50,7 +50,7 @@ describe('JsonFileModelLoader - watch', () => {
   test('should not throw when watching non-existent file', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     const loader = new JsonFileModelLoader({
-      MODELS_CONFIG: testSetup.getTestFilePath('nonexistent.json'),
+      MODELS_CONFIG_FILE: testSetup.getTestFilePath('nonexistent.json'),
     });
     expect(() => loader.watch(() => {})).not.toThrow();
     loader.stopWatching();
@@ -59,7 +59,7 @@ describe('JsonFileModelLoader - watch', () => {
 
   test('should not watch twice', () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
 
     loader.watch(() => {});
     loader.watch(() => {});
@@ -78,7 +78,7 @@ describe('JsonFileModelLoader - watch', () => {
 
   test('should call callback when file changes', () => {
     return new Promise((resolve) => {
-      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
 
       const callback = jest.fn((models) => {
         expect(models).toEqual({

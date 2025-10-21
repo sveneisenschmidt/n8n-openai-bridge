@@ -48,7 +48,7 @@ describe('JsonFileModelLoader - load', () => {
   });
 
   test('should load valid JSON file', async () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     const models = await loader.load();
 
     expect(models).toEqual({
@@ -59,14 +59,14 @@ describe('JsonFileModelLoader - load', () => {
 
   test('should throw error for non-existent file', async () => {
     const loader = new JsonFileModelLoader({
-      MODELS_CONFIG: testSetup.getTestFilePath('nonexistent.json'),
+      MODELS_CONFIG_FILE: testSetup.getTestFilePath('nonexistent.json'),
     });
     await expect(loader.load()).rejects.toThrow('Models file not found');
   });
 
   test('should throw error for invalid JSON', async () => {
     fs.writeFileSync(testFile, '{ invalid json }');
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     await expect(loader.load()).rejects.toThrow('Invalid JSON in models file');
   });
 
@@ -78,7 +78,7 @@ describe('JsonFileModelLoader - load', () => {
         'model-2': 'https://valid.example.com/webhook',
       }),
     );
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     const models = await loader.load();
     expect(models).toEqual({
       'model-2': 'https://valid.example.com/webhook',
@@ -87,7 +87,7 @@ describe('JsonFileModelLoader - load', () => {
 
   test('should accept empty models object', async () => {
     fs.writeFileSync(testFile, JSON.stringify({}));
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: testFile });
     const models = await loader.load();
     expect(models).toEqual({});
   });

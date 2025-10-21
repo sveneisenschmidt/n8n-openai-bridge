@@ -31,13 +31,34 @@ describe('JsonFileModelLoader - Constructor', () => {
   });
 
   test('should resolve relative paths to absolute', () => {
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: './models.json' });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: './models.json' });
     expect(path.isAbsolute(loader.filePath)).toBe(true);
   });
 
   test('should accept absolute paths', () => {
     const absolutePath = '/absolute/path/models.json';
-    const loader = new JsonFileModelLoader({ MODELS_CONFIG: absolutePath });
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG_FILE: absolutePath });
     expect(loader.filePath).toBe(absolutePath);
+  });
+
+  test('should support deprecated MODELS_CONFIG with warning', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const loader = new JsonFileModelLoader({ MODELS_CONFIG: './models.json' });
+    expect(path.isAbsolute(loader.filePath)).toBe(true);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'MODELS_CONFIG is deprecated, please use MODELS_CONFIG_FILE instead',
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
+  test('should prefer MODELS_CONFIG_FILE over MODELS_CONFIG', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const loader = new JsonFileModelLoader({
+      MODELS_CONFIG_FILE: './new-models.json',
+      MODELS_CONFIG: './old-models.json',
+    });
+    expect(loader.filePath).toContain('new-models.json');
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    consoleWarnSpy.mockRestore();
   });
 });
