@@ -92,7 +92,7 @@ test:
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(PWD):/build-context:ro \
 		-e NPM_CONFIG_UPDATE_NOTIFIER=false \
-		n8n-openai-bridge-test npm test -- --detectOpenHandles
+		n8n-openai-bridge-test npm test
 	@echo ""
 	@echo "======================================"
 	@echo "✓ All tests passed successfully!"

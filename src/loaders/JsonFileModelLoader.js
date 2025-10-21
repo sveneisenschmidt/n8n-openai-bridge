@@ -55,16 +55,44 @@ const ModelLoader = require('./ModelLoader');
  */
 class JsonFileModelLoader extends ModelLoader {
   /**
-   * @param {string} filePath Path to the JSON file containing models
-   *                          Relative paths are resolved to absolute
+   * Loader type identifier for MODEL_LOADER_TYPE env var
    */
-  constructor(filePath) {
+  static TYPE = 'file';
+
+  /**
+   * Get required environment variables for this loader
+   *
+   * @returns {Array<{name: string, description: string, required: boolean, defaultValue?: string}>}
+   */
+  static getRequiredEnvVars() {
+    return [
+      {
+        name: 'MODELS_CONFIG',
+        description: 'Path to models.json file',
+        required: false,
+        defaultValue: './models.json',
+      },
+    ];
+  }
+
+  /**
+   * Constructor
+   *
+   * @param {Object} envValues Object with environment variable values
+   */
+  constructor(envValues) {
     super();
+
+    // Extract filePath from MODELS_CONFIG env var
+    const filePath = envValues.MODELS_CONFIG;
+
     // Always convert to absolute path for consistency and debugging
     this.filePath = path.resolve(filePath);
     this.watcher = null;
     this.watchCallback = null;
     this.reloadTimeout = null;
+
+    console.log(`JsonFileModelLoader: Using file ${this.filePath}`);
   }
 
   /**

@@ -58,9 +58,28 @@ Automatic discovery of n8n workflows as OpenAI models via n8n REST API, eliminat
 
 ## Architecture Decisions
 
-### 1. New Loader: `N8nApiModelLoader`
+### 1. Model Loader Pattern
 
-**Inheritance:** `ModelLoader` (base class)
+**All loaders inherit from:** `ModelLoader` (base class)
+
+**Loader Registry Pattern:**
+```javascript
+const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader];
+```
+
+**Loaders must implement:**
+- `static TYPE` - Loader type identifier (e.g., 'file', 'n8n-api', 'static')
+- `static getRequiredEnvVars()` - Returns array of required ENV variables
+- `constructor(envValues)` - Receives object with ENV var names as keys
+- `async load()` - Loads and returns models
+
+**Base class responsibilities:**
+- Model validation (`validateModels()`)
+- Watch/StopWatching interface (optional)
+
+### 2. New Loader: `N8nApiModelLoader`
+
+**Type:** `n8n-api`
 
 **Responsibilities:**
 - n8n API communication (GET /api/v1/workflows)
@@ -69,42 +88,92 @@ Automatic discovery of n8n workflows as OpenAI models via n8n REST API, eliminat
 - Polling mechanism for auto-reload
 - Model ID generation from workflow names/tags
 
+**Required ENV Variables:**
+- `N8N_BASE_URL` (required)
+- `N8N_API_BEARER_TOKEN` (required)
+- `AUTO_DISCOVERY_TAG` (optional, default: 'openai-model')
+- `AUTO_DISCOVERY_POLLING` (optional, default: '300')
+
 **Not responsible for:**
 - Model validation (handled by base class `ModelLoader.validateModels()`)
 - Config management (handled by `Config` class)
+- ENV variable access (injected by Config)
 
-### 2. Config Changes
+### 3. Static Loader for Testing: `StaticModelLoader`
+
+**Type:** `static`
+
+**Purpose:** Testing without file system or API dependencies
+
+**Required ENV Variables:**
+- `STATIC_MODELS` (optional, default: '{}') - JSON string with static models
+
+**Implementation:**
+```javascript
+constructor(envValues) {
+  super();
+  const modelsJson = envValues.STATIC_MODELS || '{}';
+  this.staticModels = JSON.parse(modelsJson);
+}
+```
+
+### 4. Config Changes
 
 **In `src/config.js`:**
 
 ```javascript
+// Loader registry - dynamically match by TYPE
+const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader];
+
 createModelLoader() {
-  // Auto-Discovery enabled?
-  const autoDiscovery = process.env.AUTO_DISCOVERY_FETCH_MODELS === 'true';
+  // Get loader type from ENV (default: 'file')
+  const loaderType = (process.env.MODEL_LOADER_TYPE || 'file').toLowerCase();
   
-  if (autoDiscovery) {
-    const N8nApiModelLoader = require('./loaders/N8nApiModelLoader');
-    
-    const n8nBaseUrl = process.env.N8N_BASE_URL;
-    if (!n8nBaseUrl) {
-      throw new Error('N8N_BASE_URL required when AUTO_DISCOVERY_FETCH_MODELS is enabled');
-    }
-    
-    const apiToken = process.env.N8N_API_BEARER_TOKEN;
-    if (!apiToken) {
-      throw new Error('N8N_API_BEARER_TOKEN required when AUTO_DISCOVERY_FETCH_MODELS is enabled');
-    }
-    
-    const tag = process.env.AUTO_DISCOVERY_TAG || 'openai-model';
-    const polling = parseInt(process.env.AUTO_DISCOVERY_POLLING || '300', 10);
-    
-    console.log(`Auto-discovery enabled: polling n8n every ${polling}s for tag "${tag}"`);
-    
-    return new N8nApiModelLoader(n8nBaseUrl, apiToken, tag, polling);
+  // Find matching loader class by TYPE
+  const LoaderClass = MODEL_LOADERS.find((loader) => loader.TYPE === loaderType);
+  
+  if (!LoaderClass) {
+    const availableTypes = MODEL_LOADERS.map((l) => l.TYPE).join(', ');
+    throw new Error(
+      `Invalid MODEL_LOADER_TYPE: "${loaderType}". Available types: ${availableTypes}`
+    );
   }
   
-  // Default: JsonFileModelLoader
-  return new JsonFileModelLoader(this.modelsConfigPath);
+  console.log(`Model Loader: ${LoaderClass.TYPE}`);
+  
+  // Validate env vars and pass to constructor
+  // Loader is responsible for extracting and mapping ENV var values
+  const envValues = this.validateEnvVars(LoaderClass);
+  return new LoaderClass(envValues);
+}
+
+validateEnvVars(LoaderClass) {
+  // Get required ENV vars from loader
+  const envVarDefs = LoaderClass.getRequiredEnvVars();
+  const envValues = {};
+  const missing = [];
+  
+  for (const def of envVarDefs) {
+    const value = process.env[def.name];
+    if (!value || !value.trim()) {
+      if (def.required) {
+        missing.push(`${def.name} (${def.description})`);
+      } else {
+        envValues[def.name] = def.defaultValue;
+      }
+    } else {
+      envValues[def.name] = value.trim();
+    }
+  }
+  
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables for ${LoaderClass.TYPE} loader:\n` +
+      missing.map(m => `  - ${m}`).join('\n')
+    );
+  }
+  
+  return envValues; // Returns raw ENV var names/values
 }
 ```
 
@@ -275,20 +344,27 @@ startServer().catch(error => {
 10. ✅ Error handling for API failures
 
 ### Phase 4: Tests
-11. ✅ Unit tests for `N8nApiModelLoader`
-12. ✅ Integration tests with mock n8n API
-13. ✅ Config tests for auto-discovery mode
-14. ✅ Check test coverage (target: >75%)
+11. ✅ Create `StaticModelLoader` for testing (no file system/API dependencies)
+12. ✅ Unit tests for `StaticModelLoader`
+13. ✅ Refactor config tests to use `StaticModelLoader`
+14. ✅ Split config tests into logical groups in `tests/config/`:
+    - `config.basic.test.js` - Port, BearerToken, LogRequests
+    - `config.n8nToken.test.js` - N8N_WEBHOOK_BEARER_TOKEN & N8N_BEARER_TOKEN
+    - `config.headers.test.js` - All header parsing tests
+    - `config.models.test.js` - Model operations (load, get, reload, close)
+15. ⏳ Unit tests for `N8nApiModelLoader` (TODO)
+16. ⏳ Integration tests with mock n8n API (TODO)
+17. ✅ Check test coverage (target: >75%) - Currently: 78.74%
 
 ### Phase 5: Documentation
-15. ✅ Create `docs/AUTO_DISCOVERY.md`
-16. ✅ Update existing docs
-17. ✅ Code comments & JSDoc
+18. ⏳ Create `docs/AUTO_DISCOVERY.md` (TODO)
+19. ⏳ Update existing docs (TODO)
+20. ⏳ Code comments & JSDoc (TODO)
 
 ### Phase 6: Polish
-18. ✅ Linting & Formatting (`make lint`, `make format`)
-19. ✅ Docker tests (`make test-image`)
-20. ✅ End-to-End test with real n8n
+21. ⏳ Linting & Formatting (`make lint`, `make format`) (TODO)
+22. ⏳ Docker tests (`make test-image`) (TODO)
+23. ⏳ End-to-End test with real n8n (TODO)
 
 ---
 
@@ -361,17 +437,21 @@ const webhookUrl = isActive
 ### .env.example additions
 
 ```bash
-# Auto-Discovery Configuration (Optional)
+# Models Configuration
+# Specify which loader to use: 'file', 'n8n-api', or 'static'
+MODEL_LOADER_TYPE=file
+
+# File Loader Configuration (when MODEL_LOADER_TYPE=file)
+# Path to models.json file
+MODELS_CONFIG=./models.json
+
+# N8n API Loader Configuration (when MODEL_LOADER_TYPE=n8n-api)
 # Automatically discover n8n workflows as OpenAI models via n8n API
 
-# Enable auto-discovery (default: false)
-# When enabled, models are loaded from n8n API instead of models.json
-# AUTO_DISCOVERY_FETCH_MODELS=true
-
-# n8n instance base URL (required when auto-discovery is enabled)
+# n8n instance base URL (required when MODEL_LOADER_TYPE=n8n-api)
 # N8N_BASE_URL=https://your-n8n-instance.com
 
-# n8n API key (required when auto-discovery is enabled)
+# n8n API key (required when MODEL_LOADER_TYPE=n8n-api)
 # Create in: n8n Settings > n8n API
 # WARNING: This token has read/write access to your n8n instance
 # N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
@@ -383,6 +463,10 @@ const webhookUrl = isActive
 # Polling interval in seconds (default: 300, range: 60-600, 0 to disable)
 # How often to check n8n for new/updated workflows
 # AUTO_DISCOVERY_POLLING=300
+
+# Static Loader Configuration (when MODEL_LOADER_TYPE=static)
+# For testing purposes only - provide static models as JSON string
+# STATIC_MODELS={"test-model":"https://n8n.example.com/webhook/test"}
 ```
 
 ---
@@ -448,19 +532,24 @@ try {
 ### For Existing Users
 
 **No Breaking Changes:**
-- Default remains `AUTO_DISCOVERY_FETCH_MODELS=false`
-- JsonFileModelLoader remains default
+- Default `MODEL_LOADER_TYPE=file` (JsonFileModelLoader)
 - Existing `models.json` continues to work
+- No configuration changes required
 
-**Opt-In Migration:**
-1. Create n8n API key
+**Opt-In Migration to Auto-Discovery:**
+1. Create n8n API key in n8n UI
 2. Tag workflows with `openai-model`
-3. Set ENV variables
+3. Set ENV variables:
+   ```bash
+   MODEL_LOADER_TYPE=n8n-api
+   N8N_BASE_URL=https://your-n8n.com
+   N8N_API_BEARER_TOKEN=n8n_api_xxxxx
+   ```
 4. Restart server
-5. Empty `models.json` to `{}` (optional)
+5. Optional: Empty `models.json` to `{}` (no longer used)
 
 **Rollback:**
-- Set `AUTO_DISCOVERY_FETCH_MODELS=false`
+- Set `MODEL_LOADER_TYPE=file`
 - Use old `models.json` again
 
 ---
@@ -645,3 +734,55 @@ try {
 
 **Plan created:** 2025-10-21  
 **Last updated:** 2025-10-21
+
+---
+
+## Implementation Status Summary
+
+### ✅ Completed (Phase 1-3)
+
+**Architecture:**
+- ✅ Loader registry pattern with `MODEL_LOADER_TYPE` ENV variable
+- ✅ Base class `ModelLoader` with `getRequiredEnvVars()` interface
+- ✅ Dependency injection: Config validates and injects ENV vars
+- ✅ Each loader handles its own parameter extraction and type conversion
+
+**Loaders Implemented:**
+- ✅ `JsonFileModelLoader` - File-based loader (TYPE: 'file')
+- ✅ `N8nApiModelLoader` - n8n REST API loader (TYPE: 'n8n-api')
+- ✅ `StaticModelLoader` - Testing loader (TYPE: 'static')
+
+**Config Integration:**
+- ✅ Dynamic loader selection via `MODEL_LOADER_TYPE`
+- ✅ Unified ENV variable validation in `validateEnvVars()`
+- ✅ Async model loading with fail-fast startup
+- ✅ Graceful shutdown with `close()` method
+
+**Testing:**
+- ✅ 42 test suites, 317 tests passing
+- ✅ Code coverage: 78.74%
+- ✅ Tests reorganized into `tests/config/` subfolder:
+  - `config.basic.test.js`
+  - `config.n8nToken.test.js`
+  - `config.headers.test.js`
+  - `config.models.test.js`
+- ✅ `StaticModelLoader.test.js` with 100% coverage
+- ✅ Updated `JsonFileModelLoader.test.js` for new constructor signature
+
+### ⏳ Remaining (Phase 4-6)
+
+**Phase 4 - N8nApiModelLoader Tests:**
+- ⏳ Unit tests for `N8nApiModelLoader` (fetchWorkflows, generateModelId, extractWebhookUrl, watch/stopWatching)
+- ⏳ Integration tests with mock n8n API
+- ⏳ Error handling tests (401, 403, timeout, invalid JSON)
+- ⏳ Polling mechanism tests
+
+**Phase 5 - Documentation:**
+- ⏳ Create `docs/AUTO_DISCOVERY.md`
+- ⏳ Update existing documentation
+- ⏳ Add JSDoc comments to all methods
+
+**Phase 6 - Polish:**
+- ⏳ Run linting and formatting
+- ⏳ Docker tests
+- ⏳ End-to-End test with real n8n instance

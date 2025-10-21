@@ -63,20 +63,20 @@ describe('JsonFileModelLoader', () => {
 
   describe('constructor', () => {
     it('should resolve relative paths to absolute', () => {
-      const loader = new JsonFileModelLoader('./models.json');
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: './models.json' });
       expect(path.isAbsolute(loader.filePath)).toBe(true);
     });
 
     it('should accept absolute paths', () => {
       const absolutePath = '/absolute/path/models.json';
-      const loader = new JsonFileModelLoader(absolutePath);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: absolutePath });
       expect(loader.filePath).toBe(absolutePath);
     });
   });
 
   describe('load()', () => {
     it('should load valid JSON file', async () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       const models = await loader.load();
 
       expect(models).toEqual({
@@ -86,13 +86,15 @@ describe('JsonFileModelLoader', () => {
     });
 
     it('should throw error for non-existent file', async () => {
-      const loader = new JsonFileModelLoader(path.join(testDir, 'nonexistent.json'));
+      const loader = new JsonFileModelLoader({
+        MODELS_CONFIG: path.join(testDir, 'nonexistent.json'),
+      });
       await expect(loader.load()).rejects.toThrow('Models file not found');
     });
 
     it('should throw error for invalid JSON', async () => {
       fs.writeFileSync(testFile, '{ invalid json }');
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       await expect(loader.load()).rejects.toThrow('Invalid JSON in models file');
     });
 
@@ -104,7 +106,7 @@ describe('JsonFileModelLoader', () => {
           'model-2': 'https://valid.example.com/webhook',
         }),
       );
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       const models = await loader.load();
       expect(models).toEqual({
         'model-2': 'https://valid.example.com/webhook',
@@ -113,7 +115,7 @@ describe('JsonFileModelLoader', () => {
 
     it('should accept empty models object', async () => {
       fs.writeFileSync(testFile, JSON.stringify({}));
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       const models = await loader.load();
       expect(models).toEqual({});
     });
@@ -137,7 +139,7 @@ describe('JsonFileModelLoader', () => {
     });
 
     it('should call callback when file changes', async () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       loaders.push(loader);
 
       const callbackPromise = new Promise((resolve) => {
@@ -163,7 +165,9 @@ describe('JsonFileModelLoader', () => {
 
     it('should not throw when watching non-existent file', () => {
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const loader = new JsonFileModelLoader(path.join(testDir, 'nonexistent.json'));
+      const loader = new JsonFileModelLoader({
+        MODELS_CONFIG: path.join(testDir, 'nonexistent.json'),
+      });
       loaders.push(loader);
       expect(() => loader.watch(() => {})).not.toThrow();
       consoleWarnSpy.mockRestore();
@@ -171,7 +175,7 @@ describe('JsonFileModelLoader', () => {
 
     it('should not watch twice', () => {
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       loaders.push(loader);
 
       loader.watch(() => {});
@@ -183,7 +187,7 @@ describe('JsonFileModelLoader', () => {
     });
 
     it('should debounce multiple rapid changes', async () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       loaders.push(loader);
       const callback = jest.fn();
 
@@ -208,7 +212,7 @@ describe('JsonFileModelLoader', () => {
 
   describe('stopWatching()', () => {
     it('should stop watching file', () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       loader.watch(() => {});
 
       expect(loader.watcher).not.toBeNull();
@@ -217,12 +221,12 @@ describe('JsonFileModelLoader', () => {
     });
 
     it('should not throw when called without active watcher', () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       expect(() => loader.stopWatching()).not.toThrow();
     });
 
     it('should clear reload timeout', async () => {
-      const loader = new JsonFileModelLoader(testFile);
+      const loader = new JsonFileModelLoader({ MODELS_CONFIG: testFile });
       loader.watch(() => {});
 
       await new Promise((resolve) => setTimeout(resolve, 200));
