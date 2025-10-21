@@ -59,13 +59,13 @@ This directory contains the CI/CD workflows for the n8n OpenAI Bridge project.
 - `packages: write` - Push to GitHub Container Registry
 
 **How it works:**
-1. Add the `release` label to your PR before merging
-2. Merge the PR to `main` (squash, merge commit, or rebase)
-3. Workflow checks if PR was merged AND has `release` label
-4. Finds the latest version tag (e.g., `v0.0.6`)
-5. Increments the patch version (e.g., `v0.0.7`)
-6. Creates a new GitHub Release with auto-generated notes
-7. Immediately builds and pushes Docker images
+1. ✓ Add the `release` label to your PR before merging
+2. ✓ Merge the PR to `main` (squash, merge commit, or rebase)
+3. ✓ Workflow checks if PR was merged AND has `release` label
+4. ✓ Finds the latest version tag (e.g., `v0.0.6`)
+5. ✓ Increments the patch version (e.g., `v0.0.7`)
+6. ✓ Creates a new GitHub Release with auto-generated notes
+7. ✓ Immediately builds and pushes Docker images
 
 **Important:** PRs without the `release` label will NOT trigger a release, even when merged to `main`.
 
@@ -139,13 +139,13 @@ gh pr merge --squash --delete-branch
 
 #### 4. Automatic Release Process
 After merge to `main` (with `release` label):
-1. ✅ `release-on-merge` workflow triggers
-2. ✅ Finds latest tag (e.g., `v0.0.6`)
-3. ✅ Creates new tag (e.g., `v0.0.7`)
-4. ✅ Creates GitHub Release with auto-generated notes
-5. ✅ Docker image builds for amd64 and arm64
-6. ✅ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
-7. ✅ Tagged with `0.0.7`, `0.0`, `0`, and `latest`
+1. ✓ `release-on-merge` workflow triggers
+2. ✓ Finds latest tag (e.g., `v0.0.6`)
+3. ✓ Creates new tag (e.g., `v0.0.7`)
+4. ✓ Creates GitHub Release with auto-generated notes
+5. ✓ Docker image builds for amd64 and arm64
+6. ✓ Image pushed to `ghcr.io/sveneisenschmidt/n8n-openai-bridge`
+7. ✓ Tagged with `0.0.7`, `0.0`, `0`, and `latest`
 
 **That's it!** Everything happens in one workflow - no manual steps needed.
 
@@ -205,17 +205,17 @@ After release `v1.0.0`, the following tags are available:
 Configure in GitHub Settings → Branches → Branch protection rules:
 
 ### Main Branch
-- ✅ Require a pull request before merging
-- ✅ Require approvals: 1
-- ✅ Dismiss stale pull request approvals when new commits are pushed
-- ✅ Require status checks to pass before merging:
+- ✓ Require a pull request before merging
+- ✓ Require approvals: 1
+- ✓ Dismiss stale pull request approvals when new commits are pushed
+- ✓ Require status checks to pass before merging:
   - `test`
   - `docker-build`
   - `lint`
   - `security-scan`
-- ✅ Require branches to be up to date before merging
-- ✅ Require conversation resolution before merging
-- ✅ Do not allow bypassing the above settings
+- ✓ Require branches to be up to date before merging
+- ✓ Require conversation resolution before merging
+- ✓ Do not allow bypassing the above settings
 
 ## Secrets Configuration
 
