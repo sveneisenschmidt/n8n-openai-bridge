@@ -17,27 +17,23 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const JsonFileModelLoader = require('../../../src/loaders/JsonFileModelLoader');
+const { setupLoaderTestDir } = require('../../helpers/test-loader');
 
 describe('JsonFileModelLoader - stopWatching', () => {
-  const testDir = path.join(__dirname, '..', '..', '..', 'tests', 'test-data');
-  const testFile = path.join(testDir, 'test-models-stop.json');
+  let testSetup;
+  let testFile;
   let consoleLogSpy;
   let loaders = [];
 
   beforeAll(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
+    testSetup = setupLoaderTestDir();
   });
 
   afterAll(() => {
     consoleLogSpy.mockRestore();
-    if (fs.existsSync(testDir)) {
-      fs.rmSync(testDir, { recursive: true, force: true });
-    }
+    testSetup.cleanup();
   });
 
   beforeEach(() => {
@@ -46,7 +42,7 @@ describe('JsonFileModelLoader - stopWatching', () => {
       'test-model-1': 'https://example.com/webhook1',
       'test-model-2': 'https://example.com/webhook2',
     };
-    fs.writeFileSync(testFile, JSON.stringify(validModels, null, 2));
+    testFile = testSetup.createTestFile('test-models-stop.json', validModels);
   });
 
   afterEach(() => {
@@ -85,11 +81,6 @@ describe('JsonFileModelLoader - stopWatching', () => {
     loader.watch(() => {});
 
     await new Promise((resolve) => setTimeout(resolve, 200));
-
-    // Ensure directory exists before writing
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
 
     fs.writeFileSync(testFile, JSON.stringify({ test: 'https://example.com' }));
 

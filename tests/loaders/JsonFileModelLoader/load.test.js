@@ -17,26 +17,22 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const JsonFileModelLoader = require('../../../src/loaders/JsonFileModelLoader');
+const { setupLoaderTestDir } = require('../../helpers/test-loader');
 
 describe('JsonFileModelLoader - load', () => {
-  const testDir = path.join(__dirname, '..', '..', '..', 'tests', 'test-data');
-  const testFile = path.join(testDir, 'test-models.json');
+  let testSetup;
+  let testFile;
   let consoleLogSpy;
 
   beforeAll(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
+    testSetup = setupLoaderTestDir();
   });
 
   afterAll(() => {
     consoleLogSpy.mockRestore();
-    if (fs.existsSync(testDir)) {
-      fs.rmSync(testDir, { recursive: true, force: true });
-    }
+    testSetup.cleanup();
   });
 
   beforeEach(() => {
@@ -44,13 +40,11 @@ describe('JsonFileModelLoader - load', () => {
       'test-model-1': 'https://example.com/webhook1',
       'test-model-2': 'https://example.com/webhook2',
     };
-    fs.writeFileSync(testFile, JSON.stringify(validModels, null, 2));
+    testFile = testSetup.createTestFile('test-models.json', validModels);
   });
 
   afterEach(() => {
-    if (fs.existsSync(testFile)) {
-      fs.unlinkSync(testFile);
-    }
+    testSetup.cleanup();
   });
 
   test('should load valid JSON file', async () => {
@@ -65,7 +59,7 @@ describe('JsonFileModelLoader - load', () => {
 
   test('should throw error for non-existent file', async () => {
     const loader = new JsonFileModelLoader({
-      MODELS_CONFIG: path.join(testDir, 'nonexistent.json'),
+      MODELS_CONFIG: testSetup.getTestFilePath('nonexistent.json'),
     });
     await expect(loader.load()).rejects.toThrow('Models file not found');
   });
