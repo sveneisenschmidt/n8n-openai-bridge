@@ -365,39 +365,75 @@ Client → Express Server → Auth Middleware → Route Handler → n8nClient �
 
 ### ModelLoader System
 
-The bridge uses a flexible loader pattern for model configuration:
+The bridge uses a flexible **ModelLoader registry pattern** for model loading:
 
 **Base Class:** `src/loaders/ModelLoader.js`
 - Abstract base class defining the loader interface
-- `loadSync()`: Synchronous loading for startup
-- `load()`: Asynchronous loading for runtime
-- `watch(callback)`: Optional file watching
-- `validateModels(models)`: Validation logic
+- `static TYPE`: Loader type identifier (e.g., 'file', 'n8n-api', 'static')
+- `static getRequiredEnvVars()`: Returns array of required environment variables
+- `load()`: Asynchronous loading (required)
+- `loadSync()`: Synchronous loading for startup (optional, throws if not supported)
+- `watch(callback)`: Optional file watching or polling
+- `validateModels(models)`: Validation logic (inherited)
 
-**JsonFileModelLoader:** `src/loaders/JsonFileModelLoader.js`
-- Default implementation for JSON file loading
-- Uses `fs.readFileSync()` for sync loading
-- Uses `fs.watch()` with 100ms debounce for auto-reload
-- Validates model format and URLs
+**Built-in Loaders:**
+
+1. **JsonFileModelLoader** (`src/loaders/JsonFileModelLoader.js`, TYPE: `file`)
+   - Loads models from JSON file
+   - Uses `fs.readFileSync()` for startup loading
+   - Watches file with 100ms debounce for hot-reload
+   - Default loader if `MODEL_LOADER_TYPE` not set
+
+2. **N8nApiModelLoader** (`src/loaders/N8nApiModelLoader.js`, TYPE: `n8n-api`)
+   - Auto-discovers workflows via n8n REST API
+   - Filters by tags and active status
+   - Polling mechanism for automatic reloads
+   - Supports custom model IDs via `model:` tags
+   - Async loading only (use polling for auto-updates)
+
+3. **StaticModelLoader** (`src/loaders/StaticModelLoader.js`, TYPE: `static`)
+   - Loads models from environment variable (testing only)
+   - No file system or API dependencies
+   - Useful for unit tests and development
+
+**Loader Registry in config.js:**
+```javascript
+const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader];
+
+createModelLoader() {
+  const loaderType = (process.env.MODEL_LOADER_TYPE || 'file').toLowerCase();
+  const LoaderClass = MODEL_LOADERS.find(l => l.TYPE === loaderType);
+  
+  if (!LoaderClass) {
+    throw new Error(`Unknown loader type: ${loaderType}`);
+  }
+  
+  const envValues = this.validateEnvVars(LoaderClass);
+  return new LoaderClass(envValues);
+}
+```
 
 **Integration in config.js:**
 ```javascript
 constructor() {
-  // Initialize ModelLoader (default: JsonFileModelLoader)
   this.modelLoader = this.createModelLoader();
-
-  // Load models synchronously on startup
-  this.models = this.modelLoader.loadSync();
-
-  // Setup file watcher for hot-reload
+  
+  // Load models asynchronously
+  this.loadingPromise = this.loadModels()
+    .then(models => {
+      this.models = models;
+      this.modelsReady = true;
+      return models;
+    });
+  
   this.setupFileWatcher();
 }
 ```
 
-**Why synchronous loading on startup?**
-- Prevents race condition where server starts before models are loaded
-- Health endpoint doesn't depend on models being loaded
-- Server is immediately ready to serve requests
+**Why asynchronous loading on startup?**
+- Supports loaders that need async operations (API calls, etc.)
+- Server waits for models before accepting requests
+- Fail-fast: Server exits if models can't load
 
 ### Configuration
 
@@ -472,9 +508,31 @@ To add support for different model sources (e.g., HTTP API, Database):
 const ModelLoader = require('./ModelLoader');
 
 class HttpModelLoader extends ModelLoader {
-  constructor(apiUrl) {
+  static get TYPE() {
+    return 'http';
+  }
+
+  static getRequiredEnvVars() {
+    return [
+      {
+        name: 'MODEL_API_URL',
+        description: 'HTTP endpoint for model list',
+        required: true,
+        defaultValue: null
+      },
+      {
+        name: 'MODEL_API_TIMEOUT',
+        description: 'API request timeout in ms',
+        required: false,
+        defaultValue: '5000'
+      }
+    ];
+  }
+
+  constructor(envValues) {
     super();
-    this.apiUrl = apiUrl;
+    this.apiUrl = envValues.MODEL_API_URL;
+    this.timeout = parseInt(envValues.MODEL_API_TIMEOUT, 10);
   }
 
   loadSync() {
@@ -483,7 +541,7 @@ class HttpModelLoader extends ModelLoader {
   }
 
   async load() {
-    const response = await fetch(this.apiUrl);
+    const response = await fetch(this.apiUrl, { timeout: this.timeout });
     const models = await response.json();
     this.validateModels(models);
     return models;
@@ -492,39 +550,63 @@ class HttpModelLoader extends ModelLoader {
   watch(callback) {
     // Implement polling or webhook for updates
     setInterval(async () => {
-      const models = await this.load();
-      callback(models);
+      try {
+        const models = await this.load();
+        callback(models);
+      } catch (error) {
+        console.error('Polling error:', error.message);
+      }
     }, 60000); // Poll every minute
+  }
+
+  stopWatching() {
+    // Clean up intervals/timers
   }
 }
 ```
 
-### 2. Integrate in config.js
+### 2. Register in config.js
 
 ```javascript
-createModelLoader() {
-  const loaderType = process.env.MODEL_LOADER_TYPE || 'json';
+// src/config.js
+const MODEL_LOADERS = [
+  JsonFileModelLoader,
+  N8nApiModelLoader,
+  StaticModelLoader,
+  HttpModelLoader  // Add your loader
+];
 
-  switch (loaderType) {
-    case 'json':
-      return new JsonFileModelLoader(this.modelsConfig);
-    case 'http':
-      return new HttpModelLoader(process.env.MODEL_API_URL);
-    default:
-      throw new Error(`Unknown loader type: ${loaderType}`);
+createModelLoader() {
+  const loaderType = (process.env.MODEL_LOADER_TYPE || 'file').toLowerCase();
+  const LoaderClass = MODEL_LOADERS.find(l => l.TYPE === loaderType);
+  
+  if (!LoaderClass) {
+    const available = MODEL_LOADERS.map(l => l.TYPE).join(', ');
+    throw new Error(`Unknown MODEL_LOADER_TYPE: ${loaderType}. Available: ${available}`);
   }
+  
+  const envValues = this.validateEnvVars(LoaderClass);
+  return new LoaderClass(envValues);
 }
 ```
 
 ### 3. Add Tests
 
-Create tests similar to `tests/loaders/JsonFileModelLoader.test.js` for your new loader.
+Create tests in `tests/loaders/HttpModelLoader/` directory:
+- Constructor and initialization
+- API communication and error handling
+- Model validation
+- Polling mechanism
+- Watch/stopWatching lifecycle
+
+Use mocks for HTTP requests to avoid external dependencies.
 
 ### 4. Update Documentation
 
-- Add new env vars to .env.example
-- Document new loader in README.md
-- Add examples for configuration
+- Add new env vars to `.env.example`
+- Document new loader in `docs/MODELLOADER.md`
+- Add setup instructions
+- Document error handling and troubleshooting
 
 ## Important Reminders for AI Agents
 
