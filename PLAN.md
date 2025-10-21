@@ -43,7 +43,7 @@ Automatic discovery of n8n workflows as OpenAI models via n8n REST API, eliminat
    - Tag filter for n8n workflows
    - Only workflows with this tag are recognized as models
 
-3. **`AUTO_DISCOVERY_POLLING`** (number, default: `300` seconds)
+3. **`AUTO_DISCOVERY_POLL_INTERVAL`** (number, default: `300` seconds)
    - Polling interval for re-querying n8n API
    - Range: 60-600 seconds
    - `0` = Polling disabled (only load at startup)
@@ -92,7 +92,7 @@ const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader
 - `N8N_BASE_URL` (required)
 - `N8N_API_BEARER_TOKEN` (required)
 - `AUTO_DISCOVERY_TAG` (optional, default: 'openai-model')
-- `AUTO_DISCOVERY_POLLING` (optional, default: '300')
+- `AUTO_DISCOVERY_POLL_INTERVAL` (optional, default: '300')
 
 **Not responsible for:**
 - Model validation (handled by base class `ModelLoader.validateModels()`)
@@ -469,7 +469,7 @@ MODELS_CONFIG=./models.json
 
 # Polling interval in seconds (default: 300, range: 60-600, 0 to disable)
 # How often to check n8n for new/updated workflows
-# AUTO_DISCOVERY_POLLING=300
+# AUTO_DISCOVERY_POLL_INTERVAL=300
 
 # Static Loader Configuration (when MODEL_LOADER_TYPE=static)
 # For testing purposes only - provide static models as JSON string

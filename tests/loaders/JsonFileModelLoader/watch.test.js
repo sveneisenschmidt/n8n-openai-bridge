@@ -86,10 +86,10 @@ describe('JsonFileModelLoader - watch', () => {
   });
 
   test('should call callback when file changes', async () => {
-    // Use 200ms polling interval for faster test execution
+    // Use 0.2s (200ms) polling interval for faster test execution
     const loader = new JsonFileModelLoader({
       MODELS_CONFIG_FILE: testFile,
-      MODELS_POLL_INTERVAL: '200',
+      MODELS_POLL_INTERVAL: '0.2',
     });
     activeLoaders.push(loader);
 

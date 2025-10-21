@@ -44,7 +44,7 @@ MODEL_LOADER_TYPE=file           # Options: file (default), n8n-api, static
 
 ```bash
 MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
-MODELS_POLL_INTERVAL=1000          # File polling interval in ms (default: 1000)
+MODELS_POLL_INTERVAL=1              # File polling interval in seconds (default: 1)
 ```
 
 **Deprecated:**

@@ -81,9 +81,9 @@ class JsonFileModelLoader extends ModelLoader {
       },
       {
         name: 'MODELS_POLL_INTERVAL',
-        description: 'File watch polling interval in milliseconds',
+        description: 'File watch polling interval in seconds',
         required: false,
-        defaultValue: '1000',
+        defaultValue: '1',
       },
     ];
   }
@@ -110,9 +110,9 @@ class JsonFileModelLoader extends ModelLoader {
     this.watchCallback = null;
     this.lastHash = null;
 
-    // Watch interval from env or default
-    const watchIntervalEnv = envValues.MODELS_POLL_INTERVAL || '1000';
-    this.watchInterval = parseInt(watchIntervalEnv, 10);
+    // Watch interval from env or default (in seconds, convert to milliseconds)
+    const watchIntervalEnv = envValues.MODELS_POLL_INTERVAL || '1';
+    this.watchInterval = parseInt(watchIntervalEnv, 10) * 1000;
 
     console.log(`JsonFileModelLoader: Using file ${this.filePath}`);
   }
@@ -199,7 +199,7 @@ class JsonFileModelLoader extends ModelLoader {
    *
    * Watch Flow:
    * 1. Calculate initial file hash
-   * 2. Poll file at configured interval (default: 1000ms)
+   * 2. Poll file at configured interval (default: 1s)
    * 3. Calculate new hash and compare with previous
    * 4. If different: load() → validateModels() → callback fires
    * 5. Update hash and continue polling
@@ -217,7 +217,7 @@ class JsonFileModelLoader extends ModelLoader {
    *
    * Platform Notes:
    * - Works reliably in all environments (Docker, CI, network filesystems)
-   * - Reload latency: ~watchInterval ms after file change
+   * - Reload latency: ~watchInterval seconds after file change
    *
    * @param {Function} callback Function to call when models change
    *                            Signature: (models: Object) => void
@@ -234,7 +234,9 @@ class JsonFileModelLoader extends ModelLoader {
 
     // Get initial hash
     this.lastHash = this.getFileHash();
-    console.log(`Watching ${this.filePath} for changes (polling every ${this.watchInterval}ms)...`);
+    console.log(
+      `Watching ${this.filePath} for changes (polling every ${this.watchInterval / 1000}s)...`,
+    );
 
     // Start polling
     this.pollingInterval = setInterval(async () => {

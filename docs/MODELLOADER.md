@@ -12,7 +12,7 @@ Default loader. Reads models from a JSON file with automatic hot-reload via hash
 ```bash
 MODEL_LOADER_TYPE=file
 MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
-MODELS_POLL_INTERVAL=1000          # Polling interval in ms (default: 1000)
+MODELS_POLL_INTERVAL=1              # Polling interval in seconds (default: 1)
 ```
 
 **Deprecated:**
@@ -29,7 +29,7 @@ MODELS_POLL_INTERVAL=1000          # Polling interval in ms (default: 1000)
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON
 - Hot-reload: Polls file content (hash-based), reloads on changes
-- Polling interval: Configurable via `MODELS_POLL_INTERVAL` (default: 1000ms)
+- Polling interval: Configurable via `MODELS_POLL_INTERVAL` (default: 1s)
 - Invalid models: Filtered out with warnings, server continues
 - Hash comparison: Only reloads when file content actually changed
 

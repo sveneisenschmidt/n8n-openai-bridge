@@ -140,7 +140,7 @@ MODEL_LOADER_TYPE=n8n-api
 N8N_BASE_URL=https://your-n8n-instance.com
 N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
 AUTO_DISCOVERY_TAG=n8n-openai-bridge
-AUTO_DISCOVERY_POLLING=300
+AUTO_DISCOVERY_POLL_INTERVAL=300
 ```
 
 Tag your n8n workflows with `n8n-openai-bridge` (configurable) and they are automatically discovered and exposed as models. Polling interval can be configured (default: 300 seconds).

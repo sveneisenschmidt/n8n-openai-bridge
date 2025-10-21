@@ -70,7 +70,7 @@ describe('JsonFileModelLoader - Constructor', () => {
   test('should accept watchInterval via MODELS_POLL_INTERVAL env var', () => {
     const loader = new JsonFileModelLoader({
       MODELS_CONFIG_FILE: './models.json',
-      MODELS_POLL_INTERVAL: '2000',
+      MODELS_POLL_INTERVAL: '2',
     });
     expect(loader.watchInterval).toBe(2000);
   });
