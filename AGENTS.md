@@ -404,11 +404,14 @@ constructor() {
 **Environment Variables (.env):**
 - `PORT`: Server port (default: 3333)
 - `BEARER_TOKEN`: Auth token for API requests
-- `N8N_BEARER_TOKEN`: Auth token for n8n webhooks (optional)
+- `N8N_WEBHOOK_BEARER_TOKEN`: Auth token for n8n webhooks (optional)
 - `MODELS_CONFIG`: Path to models.json (default: ./models.json)
 - `LOG_REQUESTS`: Enable detailed logging (true/false)
 - `SESSION_ID_HEADERS`: Comma-separated list of headers to check for session ID
 - `USER_*_HEADERS`: Headers for user context (ID, email, name, role)
+
+**Backwards Compatibility:**
+- `N8N_BEARER_TOKEN` (deprecated): Old name for webhook bearer token, still supported with deprecation warning
 
 **Models Configuration (models.json):**
 ```json

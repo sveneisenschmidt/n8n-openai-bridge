@@ -8,7 +8,7 @@ This directory contains default configuration files that are built into the Dock
 Default environment configuration for the Docker container:
 - `PORT=3333` - Server port
 - `BEARER_TOKEN=change-me` - Default API token (must be changed!)
-- `N8N_BEARER_TOKEN=` - Optional n8n webhook authentication
+- `N8N_WEBHOOK_BEARER_TOKEN=` - Optional n8n webhook authentication
 - `LOG_REQUESTS=false` - Request logging disabled by default
 - `SESSION_ID_HEADERS=...` - Default session ID header names
 

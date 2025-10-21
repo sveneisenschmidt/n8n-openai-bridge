@@ -18,7 +18,7 @@ Complete guide for configuring n8n OpenAI Bridge.
 # Server Configuration
 PORT=3333                        # Server port
 BEARER_TOKEN=your-api-key        # Auth for requests TO this bridge
-N8N_BEARER_TOKEN=                # Optional: Auth for requests FROM bridge to n8n
+N8N_WEBHOOK_BEARER_TOKEN=        # Optional: Auth for requests FROM bridge to n8n
 MODELS_CONFIG=./models.json      # Path to models config
 LOG_REQUESTS=false               # Debug logging
 
@@ -35,8 +35,11 @@ DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ### Authentication Flow
 
 - `BEARER_TOKEN` - Protects this bridge (clients → bridge)
-- `N8N_BEARER_TOKEN` - Protects n8n webhooks (bridge → n8n)
-- Leave `N8N_BEARER_TOKEN` empty if your n8n webhooks are public
+- `N8N_WEBHOOK_BEARER_TOKEN` - Protects n8n webhooks (bridge → n8n)
+- Leave `N8N_WEBHOOK_BEARER_TOKEN` empty if your n8n webhooks are public
+
+**Backwards Compatibility:**
+The deprecated `N8N_BEARER_TOKEN` variable is still supported but will show a deprecation warning. Please migrate to `N8N_WEBHOOK_BEARER_TOKEN`.
 
 ## Model Configuration
 

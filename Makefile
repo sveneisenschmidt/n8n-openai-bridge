@@ -1,7 +1,10 @@
-.PHONY: help build rebuild start stop restart clean logs test verify lint lint-fix format format-fix
+.PHONY: help setup build rebuild start stop restart clean logs test verify lint lint-fix format format-fix
 
 help:
 	@echo "Available commands:"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make setup       - Initialize development environment (run once after clone)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make rebuild     - Stop containers, rebuild image, and start server"
@@ -21,6 +24,15 @@ help:
 	@echo "  make lint-fix    - Run ESLint and auto-fix issues"
 	@echo "  make format      - Check if code is formatted correctly"
 	@echo "  make format-fix  - Format code with Prettier"
+
+setup:
+	@command -v docker >/dev/null 2>&1 || { echo "Docker not found"; exit 1; }
+	@command -v make >/dev/null 2>&1 || { echo "Make not found"; exit 1; }
+	@[ -f .env ] || cp .env.example .env
+	@[ -f models.json ] || cp models.json.example models.json
+	@./scripts/setup-hooks.sh
+	@make build
+	@make test
 
 rebuild: stop build start
 	@echo "Rebuild complete!"

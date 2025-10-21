@@ -95,6 +95,64 @@ describe('Config', () => {
     });
   });
 
+  describe('resolveN8nWebhookBearerToken', () => {
+    test('should use N8N_WEBHOOK_BEARER_TOKEN when set', () => {
+      process.env.N8N_WEBHOOK_BEARER_TOKEN = 'new-token';
+      process.env.N8N_BEARER_TOKEN = 'old-token';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.n8nWebhookBearerToken).toBe('new-token');
+    });
+
+    test('should fall back to N8N_BEARER_TOKEN for backwards compatibility', () => {
+      delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
+      process.env.N8N_BEARER_TOKEN = 'old-token';
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.n8nWebhookBearerToken).toBe('old-token');
+    });
+
+    test('should warn when using deprecated N8N_BEARER_TOKEN', () => {
+      delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
+      process.env.N8N_BEARER_TOKEN = 'old-token';
+      jest.resetModules();
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      require('../src/config');
+
+      expect(console.warn).toHaveBeenCalledWith(
+        'N8N_BEARER_TOKEN is deprecated, please use N8N_WEBHOOK_BEARER_TOKEN instead',
+      );
+
+      console.warn.mockRestore();
+    });
+
+    test('should prefer N8N_WEBHOOK_BEARER_TOKEN over N8N_BEARER_TOKEN', () => {
+      process.env.N8N_WEBHOOK_BEARER_TOKEN = 'new-token';
+      process.env.N8N_BEARER_TOKEN = 'old-token';
+      jest.resetModules();
+      jest.spyOn(console, 'warn').mockImplementation();
+
+      const config = require('../src/config');
+
+      expect(config.n8nWebhookBearerToken).toBe('new-token');
+      expect(console.warn).not.toHaveBeenCalled();
+
+      console.warn.mockRestore();
+    });
+
+    test('should return empty string when no token is set', () => {
+      delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
+      delete process.env.N8N_BEARER_TOKEN;
+      jest.resetModules();
+      const config = require('../src/config');
+
+      expect(config.n8nWebhookBearerToken).toBe('');
+    });
+  });
+
   describe('parseSessionIdHeaders', () => {
     test('should parse comma-separated session ID headers', () => {
       process.env.SESSION_ID_HEADERS = 'X-Custom-Session,X-Chat-ID,X-Conversation';

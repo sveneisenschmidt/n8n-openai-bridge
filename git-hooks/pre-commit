@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Pre-commit hook: Run linting and formatting checks
+
+set -e
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|test\.js)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+make lint || exit 1
+make format || exit 1
+
+exit 0

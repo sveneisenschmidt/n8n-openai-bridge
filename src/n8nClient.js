@@ -26,8 +26,8 @@ class N8nClient {
 
   getHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (this.config.n8nBearerToken) {
-      headers['Authorization'] = `Bearer ${this.config.n8nBearerToken}`;
+    if (this.config.n8nWebhookBearerToken) {
+      headers['Authorization'] = `Bearer ${this.config.n8nWebhookBearerToken}`;
     }
     return headers;
   }

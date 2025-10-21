@@ -4,14 +4,31 @@ Guide for developing and contributing to n8n OpenAI Bridge.
 
 ## Table of Contents
 
+- [Initial Setup](#initial-setup)
 - [Project Structure](#project-structure)
 - [Make Commands](#make-commands)
 - [Development Workflow](#development-workflow)
 - [Testing](#testing)
 - [Code Quality](#code-quality)
+- [Git Hooks](#git-hooks)
 - [Git Workflow](#git-workflow)
 - [CI/CD](#cicd)
 - [Contributing](#contributing)
+
+## Initial Setup
+
+After cloning the repository, run:
+
+```bash
+make setup
+```
+
+This will:
+- Create `.env` from `.env.example`
+- Create `models.json` from `models.json.example`
+- Install Git hooks for code quality checks
+- Build Docker image
+- Run tests to validate setup
 
 ## Project Structure
 
@@ -64,6 +81,12 @@ n8n-openai-bridge/
 
 ## Make Commands
 
+### Setup Command
+
+```bash
+make setup         # Initialize development environment (run once after clone)
+```
+
 ### Development Commands
 
 ```bash
@@ -94,11 +117,7 @@ make format            # Check if code is formatted correctly (Prettier)
 make format-fix        # Format code with Prettier
 ```
 
-**Before Committing:**
-
-```bash
-make lint && make format  # Ensure code passes quality checks
-```
+Code quality checks run automatically via pre-commit hooks (see [Git Hooks](#git-hooks)).
 
 ## Development Workflow
 
@@ -233,6 +252,34 @@ make format-fix    # Format code with Prettier
 ```bash
 make lint && make format  # Ensure code passes quality checks
 ```
+
+## Git Hooks
+
+### Setup
+
+After cloning the repository, run:
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+This installs pre-commit hooks that automatically check code quality.
+
+### Pre-Commit Hook
+
+The pre-commit hook automatically runs before each commit:
+
+**What it does:**
+- Runs `make lint` to check for ESLint violations
+- Runs `make format` to verify Prettier formatting
+- Blocks commit if any check fails
+
+**Bypass (not recommended):**
+```bash
+git commit --no-verify
+```
+
+The hook ensures consistent code quality without requiring manual setup or npm on the host machine.
 
 ## Git Workflow
 
