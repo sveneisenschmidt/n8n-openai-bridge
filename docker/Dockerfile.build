@@ -1,5 +1,23 @@
 FROM node:20-alpine
 
+# Build arguments for image metadata
+ARG VERSION=unknown
+ARG BUILD_DATE=unknown
+ARG VCS_REF=unknown
+ARG DESCRIPTION="OpenAI-compatible API bridge for n8n workflows"
+
+# OCI standard labels
+LABEL org.opencontainers.image.title="n8n-openai-bridge"
+LABEL org.opencontainers.image.description="${DESCRIPTION}"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${VCS_REF}"
+LABEL org.opencontainers.image.source="https://github.com/sveneisenschmidt/n8n-openai-bridge"
+LABEL org.opencontainers.image.url="https://github.com/sveneisenschmidt/n8n-openai-bridge"
+LABEL org.opencontainers.image.documentation="https://github.com/sveneisenschmidt/n8n-openai-bridge#readme"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.vendor="Sven Eisenschmidt"
+
 # Set production environment
 ENV NODE_ENV=production
 

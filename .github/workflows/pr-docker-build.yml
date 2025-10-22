@@ -39,6 +39,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            VERSION=pr-${{ github.event.pull_request.number }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            DESCRIPTION=PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
