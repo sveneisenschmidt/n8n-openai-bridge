@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9] - 2025-10-22
+
+### Added
+- **Automatic model discovery from n8n workflows** - Models are now automatically identified by their workflow names, eliminating manual configuration (Closes #16)
+- New `N8nApiModelLoader` for dynamic model loading from n8n API
+- `make setup` command for streamlined development environment initialization
+- Demo GIF and compatibility section in README
+- Git hooks for automatic code quality checks
+
+### Changed
+- **Environment variable rename:** `N8N_BEARER_TOKEN` → `N8N_WEBHOOK_BEARER_TOKEN` (backwards compatible, old name deprecated)
+- Webhook extraction now uses `chatTrigger` nodes for simpler workflow configuration
+- Enhanced ModelLoader and integration documentation
+
+### Fixed
+- Docker file permissions for non-root user
+- Docker build workflow missing Dockerfile path
+- Release workflow tag fetching
+
+### Documentation
+- Comprehensive N8nApiModelLoader documentation
+- Updated CONFIGURATION.md and MODELLOADER.md with automatic discovery examples
+- Development setup guide with git hooks
+
+**Full Changelog**: https://github.com/sveneisenschmidt/n8n-openai-bridge/compare/v0.0.8...v0.0.9
+
 ## [0.0.8] - 2025-10-20
 
 ### Added
