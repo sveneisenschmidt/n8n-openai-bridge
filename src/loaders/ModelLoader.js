@@ -22,22 +22,54 @@
  * Provides a flexible interface for loading models from different sources.
  * This architecture allows the bridge to support multiple model sources:
  * - JSON files (JsonFileModelLoader)
+ * - n8n REST API (N8nApiModelLoader)
  * - Databases
  * - Remote configuration servers
  * - Environment variables
  * etc.
  *
  * Subclasses MUST implement:
- * - load() - Load and return models
- * - validateModels() uses graceful degradation: invalid entries are filtered
- *   out with warnings rather than failing the entire load. This ensures the
- *   bridge continues running even with partially invalid configurations.
+ * - load() - Load and return models (async)
+ * - getRequiredEnvVars() - Static method returning required environment variables
  *
  * Subclasses MAY implement:
  * - watch() - Watch for changes and reload automatically
  * - stopWatching() - Cleanup watcher resources
+ *
+ * Validation:
+ * - validateModels() uses graceful degradation: invalid entries are filtered
+ *   out with warnings rather than failing the entire load. This ensures the
+ *   bridge continues running even with partially invalid configurations.
  */
 class ModelLoader {
+  /**
+   * Get required environment variables for this loader
+   *
+   * MUST be implemented by subclass as a static method.
+   *
+   * Returns an array of required environment variable definitions.
+   * Each definition is an object with:
+   * - name: Environment variable name
+   * - description: Human-readable description
+   * - required: true/false (optional variables)
+   * - defaultValue: Default value if not set (for optional vars)
+   *
+   * Example:
+   * ```js
+   * static getRequiredEnvVars() {
+   *   return [
+   *     { name: 'N8N_BASE_URL', description: 'n8n instance URL', required: true },
+   *     { name: 'POLLING', description: 'Polling interval', required: false, defaultValue: '300' }
+   *   ];
+   * }
+   * ```
+   *
+   * @returns {Array<{name: string, description: string, required: boolean, defaultValue?: string}>}
+   */
+  static getRequiredEnvVars() {
+    throw new Error('getRequiredEnvVars() must be implemented by subclass as static method');
+  }
+
   /**
    * Load models from the configured source
    *

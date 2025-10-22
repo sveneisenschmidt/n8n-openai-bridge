@@ -29,7 +29,7 @@ function setupTestServer() {
   fs.writeFileSync(tempConfigPath, JSON.stringify(testModels, null, 2));
 
   // Set test environment
-  process.env.MODELS_CONFIG = tempConfigPath;
+  process.env.MODELS_CONFIG_FILE = tempConfigPath;
   process.env.PORT = '3333';
   process.env.BEARER_TOKEN = 'test-bearer-token';
   process.env.LOG_REQUESTS = 'false';

@@ -116,19 +116,40 @@ curl -H "Authorization: Bearer your-secret-api-key-here" \
 
 ## Model Loading System
 
-The bridge uses a flexible ModelLoader architecture:
+The bridge uses a flexible **ModelLoader architecture** to load models from different sources. Two approaches are available:
 
-- **JsonFileModelLoader** (default): Loads models from `models.json`
-- Hot-reload: Changes to `models.json` detected automatically (100ms debounce)
-- Validation: Models must be an object with valid webhook URLs
-- Graceful degradation: Server continues running even if model loading fails
+### Loaders
 
-**Model Configuration Format:**
+| Loader | Type | Use Case |
+|--------|------|----------|
+| **JsonFileModelLoader** | File-based | Manual configuration in `models.json`, hot-reload on changes |
+| **N8nApiModelLoader** | Auto-discovery | Workflows tagged with a specific tag are automatically discovered as models |
+
+### Quick Start: File-based (Default)
+
 ```json
 {
   "model-id": "https://n8n.example.com/webhook/abc123/chat"
 }
 ```
+
+Save to `models.json`. Changes are automatically detected and reloaded (100ms debounce). No additional configuration required.
+
+### Quick Start: Auto-Discovery (Recommended)
+
+```bash
+MODEL_LOADER_TYPE=n8n-api
+N8N_BASE_URL=https://your-n8n-instance.com
+N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
+AUTO_DISCOVERY_POLL_INTERVAL=300
+```
+
+Tag your n8n workflows with `n8n-openai-bridge` (configurable) and they are automatically discovered and exposed as models. Polling interval can be configured (default: 300 seconds).
+
+For detailed setup, configuration, and troubleshooting, see:
+- **[ModelLoader Documentation](docs/MODELLOADER.md)** - Architecture, all loaders, setup guides
+- **[Configuration Guide](docs/CONFIGURATION.md)** - Environment variables and options
 
 ## Project Structure
 

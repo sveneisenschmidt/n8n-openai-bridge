@@ -12,75 +12,116 @@ Complete guide for configuring n8n OpenAI Bridge.
 
 ## Environment Variables
 
-### .env Configuration
+### Server Configuration
 
 ```bash
-# Server Configuration
-PORT=3333                        # Server port
-BEARER_TOKEN=your-api-key        # Auth for requests TO this bridge
-N8N_WEBHOOK_BEARER_TOKEN=        # Optional: Auth for requests FROM bridge to n8n
-MODELS_CONFIG=./models.json      # Path to models config
-LOG_REQUESTS=false               # Debug logging
+PORT=3333                        # Server port (default: 3333)
+BEARER_TOKEN=your-api-key        # Auth token for API requests TO this bridge
+LOG_REQUESTS=false               # Enable detailed request/response logging
+DOCKER_NETWORK_NAME=proxy        # Docker network for compose
+```
 
+### Authentication
+
+```bash
+# Webhook Authentication (bridge → n8n)
+N8N_WEBHOOK_BEARER_TOKEN=        # Optional: Auth token for n8n webhooks
+```
+
+**Deprecated:**
+- `N8N_BEARER_TOKEN` - Use `N8N_WEBHOOK_BEARER_TOKEN` instead (still supported with warning)
+
+### Model Loading Configuration
+
+Select which loader to use and configure loader-specific variables:
+
+```bash
+# Loader Selection
+MODEL_LOADER_TYPE=file           # Options: file (default), n8n-api, static
+```
+
+#### File-based Loader (MODEL_LOADER_TYPE=file)
+
+```bash
+MODELS_CONFIG_FILE=./models.json    # Path to models JSON file
+MODELS_POLL_INTERVAL=1              # File polling interval in seconds (default: 1)
+```
+
+**Deprecated:**
+- `MODELS_CONFIG` - Use `MODELS_CONFIG_FILE` instead (still supported with warning)
+
+For detailed setup, see [File Loader Documentation](MODELLOADER.md#jsonfilemodelloadertype-file).
+
+#### Auto-Discovery Loader (MODEL_LOADER_TYPE=n8n-api)
+
+```bash
+N8N_BASE_URL=https://your-n8n-instance.com
+N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
+AUTO_DISCOVERY_POLL_INTERVAL=300
+```
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `N8N_BASE_URL` | Yes | - | Base URL of your n8n instance |
+| `N8N_API_BEARER_TOKEN` | Yes | - | n8n API token (Settings > n8n API) |
+| `AUTO_DISCOVERY_TAG` | No | `n8n-openai-bridge` | Tag to filter workflows |
+| `AUTO_DISCOVERY_POLL_INTERVAL` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
+
+For detailed setup, see [Auto-Discovery Loader Documentation](MODELLOADER.md#n8napi-modelloader-type-n8n-api).
+
+#### Static Loader (MODEL_LOADER_TYPE=static)
+
+```bash
+STATIC_MODELS={"test-model":"https://n8n.example.com/webhook/test"}
+```
+
+For testing and development only. See [Static Loader Documentation](MODELLOADER.md#staticmodelloader-type-static).
+
+### Session & User Context Headers
+
+```bash
 # Session & User Context Headers (comma-separated, first found wins)
 SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id
 USER_ID_HEADERS=X-User-Id
 USER_EMAIL_HEADERS=X-User-Email
 USER_NAME_HEADERS=X-User-Name
 USER_ROLE_HEADERS=X-User-Role
-
-DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ```
 
-### Authentication Flow
-
-- `BEARER_TOKEN` - Protects this bridge (clients → bridge)
-- `N8N_WEBHOOK_BEARER_TOKEN` - Protects n8n webhooks (bridge → n8n)
-- Leave `N8N_WEBHOOK_BEARER_TOKEN` empty if your n8n webhooks are public
-
-**Backwards Compatibility:**
-The deprecated `N8N_BEARER_TOKEN` variable is still supported but will show a deprecation warning. Please migrate to `N8N_WEBHOOK_BEARER_TOKEN`.
+See [Session Management](#session-management) and [User Context](#user-context) sections below.
 
 ## Model Configuration
 
-Models are loaded via a **ModelLoader** system that abstracts the model source. The bridge includes a built-in **JsonFileModelLoader** for loading models from JSON files.
+Models are loaded via a flexible **ModelLoader system**. The default loader reads from JSON files, but you can switch to auto-discovery via n8n API.
 
-### Built-in: JsonFileModelLoader
+See [MODELLOADER.md](MODELLOADER.md) for complete documentation including:
+- Model validation rules
+- Error handling and startup behavior
+- Migration between loaders
+- Troubleshooting guide
+- Custom loader development
 
-The default model loader reads from a JSON file (configured via `MODELS_CONFIG`).
+### Quick Reference
 
-#### File Format
-
-`models.json`:
-```json
-{
-  "model-id": "https://n8n.example.com/webhook/abc123/chat",
-  "gpt-4": "https://n8n.example.com/webhook/gpt4/chat"
-}
+**File-based (Default):**
+```bash
+MODEL_LOADER_TYPE=file
+MODELS_CONFIG=./models.json
 ```
 
-#### How It Works
+Models in `models.json` are automatically reloaded when file changes (100ms debounce).
 
-**Startup:**
-- Reads `models.json` synchronously
-- Validates each model (ID must be non-empty string, URL must be valid HTTP/HTTPS)
-- Invalid models filtered out with warnings
-- Throws error if: file not found OR invalid JSON syntax
+**Auto-Discovery (Recommended):**
+```bash
+MODEL_LOADER_TYPE=n8n-api
+N8N_BASE_URL=https://your-n8n-instance.com
+N8N_API_BEARER_TOKEN=n8n_api_xxxxxxxxxxxxx
+AUTO_DISCOVERY_TAG=n8n-openai-bridge
+AUTO_DISCOVERY_POLL_INTERVAL=300
+```
 
-**Hot-Reload:**
-- Watches `models.json` for changes via file system events
-- 100ms debounce prevents reload storms from multiple file events
-- Reloads and validates on file change
-- Invalid reload attempts keep old models, error logged
-- Can be manually triggered: `curl -X POST -H "Authorization: Bearer token" http://localhost:3333/admin/reload`
-
-**Error Handling:**
-- Invalid model entries → Skipped with warning, server continues with valid models
-- File not found → Error thrown, blocks startup
-- Invalid JSON → Error thrown with details, blocks startup
-- Watch setup failure → Warning logged, server runs without hot-reload
-
-For detailed documentation including troubleshooting and architecture, see [MODELLOADER.md](MODELLOADER.md).
+Tag workflows with `n8n-openai-bridge` in n8n UI and they are automatically discovered as models.
 
 ## Session Management
 

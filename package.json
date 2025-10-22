@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest tests/ --coverage --silent",
+    "test": "jest --coverage --silent",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\"",
@@ -43,6 +43,9 @@
     "testMatch": [
       "**/tests/**/*.test.js"
     ],
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
   }
 }
