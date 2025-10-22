@@ -103,6 +103,27 @@ jobs:
           # Update release
           gh release edit "$TAG" --notes "$UPDATED_BODY"
 
+      - name: Extract Release Description
+        id: release_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+
+          # Get the release body (description)
+          RELEASE_BODY=$(gh release view "$TAG" --json body -q .body)
+
+          # Extract just the first line or first paragraph as description
+          # Remove markdown headers and keep only the meaningful description
+          DESCRIPTION=$(echo "$RELEASE_BODY" | grep -v "^#" | grep -v "^docker pull" | grep -v "^\`\`\`" | grep -v "^See \[" | head -n 1 | xargs)
+
+          # If description is empty, use default
+          if [ -z "$DESCRIPTION" ]; then
+            DESCRIPTION="OpenAI-compatible API bridge for n8n workflows - Release ${{ steps.version.outputs.version }}"
+          fi
+
+          echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -115,5 +136,10 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.version }}
             ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.minor }}
             ghcr.io/${{ github.repository_owner }}/n8n-openai-bridge:${{ steps.version.outputs.major }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            DESCRIPTION=${{ steps.release_info.outputs.description }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
