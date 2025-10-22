@@ -2,7 +2,7 @@
 
 OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and workflows as OpenAI models in any OpenAI-compatible client.
 
-![Demo](docs/demo.webp)
+![Demo](docs/.demo.webp)
 
 ## Features
 
