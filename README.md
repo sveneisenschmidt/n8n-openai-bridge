@@ -1,8 +1,8 @@
 # n8n OpenAI Bridge
 
-![Demo](docs/demo.gif)
-
 OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and workflows as OpenAI models in any OpenAI-compatible client.
+
+![Demo](docs/demo.apng)
 
 ## Features
 
