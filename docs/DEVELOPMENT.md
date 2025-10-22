@@ -103,9 +103,8 @@ make clean       # Stop and remove containers, images, and volumes
 ### Testing Commands
 
 ```bash
-make test              # Run all tests (unit + image validation)
-make test-unit         # Run unit tests for server logic only
-make test-image        # Run Docker image build validation tests
+make test                   # Run all tests (unit + image validation)
+make test-file FILE=<path>  # Run test file(s), e.g. make test-file FILE=tests/loaders/
 ```
 
 ### Code Quality Commands
@@ -154,6 +153,7 @@ This project uses feature branches and GitHub Actions for CI/CD with **automated
 - `feature/*` - New features
 - `fix/*` - Bug fixes
 - `hotfix/*` - Urgent production fixes
+- `docs/*` - Documentation updates
 
 **Development workflow:**
 
