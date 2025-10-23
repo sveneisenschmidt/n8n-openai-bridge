@@ -133,7 +133,7 @@ The bridge uses a flexible **ModelLoader architecture** to load models from diff
 }
 ```
 
-Save to `models.json`. Changes are automatically detected and reloaded (100ms debounce). No additional configuration required.
+Save to `models.json`. Changes are automatically detected and reloaded. No additional configuration required.
 
 From simple single-agent workflows exposed as a model ...
 
