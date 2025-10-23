@@ -2,7 +2,7 @@
 
 OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and workflows as OpenAI models in any OpenAI-compatible client.
 
-![Demo](docs/.demo.webp)
+![Demo](docs/pictures/demo.webp)
 
 ## Features
 
@@ -133,7 +133,16 @@ The bridge uses a flexible **ModelLoader architecture** to load models from diff
 }
 ```
 
-Save to `models.json`. Changes are automatically detected and reloaded (100ms debounce). No additional configuration required.
+Save to `models.json`. Changes are automatically detected and reloaded. No additional configuration required.
+
+From simple single-agent workflows exposed as a model ...
+
+<img src="./docs/pictures/single_agent_model.png" width="75%">
+
+... to complex agent teams that work together:
+
+<img src="./docs/pictures/multi_agent_model.png" width="75%">
+
 
 ### Quick Start: Auto-Discovery (Recommended)
 
