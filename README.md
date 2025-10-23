@@ -137,11 +137,11 @@ Save to `models.json`. Changes are automatically detected and reloaded (100ms de
 
 From simple single-agent workflows exposed as a model ...
 
-<img src="./docs/pictures/single_agent_model.png" width="12em">
+<img src="./docs/pictures/single_agent_model.png" width="75%">
 
 ... to complex agent teams that work together:
 
-<img src="./docs/pictures/multi_agent_model.png" width="12em">
+<img src="./docs/pictures/multi_agent_model.png" width="75%">
 
 
 ### Quick Start: Auto-Discovery (Recommended)
