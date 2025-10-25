@@ -367,9 +367,15 @@ class N8nApiModelLoader extends ModelLoader {
    *
    * Polling Flow:
    * 1. Start timer with configured interval
-   * 2. On timer: fetch workflows → convert to models → validate → callback
-   * 3. On error: log but continue polling (don't give up on temporary failures)
-   * 4. Repeat until stopWatching() is called
+   * 2. On timer: fetch workflows → convert to models → validate → compare hash
+   * 3. If hash changed: notify callback with new models
+   * 4. On error: log but continue polling (don't give up on temporary failures)
+   * 5. Repeat until stopWatching() is called
+   *
+   * Change Detection:
+   * - Uses hash-based comparison (consistent with JsonFileModelLoader)
+   * - Only fires callback when models actually change
+   * - Prevents unnecessary reloads and webhook notifications
    *
    * Why polling instead of webhooks?
    * - Simpler setup (no need for n8n to know about bridge)
@@ -402,9 +408,20 @@ class N8nApiModelLoader extends ModelLoader {
         console.log('Polling n8n for workflow changes...');
         const models = await this.load();
 
-        // Notify callback about new models
-        if (this.watchCallback) {
-          this.watchCallback(models);
+        // Calculate hash of current models
+        const currentHash = this.getModelsHash(models);
+
+        // Check if models changed
+        if (currentHash !== this.lastHash) {
+          console.log('Models changed, reloading...');
+
+          // Update hash
+          this.lastHash = currentHash;
+
+          // Notify callback about new models
+          if (this.watchCallback) {
+            this.watchCallback(models);
+          }
         }
       } catch (error) {
         // Log error but don't stop polling
@@ -418,7 +435,7 @@ class N8nApiModelLoader extends ModelLoader {
    * Stop polling for changes
    *
    * Called during application shutdown to cleanup resources.
-   * Clears polling timer and callback reference.
+   * Clears polling timer, callback reference, and hash state.
    *
    * Safe to call multiple times (idempotent).
    */
@@ -427,6 +444,7 @@ class N8nApiModelLoader extends ModelLoader {
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
       this.watchCallback = null;
+      this.lastHash = null;
       console.log('Stopped polling n8n API');
     }
   }

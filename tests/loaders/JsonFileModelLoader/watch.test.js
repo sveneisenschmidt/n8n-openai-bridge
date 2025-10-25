@@ -93,40 +93,35 @@ describe('JsonFileModelLoader - watch', () => {
     });
     activeLoaders.push(loader);
 
-    let callbackCalled = false;
+    let callCount = 0;
     const startTime = Date.now();
+    const receivedModels = [];
 
-    const callbackPromise = new Promise((resolve, reject) => {
+    const callbackPromise = new Promise((resolve) => {
       loader.watch((models) => {
-        if (callbackCalled) {
-          return; // Prevent double-call
-        }
-        callbackCalled = true;
-
+        callCount++;
         const elapsed = Date.now() - startTime;
-        console.log(`Callback fired after ${elapsed}ms`);
+        console.log(`Callback fired (call ${callCount}) after ${elapsed}ms`);
 
-        try {
-          expect(models).toEqual({
-            'updated-model': 'https://example.com/updated',
-          });
+        receivedModels.push(models);
+
+        // Wait for second call before resolving
+        if (callCount >= 2) {
           resolve();
-        } catch (error) {
-          reject(error);
         }
       });
 
       console.log('Polling started, initial hash:', loader.lastHash);
 
-      // Wait a bit for polling to start, then change file
+      // Wait for first poll, then change file
       setTimeout(() => {
         console.log('Writing file...');
         const newModels = {
           'updated-model': 'https://example.com/updated',
         };
         fs.writeFileSync(testFile, JSON.stringify(newModels));
-        console.log('File written, new hash should be:', loader.getFileHash());
-      }, 50);
+        console.log('File written');
+      }, 250); // Wait for first poll to complete
 
       // Debug: Log if polling interval exists
       setTimeout(() => {
@@ -135,5 +130,16 @@ describe('JsonFileModelLoader - watch', () => {
     });
 
     await callbackPromise;
+
+    // Verify first call had initial models
+    expect(receivedModels[0]).toEqual({
+      'test-model-1': 'https://example.com/webhook1',
+      'test-model-2': 'https://example.com/webhook2',
+    });
+
+    // Verify second call had updated models
+    expect(receivedModels[1]).toEqual({
+      'updated-model': 'https://example.com/updated',
+    });
   }, 5000); // 5s timeout for debugging
 });
