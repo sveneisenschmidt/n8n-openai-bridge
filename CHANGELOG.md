@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Model loader callback consistency - N8nApiModelLoader and JsonFileModelLoader now both only fire callbacks when models actually change (Closes #29)
+- JsonFileModelLoader no longer triggers reloads on formatting/whitespace changes
+
+### Changed
+- Added `getModelsHash()` method to base ModelLoader class for consistent hash-based change detection
+- Both loaders now use unified `lastHash` property name
+
 ## [0.0.9] - 2025-10-22
 
 ### Added

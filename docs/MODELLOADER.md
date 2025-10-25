@@ -28,10 +28,10 @@ MODELS_POLL_INTERVAL=1              # Polling interval in seconds (default: 1)
 
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON
-- Hot-reload: Polls file content (hash-based), reloads on changes
+- Hot-reload: Polls file and compares model hash, reloads only when models change
 - Polling interval: Configurable via `MODELS_POLL_INTERVAL` (default: 1s)
 - Invalid models: Filtered out with warnings, server continues
-- Hash comparison: Only reloads when file content actually changed
+- Hash comparison: Only reloads when model content actually changed (not formatting/whitespace)
 
 **Validation:**
 - Model ID: Non-empty string
@@ -82,6 +82,7 @@ AUTO_DISCOVERY_POLL_INTERVAL=300
 
 **Polling:**
 - Runs at startup, then at configured interval
+- Hash comparison: Only fires callbacks when models actually change
 - On failure: Logs error, keeps existing models, retries later
 - Disabled when `AUTO_DISCOVERY_POLL_INTERVAL=0`
 
