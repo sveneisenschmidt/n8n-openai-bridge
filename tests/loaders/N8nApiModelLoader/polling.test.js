@@ -187,6 +187,141 @@ describe('N8nApiModelLoader - Polling', () => {
         Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
       });
     });
+
+    test('should only fire callback when models change', async () => {
+      const mockGet = jest.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 'workflow-1',
+              name: 'Test',
+              active: true,
+              nodes: [
+                {
+                  type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                  webhookId: 'test-webhook-id',
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      const loader = new N8nApiModelLoader({
+        N8N_BASE_URL: 'https://n8n.example.com',
+        N8N_API_BEARER_TOKEN: 'test-token',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
+        AUTO_DISCOVERY_POLL_INTERVAL: '300',
+      });
+      loaders.push(loader);
+
+      loader.axiosInstance = { get: mockGet };
+
+      const callback = jest.fn();
+      loader.watch(callback);
+
+      // First poll - should fire callback (models changed from null to data)
+      await jest.advanceTimersByTimeAsync(300 * 1000);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith({
+        Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
+      });
+
+      // Second poll - should NOT fire callback (same models)
+      await jest.advanceTimersByTimeAsync(300 * 1000);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      // Third poll - should NOT fire callback (still same models)
+      await jest.advanceTimersByTimeAsync(300 * 1000);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    test('should fire callback when models change', async () => {
+      let callCount = 0;
+      const mockGet = jest.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            data: {
+              data: [
+                {
+                  id: 'workflow-1',
+                  name: 'Test',
+                  active: true,
+                  nodes: [
+                    {
+                      type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                      webhookId: 'test-webhook-id',
+                    },
+                  ],
+                },
+              ],
+            },
+          });
+        }
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                id: 'workflow-1',
+                name: 'Test',
+                active: true,
+                nodes: [
+                  {
+                    type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                    webhookId: 'test-webhook-id',
+                  },
+                ],
+              },
+              {
+                id: 'workflow-2',
+                name: 'Test2',
+                active: true,
+                nodes: [
+                  {
+                    type: '@n8n/n8n-nodes-langchain.chatTrigger',
+                    webhookId: 'test-webhook-id-2',
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      });
+
+      const loader = new N8nApiModelLoader({
+        N8N_BASE_URL: 'https://n8n.example.com',
+        N8N_API_BEARER_TOKEN: 'test-token',
+        AUTO_DISCOVERY_TAG: 'n8n-openai-bridge',
+        AUTO_DISCOVERY_POLL_INTERVAL: '300',
+      });
+      loaders.push(loader);
+
+      loader.axiosInstance = { get: mockGet };
+
+      const callback = jest.fn();
+      loader.watch(callback);
+
+      // First poll - should fire callback
+      await jest.advanceTimersByTimeAsync(300 * 1000);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith({
+        Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
+      });
+
+      // Second poll - should fire callback (new workflow added)
+      await jest.advanceTimersByTimeAsync(300 * 1000);
+
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenLastCalledWith({
+        Test: 'https://n8n.example.com/webhook/test-webhook-id/chat',
+        Test2: 'https://n8n.example.com/webhook/test-webhook-id-2/chat',
+      });
+    });
   });
 
   describe('stopWatching', () => {
@@ -207,6 +342,7 @@ describe('N8nApiModelLoader - Polling', () => {
 
       expect(loader.pollingTimer).toBeNull();
       expect(loader.watchCallback).toBeNull();
+      expect(loader.lastHash).toBeNull();
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Stopped polling n8n API'),
       );

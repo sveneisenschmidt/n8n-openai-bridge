@@ -18,7 +18,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const ModelLoader = require('./ModelLoader');
 
 /**
@@ -108,7 +107,6 @@ class JsonFileModelLoader extends ModelLoader {
     this.filePath = path.resolve(filePath);
     this.pollingInterval = null;
     this.watchCallback = null;
-    this.lastHash = null;
 
     // Watch interval from env or default (in seconds, convert to milliseconds)
     const watchIntervalEnv = envValues.MODELS_POLL_INTERVAL || '1';
@@ -178,31 +176,22 @@ class JsonFileModelLoader extends ModelLoader {
   }
 
   /**
-   * Calculate hash of file content
-   *
-   * @returns {string|null} Hash of file content, or null if file doesn't exist
-   */
-  getFileHash() {
-    try {
-      const content = fs.readFileSync(this.filePath, 'utf8');
-      return crypto.createHash('md5').update(content).digest('hex');
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Watch the JSON file for changes and reload automatically
    *
    * This enables hot-reload: changes to models.json are automatically detected
    * and loaded without restarting the application.
    *
    * Watch Flow:
-   * 1. Calculate initial file hash
-   * 2. Poll file at configured interval (default: 1s)
-   * 3. Calculate new hash and compare with previous
-   * 4. If different: load() → validateModels() → callback fires
+   * 1. Poll file at configured interval (default: 1s)
+   * 2. Load and parse models
+   * 3. Calculate hash of models and compare with previous
+   * 4. If different: notify callback with new models
    * 5. Update hash and continue polling
+   *
+   * Change Detection:
+   * - Uses hash-based comparison (consistent with N8nApiModelLoader)
+   * - Only fires callback when models actually change
+   * - Formatting changes (whitespace) do not trigger reload
    *
    * Why Simple Hash-Based Polling?
    * - fs.watch() is unreliable in Docker/CI environments
@@ -212,8 +201,8 @@ class JsonFileModelLoader extends ModelLoader {
    *
    * Error Handling:
    * - Invalid models (bad URL, etc): Logged as warnings, not thrown
-   * - File deleted during watch: Hash returns null, no reload
-   * - File permission changed: Hash returns null, no reload
+   * - File read errors: Logged, no callback fired
+   * - Parse errors: Logged, no callback fired
    *
    * Platform Notes:
    * - Works reliably in all environments (Docker, CI, network filesystems)
@@ -232,23 +221,22 @@ class JsonFileModelLoader extends ModelLoader {
 
     this.watchCallback = callback;
 
-    // Get initial hash
-    this.lastHash = this.getFileHash();
     console.log(
       `Watching ${this.filePath} for changes (polling every ${this.watchInterval / 1000}s)...`,
     );
 
     // Start polling
     this.pollingInterval = setInterval(async () => {
-      const currentHash = this.getFileHash();
+      try {
+        // Load and validate new models
+        const models = await this.load();
 
-      // Check if file content changed
-      if (currentHash && currentHash !== this.lastHash) {
-        console.log(`${this.filePath} changed, reloading...`);
+        // Calculate hash of current models
+        const currentHash = this.getModelsHash(models);
 
-        try {
-          // Load and validate new models
-          const models = await this.load();
+        // Check if models changed
+        if (currentHash !== this.lastHash) {
+          console.log('Models changed, reloading...');
           console.log(`Models reloaded successfully (${Object.keys(models).length} models)`);
 
           // Update hash
@@ -258,11 +246,11 @@ class JsonFileModelLoader extends ModelLoader {
           if (this.watchCallback) {
             this.watchCallback(models);
           }
-        } catch (error) {
-          // Log error but don't throw - watcher continues running
-          // This allows fixing the file and it will reload on next save
-          console.error(`Error reloading models: ${error.message}`);
         }
+      } catch (error) {
+        // Log error but don't throw - watcher continues running
+        // This allows fixing the file and it will reload on next save
+        console.error(`Error reloading models: ${error.message}`);
       }
     }, this.watchInterval);
   }

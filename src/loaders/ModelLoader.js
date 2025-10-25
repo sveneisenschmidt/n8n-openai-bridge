@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const crypto = require('crypto');
+
 /**
  * Base class for model loaders
  *
@@ -40,8 +42,17 @@
  * - validateModels() uses graceful degradation: invalid entries are filtered
  *   out with warnings rather than failing the entire load. This ensures the
  *   bridge continues running even with partially invalid configurations.
+ *
+ * Change Detection:
+ * - getModelsHash() provides hash-based change detection for watch() implementations
+ * - lastHash stores the last computed hash for comparison
+ * - Ensures callbacks only fire when models actually change
  */
 class ModelLoader {
+  constructor() {
+    // Hash of last loaded models for change detection
+    this.lastHash = null;
+  }
   /**
    * Get required environment variables for this loader
    *
@@ -115,6 +126,26 @@ class ModelLoader {
    */
   stopWatching() {
     // Optional: implement in subclass if watching is supported
+  }
+
+  /**
+   * Calculate hash of models object
+   *
+   * Used for change detection in watch() implementations.
+   * Ensures callbacks only fire when models actually change.
+   *
+   * Implementation:
+   * - Sorts object keys for consistent hash calculation
+   * - Uses MD5 for fast hashing (security not required here)
+   * - Works with any models object structure
+   *
+   * @param {Object} models Models object to hash
+   * @returns {string} MD5 hash of models object
+   * @protected
+   */
+  getModelsHash(models) {
+    const content = JSON.stringify(models, Object.keys(models).sort());
+    return crypto.createHash('md5').update(content).digest('hex');
   }
 
   /**
