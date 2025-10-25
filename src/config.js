@@ -78,7 +78,7 @@ class Config {
         throw error; // Propagate error to server startup
       });
 
-    this.setupFileWatcher();
+    this.setupModelWatcher();
   }
 
   /**
@@ -201,9 +201,11 @@ class Config {
     return new WebhookNotifier(config);
   }
 
-  setupFileWatcher() {
+  setupModelWatcher() {
     this.modelLoader.watch((newModels) => {
+      console.log('Models changed, reloading...');
       this.models = newModels;
+      console.log(`Models reloaded successfully (${Object.keys(newModels).length} models)`);
 
       // Notify webhook subscribers about model changes
       const payload = WebhookNotifier.createPayload(

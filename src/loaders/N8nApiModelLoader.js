@@ -404,8 +404,8 @@ class N8nApiModelLoader extends ModelLoader {
 
     // Start polling timer
     this.pollingTimer = setInterval(async () => {
+      console.log('Polling for model changes...');
       try {
-        console.log('Polling n8n for workflow changes...');
         const models = await this.load();
 
         // Calculate hash of current models
@@ -413,8 +413,6 @@ class N8nApiModelLoader extends ModelLoader {
 
         // Check if models changed
         if (currentHash !== this.lastHash) {
-          console.log('Models changed, reloading...');
-
           // Update hash
           this.lastHash = currentHash;
 

@@ -227,6 +227,7 @@ class JsonFileModelLoader extends ModelLoader {
 
     // Start polling
     this.pollingInterval = setInterval(async () => {
+      console.log('Polling for model changes...');
       try {
         // Load and validate new models
         const models = await this.load();
@@ -236,9 +237,6 @@ class JsonFileModelLoader extends ModelLoader {
 
         // Check if models changed
         if (currentHash !== this.lastHash) {
-          console.log('Models changed, reloading...');
-          console.log(`Models reloaded successfully (${Object.keys(models).length} models)`);
-
           // Update hash
           this.lastHash = currentHash;
 
