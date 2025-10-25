@@ -11,7 +11,6 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Multi-model support via JSON configuration
 - Session tracking for conversation memory
 - User context forwarding (ID, email, name, role)
-- Bearer token authentication with timing-safe comparison
 - Rate limiting with configurable thresholds per endpoint
 - Request ID tracking for distributed tracing
 - Docker ready with health checks
