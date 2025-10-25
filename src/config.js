@@ -20,6 +20,7 @@ require('dotenv').config();
 const JsonFileModelLoader = require('./loaders/JsonFileModelLoader');
 const N8nApiModelLoader = require('./loaders/N8nApiModelLoader');
 const StaticModelLoader = require('./loaders/StaticModelLoader');
+const WebhookNotifier = require('./services/webhookNotifier');
 
 // Registry of available model loaders
 const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader];
@@ -42,6 +43,9 @@ class Config {
     // Initialize ModelLoader (JsonFileModelLoader or N8nApiModelLoader)
     this.modelLoader = this.createModelLoader();
 
+    // Initialize webhook notifier
+    this.webhookNotifier = this.createWebhookNotifier();
+
     // Initialize models as empty object
     this.models = {};
 
@@ -52,6 +56,21 @@ class Config {
       .then((models) => {
         this.models = models;
         console.log(`Models loaded: ${Object.keys(models).length} available`);
+
+        // Notify webhook on startup if enabled
+        if (this.webhookNotifier.enabled && this.webhookNotifier.notifyOnStartup) {
+          const payload = WebhookNotifier.createPayload(
+            models,
+            this.modelLoader.constructor.name,
+            WebhookNotifier.EventType.MODELS_LOADED,
+          );
+          this.webhookNotifier.notify(payload).catch(() => {
+            console.warn(
+              `[${new Date().toISOString()}] Webhook notification on startup failed, but models loaded successfully`,
+            );
+          });
+        }
+
         return models;
       })
       .catch((error) => {
@@ -59,7 +78,7 @@ class Config {
         throw error; // Propagate error to server startup
       });
 
-    this.setupFileWatcher();
+    this.setupModelWatcher();
   }
 
   /**
@@ -164,9 +183,41 @@ class Config {
     return new LoaderClass(envValues);
   }
 
-  setupFileWatcher() {
+  /**
+   * Create and configure the WebhookNotifier
+   * Only enabled if WEBHOOK_NOTIFIER_URL is set
+   * @returns {WebhookNotifier} Configured notifier instance
+   * @private
+   */
+  createWebhookNotifier() {
+    const config = {
+      webhookUrl: process.env.WEBHOOK_NOTIFIER_URL || null,
+      timeout: parseInt(process.env.WEBHOOK_NOTIFIER_TIMEOUT || '5000', 10),
+      maxRetries: parseInt(process.env.WEBHOOK_NOTIFIER_RETRIES || '3', 10),
+      bearerToken: process.env.WEBHOOK_NOTIFIER_BEARER_TOKEN || null,
+      notifyOnStartup: process.env.WEBHOOK_NOTIFIER_ON_STARTUP === 'true',
+    };
+
+    return new WebhookNotifier(config);
+  }
+
+  setupModelWatcher() {
     this.modelLoader.watch((newModels) => {
+      console.log('Models changed, reloading...');
       this.models = newModels;
+      console.log(`Models reloaded successfully (${Object.keys(newModels).length} models)`);
+
+      // Notify webhook subscribers about model changes
+      const payload = WebhookNotifier.createPayload(
+        newModels,
+        this.modelLoader.constructor.name,
+        WebhookNotifier.EventType.MODELS_CHANGED,
+      );
+      this.webhookNotifier.notify(payload).catch(() => {
+        console.warn(
+          `[${new Date().toISOString()}] Webhook notification on model change failed, but models reloaded successfully`,
+        );
+      });
     });
   }
 

@@ -91,6 +91,67 @@ USER_ROLE_HEADERS=X-User-Role
 
 See [Session Management](#session-management) and [User Context](#user-context) sections below.
 
+### Webhook Notifier
+
+Get notified via webhook when models change (hot-reload or auto-discovery):
+
+```bash
+# Webhook Notifier Configuration (optional)
+WEBHOOK_NOTIFIER_URL=https://your-service.com/webhook/model-changes
+WEBHOOK_NOTIFIER_TIMEOUT=5000           # Request timeout in milliseconds (default: 5000)
+WEBHOOK_NOTIFIER_RETRIES=3              # Maximum retry attempts (default: 3)
+WEBHOOK_NOTIFIER_BEARER_TOKEN=          # Optional: Bearer token for webhook authentication
+WEBHOOK_NOTIFIER_ON_STARTUP=false       # Notify webhook on server startup (default: false)
+```
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `WEBHOOK_NOTIFIER_URL` | No | - | Webhook URL to notify on model changes. Feature disabled if not set. |
+| `WEBHOOK_NOTIFIER_TIMEOUT` | No | `5000` | HTTP request timeout in milliseconds |
+| `WEBHOOK_NOTIFIER_RETRIES` | No | `3` | Maximum retry attempts with exponential backoff (1s, 2s, 4s) |
+| `WEBHOOK_NOTIFIER_BEARER_TOKEN` | No | - | Optional Bearer token for webhook authentication |
+| `WEBHOOK_NOTIFIER_ON_STARTUP` | No | `false` | Send notification when server starts and models are loaded |
+
+**How it works:**
+- Only triggers for loaders that implement `watch()` (JsonFileModelLoader, N8nApiModelLoader)
+- Notifications sent only when models actually change (hash-based detection)
+- Uses exponential backoff retry strategy (1s, 2s, 4s intervals)
+- Failures are logged but never block model loading (graceful degradation)
+
+**Webhook Payload Format:**
+
+When models change (hot-reload or auto-discovery):
+```json
+{
+  "type": "models_changed",
+  "timestamp": "2025-10-25T10:30:00.000Z",
+  "source": "JsonFileModelLoader",
+  "models": {
+    "model-id": "https://n8n.example.com/webhook/abc123/chat"
+  },
+  "modelCount": 1
+}
+```
+
+When server starts (only if `WEBHOOK_NOTIFIER_ON_STARTUP=true`):
+```json
+{
+  "type": "models_loaded",
+  "timestamp": "2025-10-25T10:25:00.000Z",
+  "source": "N8nApiModelLoader",
+  "models": {
+    "model-id": "https://n8n.example.com/webhook/abc123/chat"
+  },
+  "modelCount": 1
+}
+```
+
+**Use Cases:**
+- Invalidate frontend caches when models change
+- Update monitoring dashboards with available models
+- Trigger automated tests when new models are deployed
+- Send alerts to Slack/Discord when models are updated
+
 ## Model Configuration
 
 Models are loaded via a flexible **ModelLoader system**. The default loader reads from JSON files, but you can switch to auto-discovery via n8n API.
