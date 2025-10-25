@@ -15,6 +15,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Request ID tracking for distributed tracing
 - Docker ready with health checks
 - Hot-reload models without restart
+- Webhook notifications on model changes
 
 ## Compatibility
 
