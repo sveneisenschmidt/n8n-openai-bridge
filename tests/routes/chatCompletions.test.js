@@ -19,10 +19,13 @@
 const express = require('express');
 const request = require('supertest');
 const chatCompletionsRoute = require('../../src/routes/chatCompletions');
+const Config = require('../../src/config/Config');
+const ModelRepository = require('../../src/repositories/ModelRepository');
 
 describe('chatCompletions route', () => {
   let app;
-  let mockConfig;
+  let config;
+  let modelRepository;
   let mockN8nClient;
   let consoleErrorSpy;
 
@@ -34,16 +37,17 @@ describe('chatCompletions route', () => {
     app = express();
     app.use(express.json());
 
-    // Mock config
-    mockConfig = {
-      logRequests: false,
-      sessionIdHeaders: ['X-Session-Id'],
-      userIdHeaders: ['X-User-Id'],
-      userEmailHeaders: ['X-User-Email'],
-      userNameHeaders: ['X-User-Name'],
-      userRoleHeaders: ['X-User-Role'],
-      getModelWebhookUrl: jest.fn(),
-    };
+    // Create Config instance (new structure)
+    config = new Config();
+    config.logRequests = false;
+    config.sessionIdHeaders = ['X-Session-Id'];
+    config.userIdHeaders = ['X-User-Id'];
+    config.userEmailHeaders = ['X-User-Email'];
+    config.userNameHeaders = ['X-User-Name'];
+    config.userRoleHeaders = ['X-User-Role'];
+
+    // Create ModelRepository instance (new structure)
+    modelRepository = new ModelRepository();
 
     // Mock n8nClient
     mockN8nClient = {
@@ -51,8 +55,9 @@ describe('chatCompletions route', () => {
       nonStreamingCompletion: jest.fn(),
     };
 
-    // Store mocks in app.locals
-    app.locals.config = mockConfig;
+    // Store in app.locals (new structure)
+    app.locals.config = config;
+    app.locals.modelRepository = modelRepository;
     app.locals.n8nClient = mockN8nClient;
 
     // Mount route
@@ -111,7 +116,8 @@ describe('chatCompletions route', () => {
 
     describe('model validation', () => {
       it('should return 404 if model is not found', async () => {
-        mockConfig.getModelWebhookUrl.mockReturnValue(null);
+        // Model not in repository
+        modelRepository.models = {};
 
         const response = await request(app)
           .post('/')
@@ -130,7 +136,10 @@ describe('chatCompletions route', () => {
 
     describe('non-streaming mode', () => {
       beforeEach(() => {
-        mockConfig.getModelWebhookUrl.mockReturnValue('https://n8n.example.com/webhook/test');
+        // Add test model to repository
+        modelRepository.models = {
+          'test-model': 'https://n8n.example.com/webhook/test',
+        };
       });
 
       it('should return successful response for valid request', async () => {
@@ -243,7 +252,10 @@ describe('chatCompletions route', () => {
 
     describe('streaming mode', () => {
       beforeEach(() => {
-        mockConfig.getModelWebhookUrl.mockReturnValue('https://n8n.example.com/webhook/test');
+        // Add test model to repository
+        modelRepository.models = {
+          'test-model': 'https://n8n.example.com/webhook/test',
+        };
       });
 
       it('should handle streaming response', async () => {
@@ -322,9 +334,12 @@ describe('chatCompletions route', () => {
     describe('session ID detection with logRequests enabled', () => {
       it('should log session detection when logRequests is true', async () => {
         // Enable debug logging
-        mockConfig.logRequests = true;
+        config.logRequests = true;
 
-        mockConfig.getModelWebhookUrl.mockReturnValue('https://n8n.example.com/webhook/test');
+        // Add test model to repository
+        modelRepository.models = {
+          'test-model': 'https://n8n.example.com/webhook/test',
+        };
         mockN8nClient.nonStreamingCompletion.mockResolvedValue('Response');
 
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();

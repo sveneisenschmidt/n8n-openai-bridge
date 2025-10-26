@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const Config = require('../../src/config/Config');
+
 // Mock console methods to reduce noise in test output
 global.console = {
   ...console,
@@ -25,23 +27,10 @@ global.console = {
 };
 
 describe('Config - Basic Properties', () => {
-  let Config;
   let originalEnv;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     originalEnv = { ...process.env };
-
-    process.env.MODEL_LOADER_TYPE = 'static';
-    process.env.STATIC_MODELS = JSON.stringify({
-      'test-model': 'https://n8n.example.com/webhook/test/chat',
-    });
-    process.env.PORT = '3333';
-    process.env.BEARER_TOKEN = 'test-token';
-    process.env.LOG_REQUESTS = 'false';
-
-    jest.resetModules();
-    Config = require('../../src/config');
-    await Config.loadingPromise;
   });
 
   afterEach(() => {
@@ -50,16 +39,23 @@ describe('Config - Basic Properties', () => {
   });
 
   test('should load configuration from environment variables', () => {
-    expect(Config.port).toBe('3333');
-    expect(Config.bearerToken).toBe('test-token');
-    expect(Config.logRequests).toBe(false);
+    process.env.PORT = '3333';
+    process.env.BEARER_TOKEN = 'test-token';
+    process.env.LOG_REQUESTS = 'false';
+
+    const config = new Config();
+
+    expect(config.port).toBe('3333');
+    expect(config.bearerToken).toBe('test-token');
+    expect(config.logRequests).toBe(false);
   });
 
-  test('should use default values when env vars are not set', async () => {
-    process.env = { MODEL_LOADER_TYPE: 'static' };
-    jest.resetModules();
-    const config = require('../../src/config');
-    await config.loadingPromise;
+  test('should use default values when env vars are not set', () => {
+    delete process.env.PORT;
+    delete process.env.BEARER_TOKEN;
+    delete process.env.LOG_REQUESTS;
+
+    const config = new Config();
 
     expect(config.port).toBe(3333);
     expect(config.bearerToken).toBe('');

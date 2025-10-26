@@ -62,7 +62,7 @@ function setupLoaderTestDir() {
       const files = fs.readdirSync(testDir);
       files.forEach((file) => {
         const filePath = path.join(testDir, file);
-        if (fs.statSync(filePath).isFile()) {
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
           fs.unlinkSync(filePath);
         }
       });

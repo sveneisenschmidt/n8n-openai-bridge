@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const Config = require('../../src/config/Config');
+
 // Mock console methods to reduce noise in test output
 global.console = {
   ...console,
@@ -36,37 +38,30 @@ describe('Config - N8N Webhook Bearer Token', () => {
     jest.clearAllMocks();
   });
 
-  test('should use N8N_WEBHOOK_BEARER_TOKEN when set', async () => {
-    process.env.MODEL_LOADER_TYPE = 'static';
+  test('should use N8N_WEBHOOK_BEARER_TOKEN when set', () => {
     process.env.N8N_WEBHOOK_BEARER_TOKEN = 'new-token';
     process.env.N8N_BEARER_TOKEN = 'old-token';
-    jest.resetModules();
-    const config = require('../../src/config');
-    await config.loadingPromise;
+
+    const config = new Config();
 
     expect(config.n8nWebhookBearerToken).toBe('new-token');
   });
 
-  test('should fall back to N8N_BEARER_TOKEN for backwards compatibility', async () => {
-    process.env.MODEL_LOADER_TYPE = 'static';
+  test('should fall back to N8N_BEARER_TOKEN for backwards compatibility', () => {
     delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
     process.env.N8N_BEARER_TOKEN = 'old-token';
-    jest.resetModules();
-    const config = require('../../src/config');
-    await config.loadingPromise;
+
+    const config = new Config();
 
     expect(config.n8nWebhookBearerToken).toBe('old-token');
   });
 
-  test('should warn when using deprecated N8N_BEARER_TOKEN', async () => {
-    process.env.MODEL_LOADER_TYPE = 'static';
+  test('should warn when using deprecated N8N_BEARER_TOKEN', () => {
     delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
     process.env.N8N_BEARER_TOKEN = 'old-token';
-    jest.resetModules();
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-    const config = require('../../src/config');
-    await config.loadingPromise;
+    new Config();
 
     expect(warnSpy).toHaveBeenCalledWith(
       'N8N_BEARER_TOKEN is deprecated, please use N8N_WEBHOOK_BEARER_TOKEN instead',
@@ -75,15 +70,12 @@ describe('Config - N8N Webhook Bearer Token', () => {
     warnSpy.mockRestore();
   });
 
-  test('should prefer N8N_WEBHOOK_BEARER_TOKEN over N8N_BEARER_TOKEN', async () => {
-    process.env.MODEL_LOADER_TYPE = 'static';
+  test('should prefer N8N_WEBHOOK_BEARER_TOKEN over N8N_BEARER_TOKEN', () => {
     process.env.N8N_WEBHOOK_BEARER_TOKEN = 'new-token';
     process.env.N8N_BEARER_TOKEN = 'old-token';
-    jest.resetModules();
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-    const config = require('../../src/config');
-    await config.loadingPromise;
+    const config = new Config();
 
     expect(config.n8nWebhookBearerToken).toBe('new-token');
     expect(warnSpy).not.toHaveBeenCalled();
@@ -91,13 +83,11 @@ describe('Config - N8N Webhook Bearer Token', () => {
     warnSpy.mockRestore();
   });
 
-  test('should return empty string when no token is set', async () => {
-    process.env.MODEL_LOADER_TYPE = 'static';
+  test('should return empty string when no token is set', () => {
     delete process.env.N8N_WEBHOOK_BEARER_TOKEN;
     delete process.env.N8N_BEARER_TOKEN;
-    jest.resetModules();
-    const config = require('../../src/config');
-    await config.loadingPromise;
+
+    const config = new Config();
 
     expect(config.n8nWebhookBearerToken).toBe('');
   });

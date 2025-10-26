@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const ModelRepository = require('../../src/repositories/ModelRepository');
+
 // Mock console methods to reduce noise in test output
 global.console = {
   ...console,
@@ -24,64 +26,59 @@ global.console = {
   error: jest.fn(),
 };
 
-describe('Config - Model Operations', () => {
-  let Config;
-  let originalEnv;
+describe('ModelRepository - Model Operations', () => {
+  let modelRepository;
 
-  beforeEach(async () => {
-    originalEnv = { ...process.env };
-
-    process.env.MODEL_LOADER_TYPE = 'static';
-    process.env.STATIC_MODELS = JSON.stringify({
-      'test-model': 'https://n8n.example.com/webhook/test/chat',
-      'another-model': 'https://n8n.example.com/webhook/another/chat',
-    });
-
-    jest.resetModules();
-    Config = require('../../src/config');
-    await Config.loadingPromise;
-  });
-
-  afterEach(() => {
-    process.env = originalEnv;
-    jest.clearAllMocks();
+  beforeEach(() => {
+    modelRepository = new ModelRepository();
   });
 
   describe('Model Loading', () => {
-    test('should load models from StaticModelLoader', () => {
-      const models = Config.models;
+    test('should store models', () => {
+      modelRepository.models = {
+        'test-model': 'https://n8n.example.com/webhook/test/chat',
+        'another-model': 'https://n8n.example.com/webhook/another/chat',
+      };
 
-      expect(models).toHaveProperty('test-model');
-      expect(models).toHaveProperty('another-model');
-      expect(models['test-model']).toBe('https://n8n.example.com/webhook/test/chat');
+      expect(modelRepository.models).toHaveProperty('test-model');
+      expect(modelRepository.models).toHaveProperty('another-model');
+      expect(modelRepository.models['test-model']).toBe(
+        'https://n8n.example.com/webhook/test/chat',
+      );
     });
 
-    test('should return empty object when no static models provided', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.STATIC_MODELS = '{}';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
-
-      expect(config.models).toEqual({});
+    test('should start with empty object', () => {
+      expect(modelRepository.models).toEqual({});
     });
   });
 
   describe('getModelWebhookUrl', () => {
+    beforeEach(() => {
+      modelRepository.models = {
+        'test-model': 'https://n8n.example.com/webhook/test/chat',
+        'another-model': 'https://n8n.example.com/webhook/another/chat',
+      };
+    });
+
     test('should return webhook URL for existing model', () => {
-      const url = Config.getModelWebhookUrl('test-model');
+      const url = modelRepository.getModelWebhookUrl('test-model');
       expect(url).toBe('https://n8n.example.com/webhook/test/chat');
     });
 
     test('should return undefined for non-existent model', () => {
-      const url = Config.getModelWebhookUrl('nonexistent-model');
+      const url = modelRepository.getModelWebhookUrl('nonexistent-model');
       expect(url).toBeUndefined();
     });
   });
 
   describe('getAllModels', () => {
     test('should return array of model objects', () => {
-      const models = Config.getAllModels();
+      modelRepository.models = {
+        'test-model': 'https://n8n.example.com/webhook/test/chat',
+        'another-model': 'https://n8n.example.com/webhook/another/chat',
+      };
+
+      const models = modelRepository.getAllModels();
 
       expect(Array.isArray(models)).toBe(true);
       expect(models.length).toBe(2);
@@ -92,41 +89,87 @@ describe('Config - Model Operations', () => {
     });
 
     test('should include all configured models', () => {
-      const models = Config.getAllModels();
+      modelRepository.models = {
+        'test-model': 'https://n8n.example.com/webhook/test/chat',
+        'another-model': 'https://n8n.example.com/webhook/another/chat',
+      };
+
+      const models = modelRepository.getAllModels();
       const modelIds = models.map((m) => m.id);
 
       expect(modelIds).toContain('test-model');
       expect(modelIds).toContain('another-model');
     });
 
-    test('should return empty array when no models', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.STATIC_MODELS = '{}';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+    test('should return empty array when no models', () => {
+      modelRepository.models = {};
 
-      const models = config.getAllModels();
+      const models = modelRepository.getAllModels();
       expect(models).toEqual([]);
     });
   });
 
   describe('reloadModels', () => {
     test('should reload models from loader', async () => {
-      // Note: StaticModelLoader doesn't change models on reload,
-      // but this tests the interface
-      const initialModels = { ...Config.models };
-      await Config.reloadModels();
+      const mockLoader = {
+        load: jest.fn().mockResolvedValue({
+          'new-model': 'https://n8n.example.com/webhook/new',
+        }),
+      };
 
-      expect(Config.models).toEqual(initialModels);
+      const newModels = await modelRepository.reloadModels(mockLoader);
+
+      expect(mockLoader.load).toHaveBeenCalled();
+      expect(modelRepository.models).toEqual({
+        'new-model': 'https://n8n.example.com/webhook/new',
+      });
+      expect(newModels).toEqual({
+        'new-model': 'https://n8n.example.com/webhook/new',
+      });
     });
   });
 
-  describe('close', () => {
-    test('should call stopWatching on model loader if available', () => {
-      const stopWatchingSpy = jest.spyOn(Config.modelLoader, 'stopWatching');
-      Config.close();
-      expect(stopWatchingSpy).toHaveBeenCalled();
+  describe('updateModels', () => {
+    test('should update models', () => {
+      modelRepository.updateModels({
+        'updated-model': 'https://n8n.example.com/webhook/updated',
+      });
+
+      expect(modelRepository.models).toEqual({
+        'updated-model': 'https://n8n.example.com/webhook/updated',
+      });
+    });
+  });
+
+  describe('getModelCount', () => {
+    test('should return count of models', () => {
+      modelRepository.models = {
+        'model-1': 'url1',
+        'model-2': 'url2',
+        'model-3': 'url3',
+      };
+
+      expect(modelRepository.getModelCount()).toBe(3);
+    });
+
+    test('should return 0 for empty models', () => {
+      expect(modelRepository.getModelCount()).toBe(0);
+    });
+  });
+
+  describe('hasModel', () => {
+    beforeEach(() => {
+      modelRepository.models = {
+        'test-model': 'https://n8n.example.com/webhook/test',
+      };
+    });
+
+    test('should return true for existing model', () => {
+      expect(modelRepository.hasModel('test-model')).toBe(true);
+    });
+
+    test('should return false for non-existent model', () => {
+      expect(modelRepository.hasModel('nonexistent')).toBe(false);
     });
   });
 });
