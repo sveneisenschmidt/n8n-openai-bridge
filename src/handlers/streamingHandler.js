@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { createStreamingChunk } = require('../utils/openaiResponse');
+const { createStreamingChunk, createStatusToolCallChunk } = require('../utils/openaiResponse');
 const { createErrorResponse } = require('../utils/errorResponse');
 
 /**
@@ -47,6 +47,16 @@ async function handleStreaming(
   res.setHeader('Connection', 'keep-alive');
 
   try {
+    // Status: Processing (before calling n8n)
+    if (config.enableStatusEmit) {
+      const processingChunk = createStatusToolCallChunk(model, {
+        message: 'Processing',
+        progress: 50,
+        step: 'processing',
+      });
+      res.write(`data: ${JSON.stringify(processingChunk)}\n\n`);
+    }
+
     const streamGenerator = n8nClient.streamCompletion(
       webhookUrl,
       messages,
@@ -54,7 +64,20 @@ async function handleStreaming(
       userContext,
     );
 
+    let firstChunk = true;
+
     for await (const content of streamGenerator) {
+      // Status: Completed (when first content chunk arrives from n8n)
+      if (firstChunk && config.enableStatusEmit) {
+        const completedChunk = createStatusToolCallChunk(model, {
+          message: 'Completed',
+          progress: 100,
+          step: 'completed',
+        });
+        res.write(`data: ${JSON.stringify(completedChunk)}\n\n`);
+        firstChunk = false;
+      }
+
       const chunk = createStreamingChunk(model, content, null);
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }

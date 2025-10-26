@@ -40,6 +40,9 @@ class Config {
     this.n8nWebhookBearerToken = this.resolveN8nWebhookBearerToken();
     this.logRequests = process.env.LOG_REQUESTS === 'true';
 
+    // Status emit configuration
+    this.enableStatusEmit = process.env.ENABLE_STATUS_EMIT !== 'false';
+
     // Header configuration
     this.sessionIdHeaders = this.parseSessionIdHeaders();
     this.userIdHeaders = this.parseUserIdHeaders();

@@ -73,7 +73,48 @@ function createCompletionResponse(model, content) {
   };
 }
 
+/**
+ * Creates an OpenAI-compatible tool call chunk for status updates
+ *
+ * @param {string} model - Model identifier
+ * @param {Object} statusData - Status data object
+ * @param {string} statusData.message - Status message
+ * @param {number} statusData.progress - Progress percentage (0-100)
+ * @param {string} statusData.step - Current step identifier
+ * @returns {Object} OpenAI-compatible chunk with tool_calls
+ */
+function createStatusToolCallChunk(model, statusData) {
+  const callId = `call_status_${Date.now()}`;
+
+  return {
+    id: `chatcmpl-${uuidv4()}`,
+    object: 'chat.completion.chunk',
+    created: Math.floor(Date.now() / 1000),
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              id: callId,
+              type: 'function',
+              function: {
+                name: 'emit_status',
+                arguments: JSON.stringify(statusData),
+              },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
+  };
+}
+
 module.exports = {
   createStreamingChunk,
   createCompletionResponse,
+  createStatusToolCallChunk,
 };
