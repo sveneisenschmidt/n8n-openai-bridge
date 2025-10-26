@@ -20,7 +20,7 @@ const {
   createStreamingChunk,
   createCompletionResponse,
   createStatus,
-  createStatusToolCallChunk,
+  createStatusToolCallChunks,
   createTypeStatusChunk,
 } = require('../../src/utils/openaiResponse');
 
@@ -122,12 +122,21 @@ describe('openaiResponse utility', () => {
     });
   });
 
-  describe('createStatusToolCallChunk', () => {
-    it('should create status tool call chunk with all fields', () => {
+  describe('createStatusToolCallChunks', () => {
+    it('should create array of status tool call chunks', () => {
       const status = createStatus('Processing', false);
-      const chunk = createStatusToolCallChunk('gpt-4', status);
+      const chunks = createStatusToolCallChunks('gpt-4', status);
 
-      expect(chunk).toMatchObject({
+      expect(Array.isArray(chunks)).toBe(true);
+      expect(chunks).toHaveLength(2);
+    });
+
+    it('should have first chunk with id, type, name, and empty arguments', () => {
+      const status = createStatus('Processing', false);
+      const chunks = createStatusToolCallChunks('gpt-4', status);
+      const firstChunk = chunks[0];
+
+      expect(firstChunk).toMatchObject({
         object: 'chat.completion.chunk',
         model: 'gpt-4',
         choices: [
@@ -140,6 +149,36 @@ describe('openaiResponse utility', () => {
                   type: 'function',
                   function: {
                     name: 'emit_status',
+                    arguments: '',
+                  },
+                },
+              ],
+            },
+            finish_reason: null,
+          },
+        ],
+      });
+      expect(firstChunk.id).toMatch(/^chatcmpl-/);
+      expect(firstChunk.created).toBeGreaterThan(0);
+      expect(firstChunk.choices[0].delta.tool_calls[0].id).toMatch(/^call_status_/);
+    });
+
+    it('should have second chunk with arguments only', () => {
+      const status = createStatus('Processing', false);
+      const chunks = createStatusToolCallChunks('gpt-4', status);
+      const secondChunk = chunks[1];
+
+      expect(secondChunk).toMatchObject({
+        object: 'chat.completion.chunk',
+        model: 'gpt-4',
+        choices: [
+          {
+            index: 0,
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  function: {
                     arguments: JSON.stringify({ message: 'Processing' }),
                   },
                 },
@@ -149,34 +188,32 @@ describe('openaiResponse utility', () => {
           },
         ],
       });
-      expect(chunk.id).toMatch(/^chatcmpl-/);
-      expect(chunk.created).toBeGreaterThan(0);
-      expect(chunk.choices[0].delta.tool_calls[0].id).toMatch(/^call_status_/);
+      expect(secondChunk.id).toMatch(/^chatcmpl-/);
+      expect(secondChunk.created).toBeGreaterThan(0);
     });
 
-    it('should create status tool call chunk for initiating step', () => {
-      const status = createStatus('Initiating', false);
-      const chunk = createStatusToolCallChunk('test-model', status);
+    it('should use same chat ID and timestamp for both chunks', () => {
+      const status = createStatus('Test', false);
+      const chunks = createStatusToolCallChunks('gpt-4', status);
 
-      expect(chunk.choices[0].delta.tool_calls[0].function.arguments).toBe(
-        JSON.stringify({ message: 'Initiating' }),
-      );
+      expect(chunks[0].id).toBe(chunks[1].id);
+      expect(chunks[0].created).toBe(chunks[1].created);
     });
 
-    it('should create status tool call chunk for completed step', () => {
+    it('should create chunks for completed status', () => {
       const status = createStatus('Completed', true);
-      const chunk = createStatusToolCallChunk('test-model', status);
+      const chunks = createStatusToolCallChunks('test-model', status);
 
-      expect(chunk.choices[0].delta.tool_calls[0].function.arguments).toBe(
+      expect(chunks[1].choices[0].delta.tool_calls[0].function.arguments).toBe(
         JSON.stringify({ message: 'Completed' }),
       );
     });
 
     it('should have call ID with correct format', () => {
       const status = createStatus('Step 1', false);
-      const chunk = createStatusToolCallChunk('gpt-4', status);
+      const chunks = createStatusToolCallChunks('gpt-4', status);
 
-      const id = chunk.choices[0].delta.tool_calls[0].id;
+      const id = chunks[0].choices[0].delta.tool_calls[0].id;
 
       expect(id).toMatch(/^call_status_\d+$/);
     });

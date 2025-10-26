@@ -88,19 +88,28 @@ function createStatus(message, done = false) {
 }
 
 /**
- * Creates an OpenAI-compatible tool call chunk for status updates
+ * Creates OpenAI-compatible tool call chunks for status updates
+ * Returns an array of chunks that must be sent sequentially:
+ * 1. First chunk with id, type, and function name
+ * 2. Following chunks with arguments (streamed incrementally)
  *
  * @param {string} model - Model identifier
  * @param {Object} status - Status object from createStatus()
- * @returns {Object} OpenAI-compatible chunk with tool_calls
+ * @returns {Array<Object>} Array of OpenAI-compatible chunks with tool_calls
  */
-function createStatusToolCallChunk(model, status) {
+function createStatusToolCallChunks(model, status) {
   const callId = `call_status_${Date.now()}`;
+  const chatId = `chatcmpl-${uuidv4()}`;
+  const created = Math.floor(Date.now() / 1000);
+  const argsJson = JSON.stringify({ message: status.message });
 
-  return {
-    id: `chatcmpl-${uuidv4()}`,
+  const chunks = [];
+
+  // First chunk: id, type, and function name with empty arguments
+  chunks.push({
+    id: chatId,
     object: 'chat.completion.chunk',
-    created: Math.floor(Date.now() / 1000),
+    created,
     model,
     choices: [
       {
@@ -113,7 +122,7 @@ function createStatusToolCallChunk(model, status) {
               type: 'function',
               function: {
                 name: 'emit_status',
-                arguments: JSON.stringify({ message: status.message }),
+                arguments: '',
               },
             },
           ],
@@ -121,7 +130,34 @@ function createStatusToolCallChunk(model, status) {
         finish_reason: null,
       },
     ],
-  };
+  });
+
+  // Stream arguments incrementally (can be sent as single chunk or character-by-character)
+  // For simplicity, we send the complete arguments in one chunk
+  chunks.push({
+    id: chatId,
+    object: 'chat.completion.chunk',
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              function: {
+                arguments: argsJson,
+              },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
+  });
+
+  return chunks;
 }
 
 /**
@@ -148,6 +184,6 @@ module.exports = {
   createStreamingChunk,
   createCompletionResponse,
   createStatus,
-  createStatusToolCallChunk,
+  createStatusToolCallChunks,
   createTypeStatusChunk,
 };

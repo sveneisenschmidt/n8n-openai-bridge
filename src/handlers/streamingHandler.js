@@ -19,7 +19,7 @@
 const {
   createStreamingChunk,
   createStatus,
-  createStatusToolCallChunk,
+  createStatusToolCallChunks,
   createTypeStatusChunk,
 } = require('../utils/openaiResponse');
 const { createErrorResponse } = require('../utils/errorResponse');
@@ -40,17 +40,22 @@ function emitStatus(res, config, model, message, done = false) {
 
   const status = createStatus(message, done);
 
-  let statusChunk;
   switch (config.statusEmitFormat) {
-    case 'type_status':
-      statusChunk = createTypeStatusChunk(model, status);
+    case 'type_status': {
+      const statusChunk = createTypeStatusChunk(model, status);
+      res.write(`data: ${JSON.stringify(statusChunk)}\n\n`);
       break;
+    }
     case 'tool_calls':
-    default:
-      statusChunk = createStatusToolCallChunk(model, status);
+    default: {
+      // tool_calls format requires multiple chunks
+      const chunks = createStatusToolCallChunks(model, status);
+      chunks.forEach((chunk) => {
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      });
       break;
+    }
   }
-  res.write(`data: ${JSON.stringify(statusChunk)}\n\n`);
 }
 
 /**
