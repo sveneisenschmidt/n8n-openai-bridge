@@ -70,7 +70,8 @@ See [Integration Guide](docs/INTEGRATIONS.md) for setup.
 # Create models configuration
 cat > models.json << 'EOF'
 {
-  "my-agent": "https://n8n.example.com/webhook/abc123/chat"
+  "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+  "webhook-agent": "https://n8n.example.com/webhook/xyz789"
 }
 EOF
 
@@ -130,9 +131,14 @@ The bridge uses a flexible **ModelLoader architecture** to load models from diff
 
 ```json
 {
-  "model-id": "https://n8n.example.com/webhook/abc123/chat"
+  "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+  "webhook-agent": "https://n8n.example.com/webhook/xyz789"
 }
 ```
+
+**Note:** 
+- Chat Trigger nodes: URLs end with `/chat`
+- Webhook nodes: URLs without `/chat` suffix
 
 Save to `models.json`. Changes are automatically detected and reloaded. No additional configuration required.
 
