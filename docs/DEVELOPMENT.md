@@ -36,8 +36,15 @@ This will:
 n8n-openai-bridge/
 ├── src/
 │   ├── server.js          # Express server setup
+│   ├── Bootstrap.js       # Application lifecycle orchestration
 │   ├── n8nClient.js       # n8n webhook client (streaming & non-streaming)
-│   ├── config.js          # Configuration & models loader
+│   ├── config/            # Configuration
+│   │   └── Config.js      # ENV parsing & server settings
+│   ├── repositories/      # Data repositories
+│   │   └── ModelRepository.js  # Model state management
+│   ├── factories/         # Factory classes
+│   │   ├── ModelLoaderFactory.js     # Create model loaders
+│   │   └── WebhookNotifierFactory.js # Create webhook notifiers
 │   ├── routes/            # API endpoints
 │   │   ├── health.js      # Health check endpoint
 │   │   ├── models.js      # List models endpoint
@@ -57,16 +64,23 @@ n8n-openai-bridge/
 │   │   └── validationService.js  # Request validation
 │   ├── loaders/           # Model loader architecture
 │   │   ├── ModelLoader.js     # Abstract base class
-│   │   └── JsonFileModelLoader.js  # JSON file loader
+│   │   ├── JsonFileModelLoader.js  # JSON file loader
+│   │   ├── N8nApiModelLoader.js    # Auto-discovery loader
+│   │   └── StaticModelLoader.js    # Static loader (testing)
+│   ├── notifiers/         # Webhook notifiers
+│   │   └── WebhookNotifier.js # Notify on model changes
 │   └── utils/             # Utility functions
 │       ├── errorResponse.js   # Error formatting
 │       ├── openaiResponse.js  # OpenAI response formatting
 │       ├── masking.js         # Sensitive data masking
 │       └── debugSession.js    # Session debug logging
 ├── tests/
-│   ├── server.test.js     # Server endpoint tests
+│   ├── routes/            # Route tests
+│   ├── config/            # Config & ModelRepository tests
+│   ├── loaders/           # Loader tests
+│   ├── notifiers/         # Notifier tests
 │   ├── n8nClient.test.js  # n8n client tests
-│   └── config.test.js     # Configuration tests
+│   └── container/         # Container structure tests
 ├── docker/
 │   ├── Dockerfile.build          # Production Docker image
 │   ├── Dockerfile.test           # Test Docker image
