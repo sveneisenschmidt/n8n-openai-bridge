@@ -2,6 +2,8 @@
   "nodes": [
     {
       "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
         "options": {
           "enableStreaming": true
         }
@@ -9,7 +11,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        208,
+        432,
         0
       ],
       "id": "27283b74-1bc2-435f-9f2b-5e4c965029c5",
@@ -28,8 +30,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        208,
-        240
+        512,
+        224
       ],
       "id": "998a50a6-6313-44ff-9107-9f3b77c24e24",
       "name": "OpenAI Chat Model",
@@ -42,9 +44,12 @@
     },
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "7dbc2954-3090-4045-82b3-00249366546a",
         "responseMode": "streaming",
-        "options": {}
+        "options": {
+          "rawBody": false
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -55,6 +60,21 @@
       "id": "0d5e9864-cc1d-4731-83fc-2d640b1abf61",
       "name": "Webhook",
       "webhookId": "7dbc2954-3090-4045-82b3-00249366546a"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f63a0aef-da1b-48c0-b346-0e004cd85ec6",
+      "name": "Extract Chat Body"
     }
   ],
   "connections": {
@@ -75,6 +95,17 @@
       ]
     },
     "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Chat Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Chat Body": {
       "main": [
         [
           {

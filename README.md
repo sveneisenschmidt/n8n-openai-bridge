@@ -9,6 +9,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Full OpenAI Chat Completion API compatibility
 - Streaming and non-streaming responses
 - Multi-model support via JSON configuration
+- Supports both Chat Trigger and Webhook nodes in n8n
 - Session tracking for conversation memory
 - User context forwarding (ID, email, name, role)
 - Rate limiting with configurable thresholds per endpoint
@@ -142,6 +143,15 @@ From simple single-agent workflows exposed as a model ...
 ... to complex agent teams that work together:
 
 <img src="./docs/pictures/multi_agent_model.png" width="75%">
+
+### Workflow Examples
+
+Two complete workflow examples are included in the project root:
+
+- **[`n8n_workflow_chat.json.example`](n8n_workflow_chat.json.example)** - Using Chat Trigger node (recommended)
+- **[`n8n_workflow_webhook.json.example`](n8n_workflow_webhook.json.example)** - Using Webhook node (advanced)
+
+See [n8n Workflow Setup Guide](docs/N8N_SETUP.md) for detailed setup instructions.
 
 
 ### Quick Start: Auto-Discovery (Recommended)
