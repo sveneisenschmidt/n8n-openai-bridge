@@ -42,7 +42,8 @@ class Config {
     this.logResponses = process.env.LOG_RESPONSES === 'true';
 
     // Status emit configuration
-    this.enableStatusEmit = process.env.ENABLE_STATUS_EMIT !== 'false';
+    this.enableStatusEmit = process.env.ENABLE_STATUS_EMIT === 'true';
+    this.statusEmitFormat = process.env.STATUS_EMIT_FORMAT || 'tool_calls';
 
     // Header configuration
     this.sessionIdHeaders = this.parseSessionIdHeaders();

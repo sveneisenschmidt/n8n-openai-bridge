@@ -81,9 +81,10 @@ function createCompletionResponse(model, content) {
  * @param {string} statusData.message - Status message
  * @param {number} statusData.progress - Progress percentage (0-100)
  * @param {string} statusData.step - Current step identifier
+ * @param {boolean} _done - Whether this is the final status (unused for tool_calls)
  * @returns {Object} OpenAI-compatible chunk with tool_calls
  */
-function createStatusToolCallChunk(model, statusData) {
+function createStatusToolCallChunk(model, statusData, _done = false) {
   const callId = `call_status_${Date.now()}`;
 
   return {
@@ -113,8 +114,33 @@ function createStatusToolCallChunk(model, statusData) {
   };
 }
 
+/**
+ * Creates a type_status format chunk (Open WebUI compatible)
+ *
+ * @param {string} model - Model identifier (unused for type_status)
+ * @param {Object} statusData - Status data object
+ * @param {string} statusData.message - Status message
+ * @param {string} statusData.step - Current step identifier
+ * @param {boolean} done - Whether this is the final status
+ * @returns {Object} type_status format object
+ */
+function createTypeStatusChunk(model, statusData, done = false) {
+  // Map step to Open WebUI status type
+  const statusType = done ? 'complete' : 'info';
+
+  return {
+    type: 'status',
+    data: {
+      status: statusType,
+      description: statusData.message,
+      done: done,
+    },
+  };
+}
+
 module.exports = {
   createStreamingChunk,
   createCompletionResponse,
   createStatusToolCallChunk,
+  createTypeStatusChunk,
 };

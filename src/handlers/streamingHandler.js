@@ -16,8 +16,39 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { createStreamingChunk, createStatusToolCallChunk } = require('../utils/openaiResponse');
+const {
+  createStreamingChunk,
+  createStatusToolCallChunk,
+  createTypeStatusChunk,
+} = require('../utils/openaiResponse');
 const { createErrorResponse } = require('../utils/errorResponse');
+
+/**
+ * Emits a status update based on configured format
+ *
+ * @param {Object} res - Express response object
+ * @param {Object} config - Configuration object
+ * @param {string} model - Model identifier
+ * @param {Object} statusData - Status data
+ * @param {boolean} done - Whether this is the final status
+ */
+function emitStatus(res, config, model, statusData, done = false) {
+  if (!config.enableStatusEmit) {
+    return;
+  }
+
+  let statusChunk;
+  switch (config.statusEmitFormat) {
+    case 'type_status':
+      statusChunk = createTypeStatusChunk(model, statusData, done);
+      break;
+    case 'tool_calls':
+    default:
+      statusChunk = createStatusToolCallChunk(model, statusData, done);
+      break;
+  }
+  res.write(`data: ${JSON.stringify(statusChunk)}\n\n`);
+}
 
 /**
  * Handles streaming chat completion requests
@@ -48,14 +79,11 @@ async function handleStreaming(
 
   try {
     // Status: Processing (before calling n8n)
-    if (config.enableStatusEmit) {
-      const processingChunk = createStatusToolCallChunk(model, {
-        message: 'Processing',
-        progress: 25,
-        step: 'processing',
-      });
-      res.write(`data: ${JSON.stringify(processingChunk)}\n\n`);
-    }
+    emitStatus(res, config, model, {
+      message: 'Processing',
+      progress: 25,
+      step: 'processing',
+    });
 
     const streamGenerator = n8nClient.streamCompletion(
       webhookUrl,
@@ -68,13 +96,18 @@ async function handleStreaming(
 
     for await (const content of streamGenerator) {
       // Status: Completed (when first content chunk arrives from n8n)
-      if (firstChunk && config.enableStatusEmit) {
-        const completedChunk = createStatusToolCallChunk(model, {
-          message: 'Completed',
-          progress: 100,
-          step: 'completed',
-        });
-        res.write(`data: ${JSON.stringify(completedChunk)}\n\n`);
+      if (firstChunk) {
+        emitStatus(
+          res,
+          config,
+          model,
+          {
+            message: 'Completed',
+            progress: 100,
+            step: 'completed',
+          },
+          true,
+        );
         firstChunk = false;
       }
 

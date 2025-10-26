@@ -19,7 +19,8 @@ PORT=3333                        # Server port (default: 3333)
 BEARER_TOKEN=your-api-key        # Auth token for API requests TO this bridge
 LOG_REQUESTS=false               # Log incoming requests
 LOG_RESPONSES=false              # Log outgoing responses to clients
-ENABLE_STATUS_EMIT=true          # Enable status updates during streaming (default: true)
+ENABLE_STATUS_EMIT=false         # Enable status updates during streaming (default: false)
+STATUS_EMIT_FORMAT=tool_calls    # Status format: tool_calls (default) or type_status
 DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ```
 

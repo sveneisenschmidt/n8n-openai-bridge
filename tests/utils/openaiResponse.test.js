@@ -20,6 +20,7 @@ const {
   createStreamingChunk,
   createCompletionResponse,
   createStatusToolCallChunk,
+  createTypeStatusChunk,
 } = require('../../src/utils/openaiResponse');
 
 describe('openaiResponse utility', () => {
@@ -178,6 +179,59 @@ describe('openaiResponse utility', () => {
       const id = chunk.choices[0].delta.tool_calls[0].id;
 
       expect(id).toMatch(/^call_status_\d+$/);
+    });
+  });
+
+  describe('createTypeStatusChunk', () => {
+    it('should create type_status chunk with info status when not done', () => {
+      const statusData = {
+        message: 'Processing',
+        progress: 50,
+        step: 'processing',
+      };
+
+      const chunk = createTypeStatusChunk('gpt-4', statusData, false);
+
+      expect(chunk).toEqual({
+        type: 'status',
+        data: {
+          status: 'info',
+          description: 'Processing',
+          done: false,
+        },
+      });
+    });
+
+    it('should create type_status chunk with complete status when done', () => {
+      const statusData = {
+        message: 'Completed',
+        progress: 100,
+        step: 'completed',
+      };
+
+      const chunk = createTypeStatusChunk('gpt-4', statusData, true);
+
+      expect(chunk).toEqual({
+        type: 'status',
+        data: {
+          status: 'complete',
+          description: 'Completed',
+          done: true,
+        },
+      });
+    });
+
+    it('should default to done=false when not specified', () => {
+      const statusData = {
+        message: 'Starting',
+        progress: 0,
+        step: 'starting',
+      };
+
+      const chunk = createTypeStatusChunk('gpt-4', statusData);
+
+      expect(chunk.data.done).toBe(false);
+      expect(chunk.data.status).toBe('info');
     });
   });
 });
