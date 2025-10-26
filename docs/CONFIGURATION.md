@@ -194,7 +194,13 @@ When server starts (only if `WEBHOOK_NOTIFIER_ON_STARTUP=true`):
 
 ## Model Configuration
 
-Models are loaded via a flexible **ModelLoader system**. The default loader reads from JSON files, but you can switch to auto-discovery via n8n API.
+Models are loaded via a flexible **ModelLoader system** managed by the `ModelRepository`. The repository maintains model state in memory while loaders handle data sources (files, APIs, etc.).
+
+**Architecture:**
+- `Config` (src/config/Config.js) - Parses ENV variables, server settings
+- `ModelRepository` (src/repositories/ModelRepository.js) - Manages model state, queries, reloading
+- `ModelLoaderFactory` (src/factories/ModelLoaderFactory.js) - Creates appropriate loader based on `MODEL_LOADER_TYPE`
+- `Bootstrap` (src/Bootstrap.js) - Orchestrates lifecycle, wires dependencies
 
 See [MODELLOADER.md](MODELLOADER.md) for complete documentation including:
 - Model validation rules

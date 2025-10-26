@@ -19,35 +19,26 @@
 const express = require('express');
 const request = require('supertest');
 const modelsRoute = require('../../src/routes/models');
+const ModelRepository = require('../../src/repositories/ModelRepository');
 
 describe('Models Route - GET /v1/models', () => {
   let app;
-  let mockConfig;
+  let modelRepository;
 
   beforeEach(() => {
     // Create Express app with route
     app = express();
     app.use(express.json());
 
-    // Mock config
-    mockConfig = {
-      models: {
-        'test-model': 'https://n8n.example.com/webhook/test/chat',
-        'another-model': 'https://n8n.example.com/webhook/another/chat',
-      },
-      getAllModels: jest.fn(function () {
-        const now = Math.floor(Date.now() / 1000);
-        return Object.entries(this.models).map(([id, _url]) => ({
-          id,
-          object: 'model',
-          created: now,
-          owned_by: 'n8n',
-        }));
-      }),
+    // Create ModelRepository instance with test data
+    modelRepository = new ModelRepository();
+    modelRepository.models = {
+      'test-model': 'https://n8n.example.com/webhook/test/chat',
+      'another-model': 'https://n8n.example.com/webhook/another/chat',
     };
 
-    // Store mock in app.locals
-    app.locals.config = mockConfig;
+    // Store modelRepository in app.locals (new structure)
+    app.locals.modelRepository = modelRepository;
 
     // Mount route
     app.use('/', modelsRoute);
@@ -168,7 +159,7 @@ describe('Models Route - GET /v1/models', () => {
     });
 
     test('should return empty array when no models configured', async () => {
-      mockConfig.models = {};
+      modelRepository.models = {};
 
       const response = await request(app).get('/').expect(200);
 

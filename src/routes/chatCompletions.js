@@ -70,6 +70,7 @@ const router = express.Router();
  */
 router.post('/', async (req, res) => {
   const config = req.app.locals.config;
+  const modelRepository = req.app.locals.modelRepository;
   const n8nClient = req.app.locals.n8nClient;
 
   const { model, messages, stream = false } = req.body;
@@ -83,7 +84,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: validation.error });
   }
 
-  const webhookUrl = config.getModelWebhookUrl(model);
+  const webhookUrl = modelRepository.getModelWebhookUrl(model);
   if (!webhookUrl) {
     return res
       .status(404)

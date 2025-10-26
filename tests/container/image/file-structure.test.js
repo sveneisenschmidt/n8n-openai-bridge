@@ -37,8 +37,33 @@ describe('File Structure', () => {
       expect(exists).toBe(true);
     });
 
-    test('should have config.js', async () => {
-      const exists = await fileExists('/app/src/config.js');
+    test('should have Bootstrap.js', async () => {
+      const exists = await fileExists('/app/src/Bootstrap.js');
+      expect(exists).toBe(true);
+    });
+
+    test('should have config directory', async () => {
+      const exists = await directoryExists('/app/src/config');
+      expect(exists).toBe(true);
+    });
+
+    test('should have Config.js in config directory', async () => {
+      const exists = await fileExists('/app/src/config/Config.js');
+      expect(exists).toBe(true);
+    });
+
+    test('should have repositories directory', async () => {
+      const exists = await directoryExists('/app/src/repositories');
+      expect(exists).toBe(true);
+    });
+
+    test('should have ModelRepository.js', async () => {
+      const exists = await fileExists('/app/src/repositories/ModelRepository.js');
+      expect(exists).toBe(true);
+    });
+
+    test('should have factories directory', async () => {
+      const exists = await directoryExists('/app/src/factories');
       expect(exists).toBe(true);
     });
 

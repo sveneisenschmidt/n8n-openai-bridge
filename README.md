@@ -182,15 +182,23 @@ For detailed setup, configuration, and troubleshooting, see:
 n8n-openai-bridge/
 ├── src/
 │   ├── server.js          # Express server setup
+│   ├── Bootstrap.js       # Application lifecycle orchestration
 │   ├── n8nClient.js       # n8n webhook client
-│   ├── config.js          # Configuration & models loader
+│   ├── config/            # Configuration
+│   │   └── Config.js      # ENV parsing & server settings
+│   ├── repositories/      # Data repositories
+│   │   └── ModelRepository.js  # Model state management
+│   ├── factories/         # Factory classes
+│   │   ├── ModelLoaderFactory.js     # Create model loaders
+│   │   └── WebhookNotifierFactory.js # Create webhook notifiers
 │   ├── routes/            # API endpoints
 │   ├── handlers/          # Request handlers
 │   ├── middleware/        # Express middleware
 │   ├── services/          # Business logic services
 │   ├── loaders/           # Model loader architecture
+│   ├── notifiers/         # Webhook notifiers
 │   └── utils/             # Utility functions
-├── tests/                 # Unit tests
+├── tests/                 # Unit tests (403+ tests)
 ├── docker/                # Docker configuration
 ├── docs/                  # Documentation
 ├── models.json            # Model configuration (git-ignored)

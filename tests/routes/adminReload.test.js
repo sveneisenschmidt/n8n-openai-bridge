@@ -19,27 +19,38 @@
 const express = require('express');
 const request = require('supertest');
 const adminReloadRoute = require('../../src/routes/adminReload');
+const ModelRepository = require('../../src/repositories/ModelRepository');
 
 describe('adminReload route', () => {
   let app;
-  let mockConfig;
+  let modelRepository;
+  let mockModelLoader;
 
   beforeEach(() => {
     // Create Express app with route
     app = express();
     app.use(express.json());
 
-    // Mock config
-    mockConfig = {
-      models: {
-        'model-1': 'https://n8n.example.com/webhook/1',
-        'model-2': 'https://n8n.example.com/webhook/2',
-      },
-      reloadModels: jest.fn(),
+    // Create ModelRepository instance with test data
+    modelRepository = new ModelRepository();
+    modelRepository.models = {
+      'model-1': 'https://n8n.example.com/webhook/1',
+      'model-2': 'https://n8n.example.com/webhook/2',
     };
 
-    // Store mock in app.locals
-    app.locals.config = mockConfig;
+    // Mock ModelLoader
+    mockModelLoader = {
+      load: jest.fn(),
+    };
+
+    // Mock Bootstrap (minimal - only what's needed)
+    const mockBootstrap = {
+      modelLoader: mockModelLoader,
+    };
+
+    // Store in app.locals (new structure)
+    app.locals.bootstrap = mockBootstrap;
+    app.locals.modelRepository = modelRepository;
 
     // Mount route
     app.use('/', adminReloadRoute);
@@ -47,13 +58,12 @@ describe('adminReload route', () => {
 
   describe('POST /', () => {
     it('should reload models successfully', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        mockConfig.models = {
-          'model-1': 'https://n8n.example.com/webhook/1',
-          'model-2': 'https://n8n.example.com/webhook/2',
-          'model-3': 'https://n8n.example.com/webhook/3',
-        };
-      });
+      const newModels = {
+        'model-1': 'https://n8n.example.com/webhook/1',
+        'model-2': 'https://n8n.example.com/webhook/2',
+        'model-3': 'https://n8n.example.com/webhook/3',
+      };
+      mockModelLoader.load.mockResolvedValue(newModels);
 
       const response = await request(app).post('/').send();
 
@@ -63,26 +73,25 @@ describe('adminReload route', () => {
         message: 'Models reloaded',
         models: 3,
       });
-      expect(mockConfig.reloadModels).toHaveBeenCalled();
+      expect(mockModelLoader.load).toHaveBeenCalled();
+      expect(modelRepository.models).toEqual(newModels);
     });
 
     it('should return current model count after reload', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        mockConfig.models = {
-          'new-model': 'https://n8n.example.com/webhook/new',
-        };
-      });
+      const newModels = {
+        'new-model': 'https://n8n.example.com/webhook/new',
+      };
+      mockModelLoader.load.mockResolvedValue(newModels);
 
       const response = await request(app).post('/').send();
 
       expect(response.status).toBe(200);
       expect(response.body.models).toBe(1);
+      expect(modelRepository.models).toEqual(newModels);
     });
 
     it('should handle empty models after reload', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        mockConfig.models = {};
-      });
+      mockModelLoader.load.mockResolvedValue({});
 
       const response = await request(app).post('/').send();
 
@@ -92,12 +101,11 @@ describe('adminReload route', () => {
         message: 'Models reloaded',
         models: 0,
       });
+      expect(modelRepository.models).toEqual({});
     });
 
     it('should return 500 if reload fails', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        throw new Error('Failed to read models.json');
-      });
+      mockModelLoader.load.mockRejectedValue(new Error('Failed to read models.json'));
 
       const response = await request(app).post('/').send();
 
@@ -111,11 +119,9 @@ describe('adminReload route', () => {
     });
 
     it('should handle file system errors', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        const error = new Error('ENOENT: no such file or directory');
-        error.code = 'ENOENT';
-        throw error;
-      });
+      const error = new Error('ENOENT: no such file or directory');
+      error.code = 'ENOENT';
+      mockModelLoader.load.mockRejectedValue(error);
 
       const response = await request(app).post('/').send();
 
@@ -124,9 +130,7 @@ describe('adminReload route', () => {
     });
 
     it('should handle JSON parse errors', async () => {
-      mockConfig.reloadModels.mockImplementation(() => {
-        throw new SyntaxError('Unexpected token in JSON');
-      });
+      mockModelLoader.load.mockRejectedValue(new SyntaxError('Unexpected token in JSON'));
 
       const response = await request(app).post('/').send();
 

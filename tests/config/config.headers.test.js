@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const Config = require('../../src/config/Config');
+
 // Mock console methods to reduce noise in test output
 global.console = {
   ...console,
@@ -37,134 +39,106 @@ describe('Config - Header Parsing', () => {
   });
 
   describe('parseSessionIdHeaders', () => {
-    test('should parse comma-separated session ID headers', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should parse comma-separated session ID headers', () => {
       process.env.SESSION_ID_HEADERS = 'X-Custom-Session,X-Chat-ID,X-Conversation';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.sessionIdHeaders).toEqual(['X-Custom-Session', 'X-Chat-ID', 'X-Conversation']);
     });
 
-    test('should use default headers when env var is empty', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should use default headers when env var is empty', () => {
       process.env.SESSION_ID_HEADERS = '';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.sessionIdHeaders).toEqual(['X-Session-Id', 'X-Chat-Id']);
     });
 
-    test('should trim whitespace from header names', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should trim whitespace from header names', () => {
       process.env.SESSION_ID_HEADERS = ' X-Header-1 , X-Header-2 ,  X-Header-3  ';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.sessionIdHeaders).toEqual(['X-Header-1', 'X-Header-2', 'X-Header-3']);
     });
   });
 
   describe('parseUserIdHeaders', () => {
-    test('should parse comma-separated user ID headers', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should parse comma-separated user ID headers', () => {
       process.env.USER_ID_HEADERS = 'X-Custom-User,X-User-ID,X-OpenWebUI-User-Id';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.userIdHeaders).toEqual(['X-Custom-User', 'X-User-ID', 'X-OpenWebUI-User-Id']);
     });
 
-    test('should use default headers when env var is empty', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should use default headers when env var is empty', () => {
       process.env.USER_ID_HEADERS = '';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.userIdHeaders).toEqual(['X-User-Id']);
     });
 
-    test('should trim whitespace from header names', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.USER_ID_HEADERS = ' X-User-1 , X-User-2 ,  X-User-3  ';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+    test('should trim whitespace from header names', () => {
+      process.env.USER_ID_HEADERS = ' X-Header-1 , X-Header-2 ';
 
-      expect(config.userIdHeaders).toEqual(['X-User-1', 'X-User-2', 'X-User-3']);
+      const config = new Config();
+
+      expect(config.userIdHeaders).toEqual(['X-Header-1', 'X-Header-2']);
     });
   });
 
   describe('parseUserEmailHeaders', () => {
-    test('should parse comma-separated user email headers', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.USER_EMAIL_HEADERS = 'X-Email,X-User-Email,X-OpenWebUI-User-Email';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+    test('should parse comma-separated user email headers', () => {
+      process.env.USER_EMAIL_HEADERS = 'X-Custom-Email,X-User-Email';
 
-      expect(config.userEmailHeaders).toEqual([
-        'X-Email',
-        'X-User-Email',
-        'X-OpenWebUI-User-Email',
-      ]);
+      const config = new Config();
+
+      expect(config.userEmailHeaders).toEqual(['X-Custom-Email', 'X-User-Email']);
     });
 
-    test('should use default headers when env var is empty', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should use default headers when env var is empty', () => {
       process.env.USER_EMAIL_HEADERS = '';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.userEmailHeaders).toEqual(['X-User-Email']);
     });
   });
 
   describe('parseUserNameHeaders', () => {
-    test('should parse comma-separated user name headers', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.USER_NAME_HEADERS = 'X-Name,X-User-Name,X-OpenWebUI-User-Name';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+    test('should parse comma-separated user name headers', () => {
+      process.env.USER_NAME_HEADERS = 'X-Custom-Name,X-User-Name';
 
-      expect(config.userNameHeaders).toEqual(['X-Name', 'X-User-Name', 'X-OpenWebUI-User-Name']);
+      const config = new Config();
+
+      expect(config.userNameHeaders).toEqual(['X-Custom-Name', 'X-User-Name']);
     });
 
-    test('should use default headers when env var is empty', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should use default headers when env var is empty', () => {
       process.env.USER_NAME_HEADERS = '';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.userNameHeaders).toEqual(['X-User-Name']);
     });
   });
 
   describe('parseUserRoleHeaders', () => {
-    test('should parse comma-separated user role headers', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
-      process.env.USER_ROLE_HEADERS = 'X-Role,X-User-Role,X-OpenWebUI-User-Role';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+    test('should parse comma-separated user role headers', () => {
+      process.env.USER_ROLE_HEADERS = 'X-Custom-Role,X-User-Role';
 
-      expect(config.userRoleHeaders).toEqual(['X-Role', 'X-User-Role', 'X-OpenWebUI-User-Role']);
+      const config = new Config();
+
+      expect(config.userRoleHeaders).toEqual(['X-Custom-Role', 'X-User-Role']);
     });
 
-    test('should use default headers when env var is empty', async () => {
-      process.env.MODEL_LOADER_TYPE = 'static';
+    test('should use default headers when env var is empty', () => {
       process.env.USER_ROLE_HEADERS = '';
-      jest.resetModules();
-      const config = require('../../src/config');
-      await config.loadingPromise;
+
+      const config = new Config();
 
       expect(config.userRoleHeaders).toEqual(['X-User-Role']);
     });
