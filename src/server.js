@@ -18,7 +18,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const config = require('./config');
+const Bootstrap = require('./Bootstrap');
 const N8nClient = require('./n8nClient');
 const { createErrorResponse } = require('./utils/errorResponse');
 
@@ -35,14 +35,17 @@ const chatCompletionsRoute = require('./routes/chatCompletions');
 const adminReloadRoute = require('./routes/adminReload');
 
 const app = express();
-const n8nClient = new N8nClient(config);
+const bootstrap = new Bootstrap();
+const n8nClient = new N8nClient(bootstrap.config);
 
-// Store config and n8nClient in app.locals for access in routes
-app.locals.config = config;
+// Store bootstrap and n8nClient in app.locals for access in routes
+app.locals.bootstrap = bootstrap;
+app.locals.config = bootstrap.config;
+app.locals.modelRepository = bootstrap.modelRepository;
 app.locals.n8nClient = n8nClient;
 
 // Create rate limiters
-const rateLimiters = createRateLimiters(config);
+const rateLimiters = createRateLimiters(bootstrap.config);
 
 // Basic middleware
 app.use(cors());
@@ -52,13 +55,13 @@ app.use(express.json());
 app.use(requestId());
 
 // Request logging middleware
-app.use(requestLogger(config));
+app.use(requestLogger(bootstrap.config));
 
 // Public routes (no authentication required)
 app.use('/health', rateLimiters.health, healthRoute);
 
 // Apply authentication to all subsequent routes
-app.use(authenticate(config));
+app.use(authenticate(bootstrap.config));
 
 // Protected routes (authentication required)
 app.use('/admin/reload', rateLimiters.standard, adminReloadRoute);
@@ -91,9 +94,9 @@ async function startServer() {
   console.log('Loading models...');
 
   try {
-    // MUST wait for models to load before starting server
-    await config.loadingPromise;
-    console.log(`Models loaded: ${Object.keys(config.models).length} available`);
+    // Initialize bootstrap (MUST succeed)
+    await bootstrap.initialize();
+    console.log(`Models loaded: ${bootstrap.modelRepository.getModelCount()} available`);
   } catch (error) {
     console.error('='.repeat(60));
     console.error('FATAL: Failed to load models');
@@ -106,18 +109,18 @@ async function startServer() {
   }
 
   // Start HTTP server
-  const PORT = config.port;
+  const PORT = bootstrap.config.port;
   const server = app.listen(PORT, () => {
     console.log('='.repeat(60));
     console.log(`Server running on port: ${PORT}`);
-    console.log(`Request logging: ${config.logRequests ? 'ENABLED' : 'DISABLED'}`);
-    console.log(`Session ID headers: ${config.sessionIdHeaders.join(', ')}`);
+    console.log(`Request logging: ${bootstrap.config.logRequests ? 'ENABLED' : 'DISABLED'}`);
+    console.log(`Session ID headers: ${bootstrap.config.sessionIdHeaders.join(', ')}`);
     console.log('='.repeat(60));
     console.log('Available Models:');
-    const modelsList = Object.keys(config.models);
+    const modelsList = bootstrap.modelRepository.getAllModels();
     if (modelsList.length > 0) {
-      modelsList.forEach((modelId) => {
-        console.log(`  - ${modelId}`);
+      modelsList.forEach((model) => {
+        console.log(`  - ${model.id}`);
       });
     } else {
       console.log('  (no models configured)');
@@ -134,7 +137,7 @@ async function startServer() {
   // Graceful shutdown handler
   const shutdown = (signal) => {
     console.log(`${signal} received, shutting down gracefully...`);
-    config.close(); // Stop model loader watching/polling
+    bootstrap.close(); // Stop model loader watching/polling
     server.close(() => {
       console.log('Server closed');
       process.exit(0);

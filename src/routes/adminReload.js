@@ -41,15 +41,16 @@ const router = express.Router();
  *   "models": 3
  * }
  */
-router.post('/', (req, res) => {
-  const config = req.app.locals.config;
+router.post('/', async (req, res) => {
+  const bootstrap = req.app.locals.bootstrap;
+  const modelRepository = req.app.locals.modelRepository;
 
   try {
-    config.reloadModels();
+    await modelRepository.reloadModels(bootstrap.modelLoader);
     res.json({
       status: 'ok',
       message: 'Models reloaded',
-      models: Object.keys(config.models).length,
+      models: modelRepository.getModelCount(),
     });
   } catch (error) {
     res.status(500).json(createErrorResponse(error.message));

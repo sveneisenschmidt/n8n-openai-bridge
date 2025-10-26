@@ -49,8 +49,8 @@ const router = express.Router();
  * }
  */
 router.get('/', (req, res) => {
-  const config = req.app.locals.config;
-  const models = config.getAllModels();
+  const modelRepository = req.app.locals.modelRepository;
+  const models = modelRepository.getAllModels();
 
   res.json({
     object: 'list',
