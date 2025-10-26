@@ -144,7 +144,9 @@ describe('N8nApiModelLoader - workflowsToModels', () => {
     expect(models).toEqual({
       'Valid Workflow': 'https://n8n.example.com/webhook/valid-webhook-id/chat',
     });
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('No webhook node found'));
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No chatTrigger or webhook node found'),
+    );
   });
 
   test('should handle duplicate model IDs', () => {

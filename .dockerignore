@@ -30,7 +30,7 @@ models.json.example
 # Development files
 docker-compose.yml
 Makefile
-n8n_workflow.json.example
+n8n_workflow_chat.json.example
 
 # OS
 .DS_Store

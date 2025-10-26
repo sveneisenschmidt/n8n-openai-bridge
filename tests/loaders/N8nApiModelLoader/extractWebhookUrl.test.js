@@ -154,4 +154,167 @@ describe('N8nApiModelLoader - extractWebhookUrl', () => {
     const url = loader.extractWebhookUrl(workflow);
     expect(url).toBeNull();
   });
+
+  // Webhook node tests
+  test('should extract webhook URL from active workflow with webhook node', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 'my-webhook-path',
+          },
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBe('https://n8n.example.com/webhook/my-webhook-path');
+  });
+
+  test('should remove leading slash from webhook path', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: '/my-webhook-path',
+          },
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBe('https://n8n.example.com/webhook/my-webhook-path');
+  });
+
+  test('should return null when webhook node has no path parameter', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {},
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBeNull();
+  });
+
+  test('should return null when webhook node path is not a string', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 123,
+          },
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBeNull();
+  });
+
+  test('should return null when webhook node has no parameters', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBeNull();
+  });
+
+  // Priority tests (chatTrigger over webhook)
+  test('should prioritize chatTrigger over webhook node', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 'webhook-path',
+          },
+        },
+        {
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          webhookId: 'chat-webhook-id',
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBe('https://n8n.example.com/webhook/chat-webhook-id/chat');
+  });
+
+  test('should use webhook node when chatTrigger node is invalid', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: '@n8n/n8n-nodes-langchain.chatTrigger',
+          // Missing webhookId
+        },
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 'fallback-webhook-path',
+          },
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBe('https://n8n.example.com/webhook/fallback-webhook-path');
+  });
+
+  test('should use first webhook node when multiple exist', () => {
+    const workflow = {
+      id: 'workflow-1',
+      name: 'Test Workflow',
+      active: true,
+      nodes: [
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 'first-webhook-path',
+          },
+        },
+        {
+          type: 'n8n-nodes-base.webhook',
+          parameters: {
+            path: 'second-webhook-path',
+          },
+        },
+      ],
+    };
+
+    const url = loader.extractWebhookUrl(workflow);
+    expect(url).toBe('https://n8n.example.com/webhook/first-webhook-path');
+  });
 });

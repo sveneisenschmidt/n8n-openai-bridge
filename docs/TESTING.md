@@ -8,7 +8,7 @@ This directory contains the test suite for the n8n OpenAI Bridge project.
 
 **Location:** `tests/*.test.js`
 **Framework:** Jest
-**Run with:** `make test-unit`
+**Run with:** `make test`
 
 Tests the core server logic including:
 - Configuration loading and hot-reload
@@ -82,7 +82,7 @@ Running Docker Image Tests
 ### Run Unit Tests Only
 
 ```bash
-make test-unit
+make test
 ```
 
 Builds a test Docker image with `docker/Dockerfile.test` and runs Jest tests inside it.
@@ -182,7 +182,7 @@ See `.github/workflows/ci.yml` for the CI configuration.
 docker run --rm n8n-openai-bridge-test npm test -- --verbose
 
 # Check test logs
-make test-unit 2>&1 | less
+make test 2>&1 | less
 ```
 
 ### Docker Image Tests Failing

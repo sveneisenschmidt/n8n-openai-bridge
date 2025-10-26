@@ -10,7 +10,7 @@ Guide for setting up n8n workflows to work with the bridge.
 
 ## Quick Start
 
-Import [`n8n_workflow.json.example`](../n8n_workflow.json.example) in n8n → Configure credentials.
+Import [`n8n_workflow_chat.json.example`](../n8n_workflow_chat.json.example) in n8n → Configure credentials.
 
 ## Required Node Settings
 
