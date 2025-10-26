@@ -18,6 +18,7 @@
 
 const {
   createStreamingChunk,
+  createStatus,
   createStatusToolCallChunk,
   createTypeStatusChunk,
 } = require('../utils/openaiResponse');
@@ -29,22 +30,24 @@ const { createErrorResponse } = require('../utils/errorResponse');
  * @param {Object} res - Express response object
  * @param {Object} config - Configuration object
  * @param {string} model - Model identifier
- * @param {Object} statusData - Status data
+ * @param {string} message - Status message
  * @param {boolean} done - Whether this is the final status
  */
-function emitStatus(res, config, model, statusData, done = false) {
+function emitStatus(res, config, model, message, done = false) {
   if (!config.enableStatusEmit) {
     return;
   }
 
+  const status = createStatus(message, done);
+
   let statusChunk;
   switch (config.statusEmitFormat) {
     case 'type_status':
-      statusChunk = createTypeStatusChunk(model, statusData, done);
+      statusChunk = createTypeStatusChunk(model, status);
       break;
     case 'tool_calls':
     default:
-      statusChunk = createStatusToolCallChunk(model, statusData, done);
+      statusChunk = createStatusToolCallChunk(model, status);
       break;
   }
   res.write(`data: ${JSON.stringify(statusChunk)}\n\n`);
@@ -79,11 +82,7 @@ async function handleStreaming(
 
   try {
     // Status: Processing (before calling n8n)
-    emitStatus(res, config, model, {
-      message: 'Processing',
-      progress: 25,
-      step: 'processing',
-    });
+    emitStatus(res, config, model, 'Processing');
 
     const streamGenerator = n8nClient.streamCompletion(
       webhookUrl,
@@ -97,17 +96,7 @@ async function handleStreaming(
     for await (const content of streamGenerator) {
       // Status: Completed (when first content chunk arrives from n8n)
       if (firstChunk) {
-        emitStatus(
-          res,
-          config,
-          model,
-          {
-            message: 'Completed',
-            progress: 100,
-            step: 'completed',
-          },
-          true,
-        );
+        emitStatus(res, config, model, 'Completed', true);
         firstChunk = false;
       }
 

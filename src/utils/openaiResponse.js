@@ -74,17 +74,27 @@ function createCompletionResponse(model, content) {
 }
 
 /**
+ * Creates a standardized status object
+ *
+ * @param {string} message - Status message
+ * @param {boolean} done - Whether this is the final status
+ * @returns {Object} Standardized status object
+ */
+function createStatus(message, done = false) {
+  return {
+    message,
+    done,
+  };
+}
+
+/**
  * Creates an OpenAI-compatible tool call chunk for status updates
  *
  * @param {string} model - Model identifier
- * @param {Object} statusData - Status data object
- * @param {string} statusData.message - Status message
- * @param {number} statusData.progress - Progress percentage (0-100)
- * @param {string} statusData.step - Current step identifier
- * @param {boolean} _done - Whether this is the final status (unused for tool_calls)
+ * @param {Object} status - Status object from createStatus()
  * @returns {Object} OpenAI-compatible chunk with tool_calls
  */
-function createStatusToolCallChunk(model, statusData, _done = false) {
+function createStatusToolCallChunk(model, status) {
   const callId = `call_status_${Date.now()}`;
 
   return {
@@ -103,7 +113,7 @@ function createStatusToolCallChunk(model, statusData, _done = false) {
               type: 'function',
               function: {
                 name: 'emit_status',
-                arguments: JSON.stringify(statusData),
+                arguments: JSON.stringify({ message: status.message }),
               },
             },
           ],
@@ -118,22 +128,18 @@ function createStatusToolCallChunk(model, statusData, _done = false) {
  * Creates a type_status format chunk (Open WebUI compatible)
  *
  * @param {string} model - Model identifier (unused for type_status)
- * @param {Object} statusData - Status data object
- * @param {string} statusData.message - Status message
- * @param {string} statusData.step - Current step identifier
- * @param {boolean} done - Whether this is the final status
+ * @param {Object} status - Status object from createStatus()
  * @returns {Object} type_status format object
  */
-function createTypeStatusChunk(model, statusData, done = false) {
-  // Map step to Open WebUI status type
-  const statusType = done ? 'complete' : 'info';
+function createTypeStatusChunk(model, status) {
+  const statusType = status.done ? 'complete' : 'info';
 
   return {
     type: 'status',
     data: {
       status: statusType,
-      description: statusData.message,
-      done: done,
+      description: status.message,
+      done: status.done,
     },
   };
 }
@@ -141,6 +147,7 @@ function createTypeStatusChunk(model, statusData, done = false) {
 module.exports = {
   createStreamingChunk,
   createCompletionResponse,
+  createStatus,
   createStatusToolCallChunk,
   createTypeStatusChunk,
 };

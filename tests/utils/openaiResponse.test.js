@@ -19,6 +19,7 @@
 const {
   createStreamingChunk,
   createCompletionResponse,
+  createStatus,
   createStatusToolCallChunk,
   createTypeStatusChunk,
 } = require('../../src/utils/openaiResponse');
@@ -104,15 +105,27 @@ describe('openaiResponse utility', () => {
     });
   });
 
+  describe('createStatus', () => {
+    it('should create status object with message and done flag', () => {
+      const status = createStatus('Processing', false);
+
+      expect(status).toEqual({
+        message: 'Processing',
+        done: false,
+      });
+    });
+
+    it('should default done to false', () => {
+      const status = createStatus('Starting');
+
+      expect(status.done).toBe(false);
+    });
+  });
+
   describe('createStatusToolCallChunk', () => {
     it('should create status tool call chunk with all fields', () => {
-      const statusData = {
-        message: 'Processing',
-        progress: 50,
-        step: 'processing',
-      };
-
-      const chunk = createStatusToolCallChunk('gpt-4', statusData);
+      const status = createStatus('Processing', false);
+      const chunk = createStatusToolCallChunk('gpt-4', status);
 
       expect(chunk).toMatchObject({
         object: 'chat.completion.chunk',
@@ -127,7 +140,7 @@ describe('openaiResponse utility', () => {
                   type: 'function',
                   function: {
                     name: 'emit_status',
-                    arguments: JSON.stringify(statusData),
+                    arguments: JSON.stringify({ message: 'Processing' }),
                   },
                 },
               ],
@@ -142,39 +155,26 @@ describe('openaiResponse utility', () => {
     });
 
     it('should create status tool call chunk for initiating step', () => {
-      const statusData = {
-        message: 'Initiating',
-        progress: 10,
-        step: 'initiating',
-      };
-
-      const chunk = createStatusToolCallChunk('test-model', statusData);
+      const status = createStatus('Initiating', false);
+      const chunk = createStatusToolCallChunk('test-model', status);
 
       expect(chunk.choices[0].delta.tool_calls[0].function.arguments).toBe(
-        JSON.stringify(statusData),
+        JSON.stringify({ message: 'Initiating' }),
       );
     });
 
     it('should create status tool call chunk for completed step', () => {
-      const statusData = {
-        message: 'Completed',
-        progress: 100,
-        step: 'completed',
-      };
-
-      const chunk = createStatusToolCallChunk('test-model', statusData);
+      const status = createStatus('Completed', true);
+      const chunk = createStatusToolCallChunk('test-model', status);
 
       expect(chunk.choices[0].delta.tool_calls[0].function.arguments).toBe(
-        JSON.stringify(statusData),
+        JSON.stringify({ message: 'Completed' }),
       );
     });
 
     it('should have call ID with correct format', () => {
-      const chunk = createStatusToolCallChunk('gpt-4', {
-        message: 'Step 1',
-        progress: 25,
-        step: 'step1',
-      });
+      const status = createStatus('Step 1', false);
+      const chunk = createStatusToolCallChunk('gpt-4', status);
 
       const id = chunk.choices[0].delta.tool_calls[0].id;
 
@@ -184,13 +184,8 @@ describe('openaiResponse utility', () => {
 
   describe('createTypeStatusChunk', () => {
     it('should create type_status chunk with info status when not done', () => {
-      const statusData = {
-        message: 'Processing',
-        progress: 50,
-        step: 'processing',
-      };
-
-      const chunk = createTypeStatusChunk('gpt-4', statusData, false);
+      const status = createStatus('Processing', false);
+      const chunk = createTypeStatusChunk('gpt-4', status);
 
       expect(chunk).toEqual({
         type: 'status',
@@ -203,13 +198,8 @@ describe('openaiResponse utility', () => {
     });
 
     it('should create type_status chunk with complete status when done', () => {
-      const statusData = {
-        message: 'Completed',
-        progress: 100,
-        step: 'completed',
-      };
-
-      const chunk = createTypeStatusChunk('gpt-4', statusData, true);
+      const status = createStatus('Completed', true);
+      const chunk = createTypeStatusChunk('gpt-4', status);
 
       expect(chunk).toEqual({
         type: 'status',
@@ -222,13 +212,8 @@ describe('openaiResponse utility', () => {
     });
 
     it('should default to done=false when not specified', () => {
-      const statusData = {
-        message: 'Starting',
-        progress: 0,
-        step: 'starting',
-      };
-
-      const chunk = createTypeStatusChunk('gpt-4', statusData);
+      const status = createStatus('Starting');
+      const chunk = createTypeStatusChunk('gpt-4', status);
 
       expect(chunk.data.done).toBe(false);
       expect(chunk.data.status).toBe('info');
