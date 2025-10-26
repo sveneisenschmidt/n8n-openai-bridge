@@ -51,7 +51,7 @@ async function handleStreaming(
     if (config.enableStatusEmit) {
       const processingChunk = createStatusToolCallChunk(model, {
         message: 'Processing',
-        progress: 50,
+        progress: 25,
         step: 'processing',
       });
       res.write(`data: ${JSON.stringify(processingChunk)}\n\n`);

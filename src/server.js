@@ -24,6 +24,7 @@ const { createErrorResponse } = require('./utils/errorResponse');
 
 // Middleware
 const requestLogger = require('./middleware/requestLogger');
+const responseLogger = require('./middleware/responseLogger');
 const authenticate = require('./middleware/authenticate');
 const requestId = require('./middleware/requestId');
 const createRateLimiters = require('./middleware/rateLimiter');
@@ -56,6 +57,9 @@ app.use(requestId());
 
 // Request logging middleware
 app.use(requestLogger(bootstrap.config));
+
+// Response logging middleware
+app.use(responseLogger(bootstrap.config));
 
 // Public routes (no authentication required)
 app.use('/health', rateLimiters.health, healthRoute);
