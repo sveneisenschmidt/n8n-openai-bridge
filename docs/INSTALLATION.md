@@ -24,7 +24,8 @@ The Docker image comes with default configuration files built-in. Simply mount y
 # Create models configuration
 cat > models.json << 'EOF'
 {
-  "my-agent": "https://n8n.example.com/webhook/abc123/chat"
+  "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+  "webhook-agent": "https://n8n.example.com/webhook/xyz789"
 }
 EOF
 

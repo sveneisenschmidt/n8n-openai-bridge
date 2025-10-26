@@ -206,7 +206,7 @@ See [.github/workflows/README.md](../.github/workflows/README.md) for detailed C
 Unit tests run in isolated Docker containers with npm caching for fast rebuilds.
 
 ```bash
-make test-unit         # Run Jest tests (~5-10s with cache)
+make test         # Run Jest tests (~5-10s with cache)
 ```
 
 **Coverage:**

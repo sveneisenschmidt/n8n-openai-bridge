@@ -21,10 +21,14 @@ MODELS_POLL_INTERVAL=1              # Polling interval in seconds (default: 1)
 **File Format:**
 ```json
 {
-  "model-id": "https://n8n.example.com/webhook/abc123/chat",
-  "gpt-4": "https://n8n.example.com/webhook/gpt4/chat"
+  "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+  "webhook-agent": "https://n8n.example.com/webhook/xyz789"
 }
 ```
+
+**Note:** 
+- Chat Trigger nodes: URLs end with `/chat`
+- Webhook nodes: URLs without `/chat` suffix
 
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON

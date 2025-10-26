@@ -270,7 +270,7 @@ class N8nApiModelLoader extends ModelLoader {
       const webhookUrl = this.extractWebhookUrl(workflow);
       if (!webhookUrl) {
         console.warn(
-          `Skipping workflow "${workflow.name}" (${workflow.id}): No webhook node found or webhook path missing`,
+          `Skipping workflow "${workflow.name}" (${workflow.id}): No chatTrigger or webhook node found, or path/webhookId missing`,
         );
         continue;
       }
@@ -323,11 +323,16 @@ class N8nApiModelLoader extends ModelLoader {
   /**
    * Extract webhook URL from workflow nodes
    *
-   * Logic:
-   * 1. Find first chatTrigger node (type: "@n8n/n8n-nodes-langchain.chatTrigger")
-   * 2. Extract webhookId from node
-   * 3. Construct production webhook URL with /chat endpoint
-   * 4. Only return URL if workflow is active
+   * Logic (priority order):
+   * 1. Find chatTrigger node (type: "@n8n/n8n-nodes-langchain.chatTrigger") - highest priority
+   * 2. If not found, find webhook node (type: "n8n-nodes-base.webhook")
+   * 3. Extract webhookId/path from node
+   * 4. Construct production webhook URL with appropriate endpoint
+   * 5. Only return URL if workflow is active
+   *
+   * URL Formats:
+   * - Chat Trigger: https://n8n.example.com/webhook/<webhookId>/chat
+   * - Webhook: https://n8n.example.com/webhook/<path>
    *
    * Note: Only production webhook URLs are used.
    * Test URLs are not supported (unreliable, not meant for production).
@@ -337,29 +342,49 @@ class N8nApiModelLoader extends ModelLoader {
    * @private
    */
   extractWebhookUrl(workflow) {
-    // Find first chatTrigger node
-    const chatTriggerNode = (workflow.nodes || []).find(
-      (node) => node.type === '@n8n/n8n-nodes-langchain.chatTrigger',
-    );
-
-    if (!chatTriggerNode) {
-      return null;
-    }
-
-    // Extract webhookId from node
-    const webhookId = chatTriggerNode.webhookId;
-    if (!webhookId || typeof webhookId !== 'string') {
-      return null;
-    }
-
     // Only return URL if workflow is active (production URL)
     if (!workflow.active) {
       return null;
     }
 
-    // Construct production webhook URL for chat endpoint
-    // Format: https://n8n.example.com/webhook/<webhookId>/chat
-    return `${this.n8nBaseUrl}/webhook/${webhookId}/chat`;
+    const nodes = workflow.nodes || [];
+
+    // Priority 1: Find chatTrigger node with valid webhookId
+    const chatTriggerNode = nodes.find(
+      (node) => node.type === '@n8n/n8n-nodes-langchain.chatTrigger',
+    );
+
+    if (chatTriggerNode) {
+      // Extract webhookId from chatTrigger node
+      const webhookId = chatTriggerNode.webhookId;
+      if (webhookId && typeof webhookId === 'string') {
+        // Construct production webhook URL for chat endpoint
+        // Format: https://n8n.example.com/webhook/<webhookId>/chat
+        return `${this.n8nBaseUrl}/webhook/${webhookId}/chat`;
+      }
+      // If chatTrigger exists but is invalid, fall through to webhook node
+    }
+
+    // Priority 2: Find webhook node
+    const webhookNode = nodes.find((node) => node.type === 'n8n-nodes-base.webhook');
+
+    if (webhookNode) {
+      // Extract path from webhook node parameters
+      const path = webhookNode.parameters?.path;
+      if (!path || typeof path !== 'string') {
+        return null;
+      }
+
+      // Remove leading slash from path if present
+      const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+
+      // Construct production webhook URL
+      // Format: https://n8n.example.com/webhook/<path>
+      return `${this.n8nBaseUrl}/webhook/${normalizedPath}`;
+    }
+
+    // No supported node type found
+    return null;
   }
 
   /**

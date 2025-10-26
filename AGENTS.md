@@ -98,8 +98,6 @@ n8n-openai-bridge/
 
 ```bash
 make test              # All tests (unit + Docker image validation)
-make test-unit         # Unit tests only (Jest with coverage)
-make test-image        # Docker image build validation
 ```
 
 **Important:** Tests always run in Docker containers to ensure consistency. npm/jest commands won't work directly on the host.
@@ -403,11 +401,11 @@ const MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader
 createModelLoader() {
   const loaderType = (process.env.MODEL_LOADER_TYPE || 'file').toLowerCase();
   const LoaderClass = MODEL_LOADERS.find(l => l.TYPE === loaderType);
-  
+
   if (!LoaderClass) {
     throw new Error(`Unknown loader type: ${loaderType}`);
   }
-  
+
   const envValues = this.validateEnvVars(LoaderClass);
   return new LoaderClass(envValues);
 }
@@ -417,7 +415,7 @@ createModelLoader() {
 ```javascript
 constructor() {
   this.modelLoader = this.createModelLoader();
-  
+
   // Load models asynchronously
   this.loadingPromise = this.loadModels()
     .then(models => {
@@ -425,7 +423,7 @@ constructor() {
       this.modelsReady = true;
       return models;
     });
-  
+
   this.setupFileWatcher();
 }
 ```
@@ -579,12 +577,12 @@ const MODEL_LOADERS = [
 createModelLoader() {
   const loaderType = (process.env.MODEL_LOADER_TYPE || 'file').toLowerCase();
   const LoaderClass = MODEL_LOADERS.find(l => l.TYPE === loaderType);
-  
+
   if (!LoaderClass) {
     const available = MODEL_LOADERS.map(l => l.TYPE).join(', ');
     throw new Error(`Unknown MODEL_LOADER_TYPE: ${loaderType}. Available: ${available}`);
   }
-  
+
   const envValues = this.validateEnvVars(LoaderClass);
   return new LoaderClass(envValues);
 }

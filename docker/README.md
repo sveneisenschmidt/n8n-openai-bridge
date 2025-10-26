@@ -17,15 +17,20 @@ Placeholder model configuration built into the Docker image:
 ```json
 {
   "_comment": "This is a placeholder model built into the Docker image. Mount your own models.json to configure real n8n webhooks.",
-  "docker-default-model": "https://n8n-openai-bridge.invalid/webhook/REPLACE-ME/chat"
+  "docker-default-chat-trigger": "https://n8n-openai-bridge.invalid/webhook/REPLACE-ME/chat",
+  "docker-default-webhook": "https://n8n-openai-bridge.invalid/webhook/REPLACE-ME"
 }
 ```
 
-**Important:** This is a **non-functional dummy URL** (`*.invalid` domain) that:
-- Allows the container to start without errors
-- Shows up in `/v1/models` endpoint as `docker-default-model`
-- Helps with debugging - if you see this model, you know the mounted config wasn't loaded
+**Important:** These are **non-functional dummy URLs** (`*.invalid` domain) that:
+- Allow the container to start without errors
+- Show up in `/v1/models` endpoint as placeholder models
+- Help with debugging - if you see these models, you know the mounted config wasn't loaded
 - **Must be replaced** by mounting your own `models.json` with real n8n webhook URLs
+
+**Note:** 
+- Chat Trigger nodes: URLs end with `/chat`
+- Webhook nodes: URLs without `/chat` suffix
 
 ## How It Works
 

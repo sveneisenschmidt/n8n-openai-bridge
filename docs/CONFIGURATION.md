@@ -24,9 +24,47 @@ DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ### Authentication
 
 ```bash
+# API Authentication (clients → bridge)
+BEARER_TOKEN=your-api-key        # Required: Auth token for API requests TO this bridge
+
 # Webhook Authentication (bridge → n8n)
-N8N_WEBHOOK_BEARER_TOKEN=        # Optional: Auth token for n8n webhooks
+N8N_WEBHOOK_BEARER_TOKEN=        # Optional: Auth token for n8n webhook nodes
 ```
+
+#### N8N_WEBHOOK_BEARER_TOKEN (Optional)
+
+Secures communication between the bridge and n8n Webhook nodes using Bearer token authentication.
+
+**Use Case:** When using n8n Webhook nodes (not Chat Trigger nodes), you can protect your webhooks from unauthorized access.
+
+**Requirements:**
+- Only works with **Webhook nodes** in n8n
+- Does NOT work with Chat Trigger nodes
+- Requires **Header Auth credential** in n8n with:
+  - Header Name: `Authorization`
+  - Header Value: `Bearer <your-token>`
+
+**Setup Steps:**
+
+1. Set the token in your bridge configuration:
+   ```bash
+   N8N_WEBHOOK_BEARER_TOKEN=your-secure-webhook-token-here
+   ```
+
+2. Create a Header Auth credential in n8n:
+   - Go to: Credentials → Create New Credential
+   - Type: `Header Auth`
+   - Header Name: `Authorization`
+   - Header Value: `Bearer your-secure-webhook-token-here`
+   - Save the credential
+
+3. Attach the credential to your Webhook node:
+   - Open your Webhook node
+   - Expand "Authentication"
+   - Enable: `Header Auth`
+   - Select: The credential you created
+
+See [n8n Workflow Setup - Webhook Authentication](N8N_SETUP.md#webhook-authentication-optional) for detailed instructions.
 
 **Deprecated:**
 - `N8N_BEARER_TOKEN` - Use `N8N_WEBHOOK_BEARER_TOKEN` instead (still supported with warning)
@@ -127,9 +165,10 @@ When models change (hot-reload or auto-discovery):
   "timestamp": "2025-10-25T10:30:00.000Z",
   "source": "JsonFileModelLoader",
   "models": {
-    "model-id": "https://n8n.example.com/webhook/abc123/chat"
+    "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+    "webhook-agent": "https://n8n.example.com/webhook/xyz789"
   },
-  "modelCount": 1
+  "modelCount": 2
 }
 ```
 
@@ -140,9 +179,10 @@ When server starts (only if `WEBHOOK_NOTIFIER_ON_STARTUP=true`):
   "timestamp": "2025-10-25T10:25:00.000Z",
   "source": "N8nApiModelLoader",
   "models": {
-    "model-id": "https://n8n.example.com/webhook/abc123/chat"
+    "chat-trigger-agent": "https://n8n.example.com/webhook/abc123/chat",
+    "webhook-agent": "https://n8n.example.com/webhook/xyz789"
   },
-  "modelCount": 1
+  "modelCount": 2
 }
 ```
 
