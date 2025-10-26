@@ -104,6 +104,10 @@ curl -H "Authorization: Bearer your-secret-api-key-here" \
 - **[Integration Guide](docs/INTEGRATIONS.md)** - Open WebUI and LibreChat integration
 - **[API Documentation](openapi.yaml)** - Complete OpenAPI 3.1 specification
 
+### How-To Guides
+
+- **[Auto-Restart Containers on Model Changes](docs/howto/LIBRECHAT_AUTO_RESTART.md)** - Automate service restarts using bridge webhook events and n8n Data Tables (universal pattern for any container)
+
 ### Development
 
 - **[Development Guide](docs/DEVELOPMENT.md)** - Project structure, make commands, and workflow
