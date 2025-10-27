@@ -60,7 +60,6 @@ class Bootstrap {
       .load()
       .then((models) => {
         this.modelRepository.updateModels(models);
-        console.log(`Models loaded: ${this.modelRepository.getModelCount()} available`);
 
         // Notify webhook on startup if enabled
         if (this.webhookNotifier.enabled && this.webhookNotifier.notifyOnStartup) {
