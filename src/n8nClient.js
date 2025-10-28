@@ -19,8 +19,9 @@
 const axios = require('axios');
 
 class N8nClient {
-  constructor(config) {
+  constructor(config, taskDetectorService = null) {
     this.config = config;
+    this.taskDetectorService = taskDetectorService;
     this.MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB max buffer size
   }
 
@@ -43,6 +44,8 @@ class N8nClient {
       messages: messages.filter((m) => m.role !== 'system'),
       sessionId,
       userId: userContext.userId,
+      isTask: false,
+      taskType: null,
     };
 
     // Add optional user fields if provided
@@ -54,6 +57,15 @@ class N8nClient {
     }
     if (userContext.userRole) {
       payload.userRole = userContext.userRole;
+    }
+
+    // Add task detection if enabled
+    if (this.config.enableTaskDetection && this.taskDetectorService) {
+      const taskDetection = this.taskDetectorService.detectTask(messages);
+      if (taskDetection.isTask) {
+        payload.isTask = true;
+        payload.taskType = taskDetection.taskType;
+      }
     }
 
     return payload;

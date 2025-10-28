@@ -40,6 +40,9 @@ class Config {
     this.n8nWebhookBearerToken = this.resolveN8nWebhookBearerToken();
     this.logRequests = process.env.LOG_REQUESTS === 'true';
 
+    // Task detection configuration
+    this.enableTaskDetection = process.env.ENABLE_TASK_DETECTION === 'true';
+
     // Header configuration
     this.sessionIdHeaders = this.parseSessionIdHeaders();
     this.userIdHeaders = this.parseUserIdHeaders();

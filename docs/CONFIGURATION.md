@@ -129,6 +129,68 @@ USER_ROLE_HEADERS=X-User-Role
 
 See [Session Management](#session-management) and [User Context](#user-context) sections below.
 
+### Task Detection
+
+Automatically detect if incoming requests are automated task generation requests from OpenWebUI, LibreChat, or similar clients:
+
+```bash
+# Task Detection Configuration
+ENABLE_TASK_DETECTION=false      # Set to 'true' to enable (default: false)
+```
+
+**What it does:**
+- Analyzes incoming chat completion requests to detect automated tasks
+- Adds `isTask` and `taskType` fields to the n8n webhook payload
+- Helps differentiate between regular user messages and automated generation tasks
+
+**Supported Task Types:**
+- `generate_title` - Title generation (OpenWebUI, LibreChat)
+- `generate_tags` - Tags generation (OpenWebUI)
+- `generate_follow_up_questions` - Follow-up questions (OpenWebUI)
+
+**Task Detection Fields Added to Payload:**
+
+Normal conversation:
+```json
+{
+  "isTask": false,
+  "taskType": null
+}
+```
+
+Title generation detected:
+```json
+{
+  "isTask": true,
+  "taskType": "generate_title"
+}
+```
+
+Tags generation detected:
+```json
+{
+  "isTask": true,
+  "taskType": "generate_tags"
+}
+```
+
+Follow-up questions detected:
+```json
+{
+  "isTask": true,
+  "taskType": "generate_follow_up_questions"
+}
+```
+
+**Use Cases:**
+- Route tasks to different AI agents (use faster/cheaper models for tasks)
+- Separate memory storage for tasks vs. conversations
+- Apply different system prompts for automated tasks
+- Track and analyze automated vs. manual interactions
+
+**See Also:**
+- [How To: Use Task Detection in n8n Workflows](howto/TASK_DETECTION.md) - Practical examples with IF nodes and memory separation
+
 ### Webhook Notifier
 
 Get notified via webhook when models change (hot-reload or auto-discovery):
