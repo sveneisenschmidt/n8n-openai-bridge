@@ -16,8 +16,47 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { createStreamingChunk } = require('../utils/openaiResponse');
+const {
+  createStreamingChunk,
+  createStatus,
+  createStatusToolCallChunks,
+  createTypeStatusChunk,
+} = require('../utils/openaiResponse');
 const { createErrorResponse } = require('../utils/errorResponse');
+
+/**
+ * Emits a status update based on configured format
+ *
+ * @param {Object} res - Express response object
+ * @param {Object} config - Configuration object
+ * @param {string} model - Model identifier
+ * @param {string} message - Status message
+ * @param {boolean} done - Whether this is the final status
+ */
+function emitStatus(res, config, model, message, done = false) {
+  if (!config.enableStatusEmit) {
+    return;
+  }
+
+  const status = createStatus(message, done);
+
+  switch (config.statusEmitFormat) {
+    case 'type_status': {
+      const statusChunk = createTypeStatusChunk(model, status);
+      res.write(`data: ${JSON.stringify(statusChunk)}\n\n`);
+      break;
+    }
+    case 'tool_calls':
+    default: {
+      // tool_calls format requires multiple chunks
+      const chunks = createStatusToolCallChunks(model, status);
+      chunks.forEach((chunk) => {
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      });
+      break;
+    }
+  }
+}
 
 /**
  * Handles streaming chat completion requests
@@ -47,6 +86,9 @@ async function handleStreaming(
   res.setHeader('Connection', 'keep-alive');
 
   try {
+    // Status: Processing (before calling n8n)
+    emitStatus(res, config, model, 'Processing');
+
     const streamGenerator = n8nClient.streamCompletion(
       webhookUrl,
       messages,
@@ -54,7 +96,15 @@ async function handleStreaming(
       userContext,
     );
 
+    let firstChunk = true;
+
     for await (const content of streamGenerator) {
+      // Status: Completed (when first content chunk arrives from n8n)
+      if (firstChunk) {
+        emitStatus(res, config, model, 'Completed', true);
+        firstChunk = false;
+      }
+
       const chunk = createStreamingChunk(model, content, null);
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }

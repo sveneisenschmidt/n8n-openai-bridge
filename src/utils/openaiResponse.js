@@ -73,7 +73,117 @@ function createCompletionResponse(model, content) {
   };
 }
 
+/**
+ * Creates a standardized status object
+ *
+ * @param {string} message - Status message
+ * @param {boolean} done - Whether this is the final status
+ * @returns {Object} Standardized status object
+ */
+function createStatus(message, done = false) {
+  return {
+    message,
+    done,
+  };
+}
+
+/**
+ * Creates OpenAI-compatible tool call chunks for status updates
+ * Returns an array of chunks that must be sent sequentially:
+ * 1. First chunk with id, type, and function name
+ * 2. Following chunks with arguments (streamed incrementally)
+ *
+ * @param {string} model - Model identifier
+ * @param {Object} status - Status object from createStatus()
+ * @returns {Array<Object>} Array of OpenAI-compatible chunks with tool_calls
+ */
+function createStatusToolCallChunks(model, status) {
+  const callId = `call_status_${Date.now()}`;
+  const chatId = `chatcmpl-${uuidv4()}`;
+  const created = Math.floor(Date.now() / 1000);
+  const argsJson = JSON.stringify({ message: status.message });
+
+  const chunks = [];
+
+  // First chunk: id, type, and function name with empty arguments
+  chunks.push({
+    id: chatId,
+    object: 'chat.completion.chunk',
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              id: callId,
+              type: 'function',
+              function: {
+                name: 'emit_status',
+                arguments: '',
+              },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
+  });
+
+  // Stream arguments incrementally (can be sent as single chunk or character-by-character)
+  // For simplicity, we send the complete arguments in one chunk
+  chunks.push({
+    id: chatId,
+    object: 'chat.completion.chunk',
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              function: {
+                arguments: argsJson,
+              },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
+  });
+
+  return chunks;
+}
+
+/**
+ * Creates a type_status format chunk (Open WebUI compatible)
+ *
+ * @param {string} model - Model identifier (unused for type_status)
+ * @param {Object} status - Status object from createStatus()
+ * @returns {Object} type_status format object
+ */
+function createTypeStatusChunk(model, status) {
+  const statusType = status.done ? 'complete' : 'info';
+
+  return {
+    type: 'status',
+    data: {
+      status: statusType,
+      description: status.message,
+      done: status.done,
+    },
+  };
+}
+
 module.exports = {
   createStreamingChunk,
   createCompletionResponse,
+  createStatus,
+  createStatusToolCallChunks,
+  createTypeStatusChunk,
 };

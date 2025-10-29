@@ -39,6 +39,11 @@ class Config {
     this.bearerToken = process.env.BEARER_TOKEN || '';
     this.n8nWebhookBearerToken = this.resolveN8nWebhookBearerToken();
     this.logRequests = process.env.LOG_REQUESTS === 'true';
+    this.logResponses = process.env.LOG_RESPONSES === 'true';
+
+    // Status emit configuration
+    this.enableStatusEmit = process.env.ENABLE_STATUS_EMIT === 'true';
+    this.statusEmitFormat = process.env.STATUS_EMIT_FORMAT || 'tool_calls';
 
     // Task detection configuration
     this.enableTaskDetection = process.env.ENABLE_TASK_DETECTION === 'true';

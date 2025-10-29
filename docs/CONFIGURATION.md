@@ -17,7 +17,10 @@ Complete guide for configuring n8n OpenAI Bridge.
 ```bash
 PORT=3333                        # Server port (default: 3333)
 BEARER_TOKEN=your-api-key        # Auth token for API requests TO this bridge
-LOG_REQUESTS=false               # Enable detailed request/response logging
+LOG_REQUESTS=false               # Log incoming requests
+LOG_RESPONSES=false              # Log outgoing responses to clients
+ENABLE_STATUS_EMIT=false         # Enable status updates during streaming (default: false)
+STATUS_EMIT_FORMAT=tool_calls    # Status format: tool_calls (default) or type_status
 DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ```
 
@@ -115,6 +118,18 @@ STATIC_MODELS={"test-model":"https://n8n.example.com/webhook/test"}
 ```
 
 For testing and development only. See [Static Loader Documentation](MODELLOADER.md#staticmodelloader-type-static).
+
+### Status Emit Configuration
+
+```bash
+ENABLE_STATUS_EMIT=true          # Enable status updates during streaming (default: true)
+```
+
+When enabled, the bridge automatically emits status updates during streaming as OpenAI-compatible tool calls:
+- "Processing" - Before calling n8n workflow
+- "Completed" - When first response chunk arrives
+
+Status updates are sent as tool calls with `function.name === "emit_status"`. No changes required in n8n workflows.
 
 ### Session & User Context Headers
 
