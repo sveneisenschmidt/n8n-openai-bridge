@@ -21,6 +21,9 @@ const ModelRepository = require('./repositories/ModelRepository');
 const ModelLoaderFactory = require('./factories/ModelLoaderFactory');
 const WebhookNotifierFactory = require('./factories/WebhookNotifierFactory');
 const WebhookNotifier = require('./services/webhookNotifier');
+const TaskDetectorService = require('./services/taskDetectorService');
+const createDetector = require('./detectors/createDetector');
+const detectorRegistry = require('./detectors/detectorRegistry');
 
 /**
  * Bootstrap - Application Lifecycle Orchestrator
@@ -45,9 +48,36 @@ class Bootstrap {
     this.modelLoader = ModelLoaderFactory.createModelLoader();
     this.webhookNotifier = WebhookNotifierFactory.createWebhookNotifier();
 
+    // Setup task detector if enabled
+    this.taskDetectorService = null;
+    if (this.config.enableTaskDetection) {
+      this.taskDetectorService = new TaskDetectorService();
+      this.registerBuiltInDetectors();
+    }
+
     // Promise that tracks model loading status
     // Server MUST wait for this promise to resolve before accepting requests
     this.loadingPromise = null;
+  }
+
+  /**
+   * Register built-in task detectors from config
+   * Creates detectors dynamically from detectorConfig for all supported clients
+   * @private
+   */
+  registerBuiltInDetectors() {
+    if (!this.taskDetectorService) {
+      return;
+    }
+
+    // Register detectors for each task type from registry
+    for (const [taskType, patternGroups] of Object.entries(detectorRegistry)) {
+      // Only register if there are pattern groups defined
+      if (patternGroups.length > 0) {
+        const detector = createDetector(patternGroups);
+        this.taskDetectorService.registerDetector(taskType, detector);
+      }
+    }
   }
 
   /**

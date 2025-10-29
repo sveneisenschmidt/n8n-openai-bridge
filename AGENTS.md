@@ -68,6 +68,7 @@ Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
 - `ModelLoaderFactory.js` - Creates loaders based on `MODEL_LOADER_TYPE`
 - `server.js` - Express setup, OpenAI endpoints
 - `n8nClient.js` - n8n webhook communication
+- `taskDetectorService.js` - Detects automated task generation requests (optional)
 
 **Model Loading System:**
 - `JsonFileModelLoader` (TYPE: `file`) - Default, reads `models.json`, hash-based hot-reload
@@ -215,6 +216,9 @@ USER_ID_HEADERS=X-User-Id
 USER_EMAIL_HEADERS=X-User-Email
 USER_NAME_HEADERS=X-User-Name
 USER_ROLE_HEADERS=X-User-Role
+
+# Task Detection (Optional)
+ENABLE_TASK_DETECTION=false               # Detect automated task generation requests
 
 # Webhook Notifier (optional)
 WEBHOOK_NOTIFIER_URL=https://example.com/webhook

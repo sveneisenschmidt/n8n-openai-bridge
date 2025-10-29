@@ -36,7 +36,7 @@ const adminReloadRoute = require('./routes/adminReload');
 
 const app = express();
 const bootstrap = new Bootstrap();
-const n8nClient = new N8nClient(bootstrap.config);
+const n8nClient = new N8nClient(bootstrap.config, bootstrap.taskDetectorService);
 
 // Store bootstrap and n8nClient in app.locals for access in routes
 app.locals.bootstrap = bootstrap;
