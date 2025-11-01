@@ -39,6 +39,7 @@ class Config {
     this.bearerToken = process.env.BEARER_TOKEN || '';
     this.n8nWebhookBearerToken = this.resolveN8nWebhookBearerToken();
     this.logRequests = process.env.LOG_REQUESTS === 'true';
+    this.requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '50mb';
 
     // Task detection configuration
     this.enableTaskDetection = process.env.ENABLE_TASK_DETECTION === 'true';

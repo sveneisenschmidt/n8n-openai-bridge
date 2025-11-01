@@ -18,8 +18,33 @@ Complete guide for configuring n8n OpenAI Bridge.
 PORT=3333                        # Server port (default: 3333)
 BEARER_TOKEN=your-api-key        # Auth token for API requests TO this bridge
 LOG_REQUESTS=false               # Enable detailed request/response logging
+REQUEST_BODY_LIMIT=50mb          # Maximum size for JSON request bodies (default: 50mb)
 DOCKER_NETWORK_NAME=proxy        # Docker network for compose
 ```
+
+### Request Body Size Limit
+
+```bash
+REQUEST_BODY_LIMIT=50mb          # Maximum size for JSON request bodies (default: 50mb)
+```
+
+Controls the maximum size of incoming JSON request bodies. This is particularly important when handling:
+- Base64-encoded images in vision API requests
+- Large file uploads embedded in JSON
+- Extensive chat histories
+
+**Supported formats:**
+- `100kb` - 100 kilobytes
+- `1mb` - 1 megabyte
+- `50mb` - 50 megabytes (default)
+- `100mb` - 100 megabytes
+
+**Recommendations:**
+- **Default (50mb)**: Suitable for most use cases including image uploads
+- **Increase to 100mb+**: If handling multiple large images or extensive data
+- **Decrease to 10mb**: If you want to restrict payload sizes for security
+
+**Note:** Large payloads may impact performance and memory usage. Monitor your server resources when increasing this limit.
 
 ### Authentication
 
