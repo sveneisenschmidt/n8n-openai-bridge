@@ -17,6 +17,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Docker ready with health checks
 - Hot-reload models without restart
 - Webhook notifications on model changes
+- Detection of automated tasks from OpenWebUI and LibreChat
 
 ## Compatibility
 
@@ -160,6 +161,7 @@ Two complete workflow examples are included in the project root:
 
 - **[`n8n_workflow_chat.json.example`](n8n_workflow_chat.json.example)** - Using Chat Trigger node (recommended)
 - **[`n8n_workflow_webhook.json.example`](n8n_workflow_webhook.json.example)** - Using Webhook node (advanced)
+- **[`n8n_workflow_task_llm.json.example`](n8n_workflow_task_llm.json.example)** - Using Task Detection To Route Tasks to Different Model
 
 See [n8n Workflow Setup Guide](docs/N8N_SETUP.md) for detailed setup instructions.
 
