@@ -49,7 +49,7 @@ const rateLimiters = createRateLimiters(bootstrap.config);
 
 // Basic middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: bootstrap.config.requestBodyLimit }));
 
 // Request ID tracking (must be early in the chain)
 app.use(requestId());
