@@ -95,6 +95,207 @@ AUTO_DISCOVERY_POLL_INTERVAL=300
 - Never commit token to git
 - Webhook URLs are public (use `N8N_WEBHOOK_BEARER_TOKEN` for webhook auth)
 
+### JsonHttpModelLoader (Type: `json-http`)
+
+Fetches models from any HTTP(S) endpoint that returns JSON. No authentication required (basic support, future enhancements possible).
+
+**Configuration:**
+```bash
+MODEL_LOADER_TYPE=json-http
+JSON_HTTP_ENDPOINT=https://api.example.com/models
+JSON_HTTP_POLL_INTERVAL=300
+JSON_HTTP_TIMEOUT=10000
+```
+
+**Environment Variables:**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `JSON_HTTP_ENDPOINT` | Yes | - | HTTP(S) endpoint URL that returns JSON models |
+| `JSON_HTTP_POLL_INTERVAL` | No | `300` | Polling interval in seconds (0=disabled, 60-600 range) |
+| `JSON_HTTP_TIMEOUT` | No | `10000` | HTTP request timeout in milliseconds (min: 1000) |
+
+**Expected Response Format:**
+```json
+{
+  "model-id-1": "https://webhook.example.com/path1",
+  "model-id-2": "https://webhook.example.com/path2"
+}
+```
+
+**How It Works:**
+1. Fetches JSON from configured HTTP endpoint
+2. Validates response is a JSON object (not array or primitive)
+3. Validates each model entry (graceful degradation)
+4. Optional: Polls for changes at configured interval
+5. Hash-based change detection (only fires callbacks on actual changes)
+
+**Use Cases:**
+- Centralized model configuration service
+- Dynamic model provisioning
+- Third-party model registries
+- Multi-tenant model discovery
+
+**Polling:**
+- Runs at startup, then at configured interval
+- Hash comparison: Only fires callbacks when models actually change
+- On failure: Logs error, keeps existing models, retries later
+- Disabled when `JSON_HTTP_POLL_INTERVAL=0`
+
+**Setup Steps:**
+1. Create HTTP endpoint that returns JSON object with model mappings
+2. Configure bridge with endpoint URL
+3. Set polling interval (optional)
+4. Set timeout if endpoint is slow (optional)
+5. Restart bridge
+
+**Error Handling:**
+- HTTP errors (401, 403, 404, 5xx): Detailed error messages
+- Network errors: Clear failure messages with endpoint URL
+- Invalid JSON format: Throws during startup
+- Invalid model entries: Filtered with warnings (graceful degradation)
+
+**Security Considerations:**
+- Endpoint should be HTTPS in production
+- Future versions will support authentication (bearer tokens, custom headers)
+- Webhook URLs in response should be HTTPS
+- Consider using VPN/private network for internal endpoints
+
+**Example Endpoint Response:**
+```json
+{
+  "gpt-4": "https://n8n.company.com/webhook/gpt4-chat/chat",
+  "claude-3": "https://n8n.company.com/webhook/claude/chat",
+  "local-model": "https://ollama.local:8000/webhook/ollama"
+}
+```
+
+**Advanced: Using with n8n Workflows for Dynamic Model Selection**
+
+JsonHttpModelLoader can be combined with n8n workflows to implement sophisticated, dynamic model filtering and selection logic. This allows you to:
+
+- **Apply custom business logic** to determine which models are available
+- **Filter models by user roles/permissions** - expose different models to different users
+- **Dynamically select models** based on tenant, organization, or department
+- **Apply additional criteria** like resource availability, licensing, or feature flags
+- **Centralize model configuration** while keeping selection logic in n8n
+
+**Architecture:**
+
+```
+n8n-openai-bridge
+    ↓ polls every 300s
+[n8n Workflow (HTTP Trigger)]
+    ↓
+[Filter/Transform Logic]
+    ↓ returns JSON
+{ "model-id": "webhook-url", ... }
+```
+
+**How It Works:**
+
+1. Configure JsonHttpModelLoader with endpoint pointing to n8n webhook
+2. Create n8n workflow with HTTP trigger (webhook node)
+3. Workflow receives polling request from bridge
+4. Workflow executes custom logic:
+   - Query model catalog/database
+   - Apply user/tenant criteria
+   - Filter by available resources
+   - Transform data to required format
+5. Workflow returns JSON object with model mappings
+6. Bridge validates, caches (with hash), and uses for requests
+
+**Example Workflow Setup:**
+
+```
+HTTP Trigger (Webhook)
+    ↓
+Query Database/API
+    ↓
+Filter Models (Apply Criteria)
+    ↓
+Transform to Required Format
+    ↓
+Return JSON Response
+```
+
+**Use Case Examples:**
+
+1. **Role-based Model Availability:**
+   ```json
+   // For admin users
+   {
+     "gpt-4": "https://n8n.../webhook/gpt4",
+     "gpt-4-turbo": "https://n8n.../webhook/gpt4-turbo",
+     "claude-3": "https://n8n.../webhook/claude"
+   }
+   
+   // For regular users
+   {
+     "gpt-3.5-turbo": "https://n8n.../webhook/gpt35"
+   }
+   ```
+
+2. **Tenant-based Selection:**
+   - Workflow queries which models customer's subscription includes
+   - Returns only available models for that tenant
+   - Prevents unauthorized access to premium models
+
+3. **Resource-aware Selection:**
+   - Workflow checks available GPU/compute resources
+   - Only exposes models for available resources
+   - Prevents overload from unavailable services
+
+4. **Feature Flag Control:**
+   - Workflow queries feature flags
+   - Dynamically enables/disables experimental models
+   - Rollout control without redeploying
+
+**Configuration Example:**
+
+```bash
+MODEL_LOADER_TYPE=json-http
+JSON_HTTP_ENDPOINT=https://your-n8n.com/webhook/model-selector
+JSON_HTTP_POLL_INTERVAL=300        # Recheck available models every 5 minutes
+JSON_HTTP_TIMEOUT=10000            # Allow workflow up to 10 seconds to respond
+```
+
+**n8n Workflow Development:**
+
+When building your model selection workflow:
+
+1. **Receive request** - HTTP trigger automatically receives polling request
+2. **Query your criteria** - Check database, APIs, or configuration
+3. **Filter models** - Apply business logic (roles, tenants, resources, etc.)
+4. **Transform data** - Build JSON response in required format:
+   ```json
+   {
+     "model-id": "https://full-webhook-url-including-domain",
+     "model-id-2": "https://another-webhook-url"
+   }
+   ```
+5. **Return response** - Respond with 200 and JSON object
+
+**Important Notes:**
+
+- Workflow endpoint must return valid JSON object (not array)
+- Each webhook URL must be complete (including domain/protocol)
+- Ensure workflow completes within `JSON_HTTP_TIMEOUT` (default 10s)
+- Models are cached (hash-based), so frequent polling is efficient
+- Workflow errors log warning but keep using previously cached models
+- Invalid model entries are filtered with warnings (graceful degradation)
+
+**Advantages Over N8nApiModelLoader:**
+
+| Aspect | N8nApiModelLoader | JsonHttpModelLoader + Workflow |
+|--------|-------------------|-------------------------------|
+| **Setup Complexity** | Simple (tag-based) | More flexible but requires workflow |
+| **Filtering Logic** | Tag-based only | Unlimited custom logic |
+| **User-aware** | No | Yes (workflow can access user context) |
+| **Tenant Support** | No | Yes (workflow can filter by tenant) |
+| **Resource Awareness** | No | Yes (workflow can check resources) |
+| **Auth Support** | API key required | Flexible (can use any n8n auth) |
+
 ### StaticModelLoader (Type: `static`)
 
 Loads models from environment variable. For testing and development only.
@@ -166,13 +367,14 @@ These are logged as warnings but don't block startup:
 
 ## Comparison
 
-| Feature | JsonFileModelLoader | N8nApiModelLoader | StaticModelLoader |
-|---------|-------------------|-------------------|-------------------|
-| **Type ID** | `file` | `n8n-api` | `static` |
-| **Use Case** | Manual configuration | Auto-discovery | Testing only |
-| **Startup Speed** | Fast | Depends on API | Fast |
-| **Hot-Reload** | File watching | Polling | None |
-| **Dependencies** | None | n8n API access | None |
+| Feature | JsonFileModelLoader | N8nApiModelLoader | JsonHttpModelLoader | StaticModelLoader |
+|---------|-------------------|-------------------|-------------------|-------------------|
+| **Type ID** | `file` | `n8n-api` | `json-http` | `static` |
+| **Use Case** | Manual configuration | Auto-discovery | Remote config | Testing only |
+| **Startup Speed** | Fast | Depends on API | Depends on endpoint | Fast |
+| **Hot-Reload** | File watching | Polling | Polling | None |
+| **Dependencies** | None | n8n API access | HTTP endpoint | None |
+| **Authentication** | N/A | Required (API key) | None (future support) | N/A |
 
 ---
 
@@ -245,7 +447,9 @@ AUTO_DISCOVERY_TAG=openai-model
 - **Base Class**: `src/loaders/ModelLoader.js`
 - **File Loader**: `src/loaders/JsonFileModelLoader.js`
 - **n8n API Loader**: `src/loaders/N8nApiModelLoader.js`
+- **JSON HTTP Loader**: `src/loaders/JsonHttpModelLoader.js`
 - **Static Loader**: `src/loaders/StaticModelLoader.js`
+- **Factory**: `src/factories/ModelLoaderFactory.js`
 - **Config Integration**: `src/config.js`
 - **Tests**: `tests/loaders/`
 
