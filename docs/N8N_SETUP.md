@@ -20,10 +20,10 @@ The bridge supports two types of n8n nodes for receiving chat requests:
 ## Quick Start
 
 **For Chat Trigger (Recommended):**
-Import [`n8n_workflow_chat.json.example`](../n8n_workflow_chat.json.example) in n8n → Configure credentials.
+Import [`n8n_workflow_chat.json`](../n8n-examples/n8n_workflow_chat.json) in n8n → Configure credentials.
 
 **For Webhook Node (Advanced):**
-Import [`n8n_workflow_webhook.json.example`](../n8n_workflow_webhook.json.example) in n8n → Configure credentials.
+Import [`n8n_workflow_webhook.json`](../n8n-examples/n8n_workflow_webhook.json) in n8n → Configure credentials.
 
 ## Option 1: Chat Trigger Node (Recommended)
 

@@ -170,6 +170,10 @@ JSON_HTTP_TIMEOUT=10000
 }
 ```
 
+**Example n8n Workflow:**
+
+See [n8n-examples/n8n_workflow_http_loader.json](../n8n-examples/n8n_workflow_http_loader.json) for a complete workflow example that returns model configurations via webhook.
+
 **Advanced: Using with n8n Workflows for Dynamic Model Selection**
 
 JsonHttpModelLoader can be combined with n8n workflows to implement sophisticated, dynamic model filtering and selection logic. This allows you to:
