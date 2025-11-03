@@ -4,12 +4,263 @@
     "description": "Example n8n workflow that returns model configurations via webhook for JSON HTTP Loader",
     "repository": "https://github.com/sven-eisenschmidt/n8n-openai-bridge"
   },
-  "name": "OpenAI Bridge - HTTP Model Loader",
-  "nodes": [],
-  "connections": {},
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "tags": []
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Listing Available Models \n[Read more about the Model Loader Architecture for n8n-openai-bridge](https://github.com/sveneisenschmidt/n8n-openai-bridge/blob/main/docs/MODELLOADER.md)\n\n- Configure List_Workflows with your n8n API Key \n- The filtering **tag** 'n8n-openai-bridge' is a parameter in the Configuration node.\n- Remember to configure **base_url** as well.\n- You can add nodes for your custom filtering logic",
+        "height": 612,
+        "width": 1464,
+        "color": 7
+      },
+      "id": "edcbe9bb-edb9-4831-b783-0e6c483b8d6b",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -32,
+        -48
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "path": "n8n-models",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "41c42480-8caf-4628-a2cd-8c68752ab36b",
+      "name": "Models",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        16,
+        176
+      ],
+      "webhookId": "f88b9992-b7b9-4ab5-829c-7b89e9cc4775",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        16,
+        368
+      ],
+      "id": "74d65e08-1a2b-479f-929e-ca85d02abce0",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2b9d0ffd-1af4-41c5-a6de-270da1423f82",
+              "name": "tag",
+              "value": "n8n-openai-bridge",
+              "type": "string"
+            },
+            {
+              "id": "a1ac1245-bb51-422e-95bb-8f626aaab9fd",
+              "name": "base_url",
+              "value": "={{ $env.WEBHOOK_URL }}/webhook",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        176
+      ],
+      "id": "a6d50484-7131-479d-968c-f98d056a3887",
+      "name": "Configuration"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b03926a4-4ad9-4d87-8188-989fa5158a07",
+              "name": "name",
+              "type": "string",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "id": "88bd31bd-005d-4734-bffa-4fd3b8487166",
+              "name": "id",
+              "type": "string",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "7fbabd24-8dea-495e-96fe-da08790f971c",
+              "name": "webhook_url",
+              "type": "string",
+              "value": "={{ $json.nodes.find(node => node.parameters?.path).parameters.path }}"
+            },
+            {
+              "id": "6b538d2a-5612-4db6-a23e-d240e3eb87e0",
+              "name": "chat_url",
+              "value": "={{ $json.nodes.find(node => node.parameters?.public).webhookId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c40c46c-3c41-497b-b3f6-6792cfcb686a",
+      "name": "Select_Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        880,
+        176
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "jsCode": "// Helper function to safely join URL parts, preventing double slashes\nfunction joinUrlPaths(base, path) {\n  if (!base) return path;\n  if (!path) return base;\n\n  const baseEndsWithSlash = base.endsWith('/');\n  const pathStartsWithSlash = path.startsWith('/');\n\n  if (baseEndsWithSlash && pathStartsWithSlash) {\n    return base + path.substring(1); // Remove leading slash from path\n  } else if (!baseEndsWithSlash && !pathStartsWithSlash) {\n    return base + '/' + path; // Add a slash in between\n  } else {\n    return base + path; // One already has a slash, or neither\n  }\n}\n\nconst items = $input.all(); // Get all input items\n\n// Retrieve the base_url from the 'Configuration' node\n// Ensure the 'Configuration' node exists and has a 'base_url' field in its output\nconst baseUrl = $('Configuration').first().json.base_url;\n\nconst finalOutputObject = {}; // Initialize an empty object to store the combined output\n\n// Iterate over each input item\nitems.forEach(item => {\n  const inputData = item.json; // Access the JSON data of the current item\n\n  const name = inputData.name;\n  const webhook_url = inputData.webhook_url;\n  const chat_url = inputData.chat_url; // Get the chat_url\n\n  let rawUrl; // This will hold the URL part before adding the base_url\n\n  // Conditional logic: Prefer chat_url if it exists and is not empty\n  if (chat_url && chat_url.trim() !== '') {\n    // Assuming chat_url is an ID or path segment that needs '/chat' appended\n    rawUrl = chat_url + '/chat';\n  } else {\n    rawUrl = webhook_url;\n  }\n\n  let finalUrl = null;\n  // If a rawUrl was determined, prepend the baseUrl\n  if (rawUrl) {\n    // Check if rawUrl is already a full URL (starts with http/https)\n    // If it is, we might not want to prepend baseUrl, or we assume baseUrl is the domain\n    // For this example, we'll assume rawUrl is a path/ID that needs the baseUrl\n    if (baseUrl) {\n      finalUrl = joinUrlPaths(baseUrl, rawUrl);\n    } else {\n      finalUrl = rawUrl; // Use rawUrl as is if no baseUrl is available\n    }\n  }\n\n  // Add the name-url pair to the final output object\n  if (name && finalUrl) {\n    finalOutputObject[name] = finalUrl;\n  } else if (name) {\n    // If no URL could be constructed, you might want to log a warning or set a default\n    console.warn(`Could not construct a URL for item: ${name}. Skipping.`);\n  }\n});\n\n// Return the single combined object in the n8n expected format\nreturn [{ json: finalOutputObject }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        176
+      ],
+      "id": "fa5a0b6e-bd01-4ab3-8a71-03c4fa68093e",
+      "name": "Compile_Answer"
+    },
+    {
+      "parameters": {
+        "filters": {
+          "activeWorkflows": true,
+          "tags": "={{ $json.tag }}",
+          "excludePinnedData": true
+        },
+        "requestOptions": {}
+      },
+      "id": "da7707e3-d796-4c70-a3b7-e9dbac0c29be",
+      "name": "List_Workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        448,
+        176
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "n8nApi": {
+          "id": "hcBeekxRKcjVsL9E",
+          "name": "N8N API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "e68da64a-e842-4791-a1c7-6277817697e8",
+      "name": "Models_Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1280,
+        176
+      ],
+      "executeOnce": false,
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        656,
+        176
+      ],
+      "id": "10067cb8-b006-4ef7-83f7-85e65e3a4ad5",
+      "name": "Your_Custom_Logic"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Models": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "List_Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select_Fields": {
+      "main": [
+        [
+          {
+            "node": "Compile_Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile_Answer": {
+      "main": [
+        [
+          {
+            "node": "Models_Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List_Workflows": {
+      "main": [
+        [
+          {
+            "node": "Your_Custom_Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your_Custom_Logic": {
+      "main": [
+        [
+          {
+            "node": "Select_Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
 }
