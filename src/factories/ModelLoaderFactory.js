@@ -18,6 +18,7 @@
 
 const JsonFileModelLoader = require('../loaders/JsonFileModelLoader');
 const N8nApiModelLoader = require('../loaders/N8nApiModelLoader');
+const JsonHttpModelLoader = require('../loaders/JsonHttpModelLoader');
 const StaticModelLoader = require('../loaders/StaticModelLoader');
 
 /**
@@ -38,7 +39,12 @@ class ModelLoaderFactory {
    * Registry of available model loaders
    * Each loader must have a static TYPE property
    */
-  static MODEL_LOADERS = [JsonFileModelLoader, N8nApiModelLoader, StaticModelLoader];
+  static MODEL_LOADERS = [
+    JsonFileModelLoader,
+    N8nApiModelLoader,
+    JsonHttpModelLoader,
+    StaticModelLoader,
+  ];
 
   /**
    * Validate and extract environment variables for a loader

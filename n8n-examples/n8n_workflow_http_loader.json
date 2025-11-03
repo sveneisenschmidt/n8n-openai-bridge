@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "templateCreatedBy": "tiangao88",
+    "description": "Example n8n workflow that returns model configurations via webhook for JSON HTTP Loader",
+    "repository": "https://github.com/sven-eisenschmidt/n8n-openai-bridge"
+  },
+  "name": "OpenAI Bridge - HTTP Model Loader",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

@@ -85,6 +85,11 @@ n8n-openai-bridge/
 │   ├── Dockerfile.build          # Production Docker image
 │   ├── Dockerfile.test           # Test Docker image
 │   └── docker-compose.dev.yml    # Development Docker Compose
+├── n8n-examples/          # Example configurations and workflows
+│   ├── n8n_workflow_chat.json        # Chat Trigger workflow example
+│   ├── n8n_workflow_webhook.json     # Webhook node workflow example
+│   ├── n8n_workflow_task_model.json  # Task detection workflow example
+│   └── n8n_workflow_http_loader.json # HTTP loader workflow example
 ├── models.json            # Model-to-webhook mapping (create from .example)
 ├── models.json.example    # Example models configuration
 ├── .env                   # Environment variables (create from .example)

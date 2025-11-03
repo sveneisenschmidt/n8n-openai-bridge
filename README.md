@@ -157,11 +157,14 @@ From simple single-agent workflows exposed as a model ...
 
 ### Workflow Examples
 
-Two complete workflow examples are included in the project root:
+Complete workflow examples are included in the [`n8n-examples/`](n8n-examples/) directory:
 
-- **[`n8n_workflow_chat.json.example`](n8n_workflow_chat.json.example)** - Using Chat Trigger node (recommended)
-- **[`n8n_workflow_webhook.json.example`](n8n_workflow_webhook.json.example)** - Using Webhook node (advanced)
-- **[`n8n_workflow_task_llm.json.example`](n8n_workflow_task_llm.json.example)** - Using Task Detection To Route Tasks to Different Model
+- **[`n8n_workflow_chat.json`](n8n-examples/n8n_workflow_chat.json)** - Using Chat Trigger node (recommended)
+- **[`n8n_workflow_webhook.json`](n8n-examples/n8n_workflow_webhook.json)** - Using Webhook node (advanced)
+- **[`n8n_workflow_task_model.json`](n8n-examples/n8n_workflow_task_model.json)** - Using Task Detection To Route Tasks to Different Model
+- **[`n8n_workflow_http_loader.json`](n8n-examples/n8n_workflow_http_loader.json)** - HTTP endpoint returning model configurations for JSON HTTP Loader
+
+Example models configuration: **[`models.json.example`](models.json.example)**
 
 See [n8n Workflow Setup Guide](docs/N8N_SETUP.md) for detailed setup instructions.
 

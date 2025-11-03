@@ -40,3 +40,7 @@ Contributors are listed alphabetically.
 **[ArielTL](https://github.com/arieltl)**
 - Documentation: Code example for task routing
 - Date: 2025-10
+
+**[tiangao88](https://github.com/tiangao88)**
+- Documentation: n8n workflow example for JSON HTTP Loader
+- Date: 2025-11

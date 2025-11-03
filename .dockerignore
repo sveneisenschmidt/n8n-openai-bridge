@@ -27,10 +27,12 @@ coverage
 models.json
 models.json.example
 
+# Example workflows and configurations
+n8n-examples
+
 # Development files
 docker-compose.yml
 Makefile
-n8n_workflow_chat.json.example
 
 # OS
 .DS_Store
