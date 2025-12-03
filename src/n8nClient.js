@@ -153,11 +153,17 @@ class N8nClient {
    */
   buildRequestConfig(payload, files) {
     if (files && files.length > 0) {
-      // Multipart mode
+      // Multipart mode - send payload fields directly for n8n compatibility
       const form = new FormData();
-      form.append('payload', JSON.stringify(payload), {
-        contentType: 'application/json',
-      });
+
+      // Add all payload fields as form fields
+      for (const [key, value] of Object.entries(payload)) {
+        if (value !== null && value !== undefined) {
+          // Stringify objects/arrays, keep primitives as-is
+          const formValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          form.append(key, formValue);
+        }
+      }
 
       // Add files as binary
       const bufferFiles = filesToBuffers(files);

@@ -331,14 +331,14 @@ FILE_UPLOAD_MODE=passthrough         # Options: passthrough, extract-json, extra
 |------|-------------|
 | `passthrough` (default) | Forward multimodal content as-is. Base64 data URLs stay in the messages array. Your n8n workflow handles decoding. |
 | `extract-json` | Extract files to a separate `files` array with clean base64 data (no `data:` prefix). Text is extracted to message content. |
-| `extract-multipart` | Send request as multipart/form-data with binary files. JSON payload in one part, files as binary parts. |
+| `extract-multipart` | **Recommended.** Send as multipart/form-data with binary files. Works out of the box with n8n webhooks. |
 | `disabled` | Strip all image/file content. Only text is forwarded to n8n. |
 
 **When to use each mode:**
 
-- **passthrough**: Default. Use when your n8n workflow can handle base64 data URLs directly, or you want full control over file processing.
-- **extract-json**: Use when you want clean base64 data in a predictable structure. Easier to use with n8n's "Convert to File" node.
-- **extract-multipart**: Use when your n8n webhook expects multipart/form-data with binary files. Note: n8n has [known quirks](https://github.com/n8n-io/n8n/issues/14876) with multipart file handling.
+- **extract-multipart** (recommended): Works seamlessly with n8n webhooks. Files are sent as binary attachments, payload fields are sent as form fields. n8n receives files directly without any decoding needed.
+- **passthrough**: Default for backwards compatibility. Use when your n8n workflow can handle base64 data URLs directly.
+- **extract-json**: Use when you want clean base64 data in a predictable structure. Useful with n8n's "Convert to File" node.
 - **disabled**: Use when you don't want to process images/files at all, or to reduce payload sizes.
 
 **Payload format for `extract-json` mode:**
