@@ -12,6 +12,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Supports both Chat Trigger and Webhook nodes in n8n
 - Session tracking for conversation memory
 - User context forwarding (ID, email, name, role)
+- File uploads support (images, documents)
 - Rate limiting with configurable thresholds per endpoint
 - Request ID tracking for distributed tracing
 - Docker ready with health checks

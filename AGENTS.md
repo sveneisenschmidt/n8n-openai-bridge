@@ -125,7 +125,9 @@ Never run `npm install` on host machine.
 
 - One class per file, file name matches class name
 - Lowercase directories (services/, loaders/, utils/)
-- Tests mirror src/ structure (src/config.js → tests/config.test.js)
+- Tests mirror src/ structure (src/utils/session.js → tests/utils/session.test.js)
+- `src/services/` → Classes with state/dependencies (e.g., `TaskDetectorService`, `WebhookNotifier`)
+- `src/utils/` → Stateless pure functions (e.g., `sessionExtractor.js`, `userExtractor.js`, `requestValidator.js`)
 
 ### Copyright Headers
 

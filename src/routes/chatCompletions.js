@@ -18,9 +18,9 @@
 
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { extractSessionId } = require('../services/sessionService');
-const { extractUserContext } = require('../services/userService');
-const { validateChatCompletionRequest } = require('../services/validationService');
+const { extractSessionId } = require('../utils/sessionExtractor');
+const { extractUserContext } = require('../utils/userExtractor');
+const { validateChatCompletionRequest } = require('../utils/requestValidator');
 const { createErrorResponse } = require('../utils/errorResponse');
 const { debugSessionDetection } = require('../utils/debugSession');
 const { handleStreaming } = require('../handlers/streamingHandler');
