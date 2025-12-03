@@ -152,86 +152,12 @@ The Webhook node receives the entire HTTP request in `$json`, with the actual ch
 
 ## Handling Images and File Uploads
 
-The bridge passes file uploads and images through to n8n as-is. Your workflow must handle image extraction and processing.
+The bridge passes images through to n8n as-is using the [OpenAI Vision API format](https://platform.openai.com/docs/guides/vision). Images are base64-encoded in the `messages` array with `type: "image_url"`.
 
-### How Clients Send Images
-
-Clients like LibreChat and Open-webUI send images embedded in the message content as base64-encoded data:
-
-```json
-{
-  "messages": [
-    {
-      "role": "user",
-      "content": [
-        {"type": "text", "text": "What's in this image?"},
-        {
-          "type": "image_url",
-          "image_url": {
-            "url": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
-            "detail": "low"
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Token Management for Images
-
-The `detail` parameter controls how many tokens the image uses:
-
-- `"low"` - 65 tokens per image (recommended)
-- `"high"` - 65-765 tokens depending on image size
-- `"auto"` - LLM provider decides (default, usually "high")
-
-**Important:** If clients don't set `detail`, images may consume 500+ tokens and cause "too many tokens" errors. You can add the `detail` parameter in your n8n workflow before passing to the LLM.
-
-### Processing Images in n8n
-
-Your workflow needs to extract and handle images from the `messages` array. Common approaches:
-
-**Option 1: Pass through to LLM (if supported)**
-- Extract entire `messages` array
-- Forward to LLM that supports vision (GPT-4V, Claude 3, etc.)
-- Ensure `detail: "low"` is set to avoid token issues
-
-**Option 2: Upload to storage**
-- Extract base64 image data
-- Upload to S3, Cloudinary, or similar
-- Replace base64 with public URL
-- Forward modified messages to LLM
-
-**Option 3: Process locally**
-- Extract image for analysis
-- Use separate vision API/service
-- Combine results with chat response
-
-### Example: Setting detail Parameter in n8n
-
-Use a Code node to ensure all images use `detail: "low"`:
-
-```javascript
-const messages = $json.messages || [];
-
-const processedMessages = messages.map(msg => {
-  if (Array.isArray(msg.content)) {
-    msg.content = msg.content.map(item => {
-      if (item.type === 'image_url' && item.image_url) {
-        // Set detail to low if not specified
-        if (!item.image_url.detail) {
-          item.image_url.detail = 'low';
-        }
-      }
-      return item;
-    });
-  }
-  return msg;
-});
-
-return { messages: processedMessages };
-```
+**Key considerations:**
+- Set `detail: "low"` (65 tokens) vs `"high"` (65-765 tokens) to control token usage
+- Forward the `messages` array to vision-capable LLMs (GPT-4V, Claude 3, etc.)
+- Optionally extract and upload images to external storage before processing
 
 ## Testing Your Workflow
 

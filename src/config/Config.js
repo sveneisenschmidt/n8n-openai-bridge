@@ -50,6 +50,20 @@ class Config {
     this.userEmailHeaders = this.parseUserEmailHeaders();
     this.userNameHeaders = this.parseUserNameHeaders();
     this.userRoleHeaders = this.parseUserRoleHeaders();
+
+    // Timeout configuration
+    this.n8nTimeout = this.parseTimeout('N8N_TIMEOUT', 300000);
+    this.serverTimeout = this.parseTimeout('SERVER_TIMEOUT', 300000);
+    this.serverKeepAliveTimeout = this.parseTimeout('SERVER_KEEP_ALIVE_TIMEOUT', 120000);
+    this.serverHeadersTimeout = this.parseTimeout('SERVER_HEADERS_TIMEOUT', 121000);
+
+    // Validate headers timeout > keep-alive timeout
+    if (this.serverHeadersTimeout <= this.serverKeepAliveTimeout) {
+      console.warn(
+        `SERVER_HEADERS_TIMEOUT (${this.serverHeadersTimeout}) must be greater than SERVER_KEEP_ALIVE_TIMEOUT (${this.serverKeepAliveTimeout}). Adjusting to ${this.serverKeepAliveTimeout + 1000}ms.`,
+      );
+      this.serverHeadersTimeout = this.serverKeepAliveTimeout + 1000;
+    }
   }
 
   /**
@@ -133,6 +147,30 @@ class Config {
    */
   parseUserRoleHeaders() {
     return this.parseHeadersFromEnv('USER_ROLE_HEADERS', ['X-User-Role']);
+  }
+
+  /**
+   * Parse timeout value from environment variable
+   * @param {string} envVarName - Name of the environment variable
+   * @param {number} defaultValue - Default timeout in milliseconds
+   * @returns {number} Timeout in milliseconds
+   * @private
+   */
+  parseTimeout(envVarName, defaultValue) {
+    const envValue = process.env[envVarName];
+
+    if (!envValue || !envValue.trim()) {
+      return defaultValue;
+    }
+
+    const parsed = parseInt(envValue, 10);
+
+    if (isNaN(parsed) || parsed < 1000) {
+      console.warn(`${envVarName} must be a number >= 1000ms. Using default: ${defaultValue}ms.`);
+      return defaultValue;
+    }
+
+    return parsed;
   }
 }
 

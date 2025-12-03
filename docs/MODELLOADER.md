@@ -33,7 +33,7 @@ MODELS_POLL_INTERVAL=1              # Polling interval in seconds (default: 1)
 **Behavior:**
 - Startup: Reads file synchronously, throws if not found or invalid JSON
 - Hot-reload: Polls file and compares model hash, reloads only when models change
-- Polling interval: Configurable via `MODELS_POLL_INTERVAL` (default: 1s)
+- Polling interval: Configurable via `MODELS_POLL_INTERVAL` in seconds (default: 1s, no upper limit for local files)
 - Invalid models: Filtered out with warnings, server continues
 - Hash comparison: Only reloads when model content actually changed (not formatting/whitespace)
 

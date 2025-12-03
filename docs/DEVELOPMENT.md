@@ -229,8 +229,7 @@ make test         # Run Jest tests (~5-10s with cache)
 ```
 
 **Coverage:**
-- 95%+ code coverage
-- 208 unit tests
+- 95%+ code coverage required
 - Tests for all core modules (server, n8nClient, config, routes, handlers, middleware, services)
 
 ### Image Tests

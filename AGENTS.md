@@ -6,7 +6,7 @@
 
 OpenAI-compatible API middleware that bridges OpenAI clients with n8n workflows. Translates OpenAI API requests to n8n webhook calls with streaming support, session tracking, and user context forwarding.
 
-**Stack:** Node.js 20, Express, Docker, Jest (403+ tests, 95%+ coverage)
+**Stack:** Node.js 20, Express, Docker, Jest (95%+ coverage)
 
 ## Quick Start
 
@@ -44,7 +44,7 @@ n8n-openai-bridge/
 │   ├── loaders/           # Model loader architecture (file, n8n-api, static)
 │   ├── notifiers/         # Webhook notifiers (model changes)
 │   └── utils/             # Utility functions
-├── tests/                 # Unit tests (403+ tests)
+├── tests/                 # Unit tests
 │   ├── image-tests/       # Modular image validation scenarios
 │   └── test-image-build.sh  # Image test orchestrator
 ├── docker/                # Docker configuration
@@ -94,7 +94,7 @@ git push origin feature/my-feature
 
 ### Testing Philosophy
 
-- **Unit tests:** 403+ tests, 95%+ coverage, run in Docker
+- **Unit tests:** 95%+ coverage required, run in Docker
 - **Image tests:** Modular Bash scenarios validate production image
 - **Console mocking:** Mock console in tests that trigger logging
 - **Resource cleanup:** Track watchers/timers, clean in `afterEach`
@@ -191,44 +191,19 @@ See .github/workflows/README.md for details.
 ## Configuration Quick Reference
 
 ```bash
-# Server
+# Essential
 PORT=3333
 BEARER_TOKEN=your-api-key-here
-LOG_REQUESTS=false
-
-# Model Loading
 MODEL_LOADER_TYPE=file                    # Options: file, n8n-api, static
-MODELS_CONFIG_FILE=./models.json          # File loader path
-MODELS_POLL_INTERVAL=1                    # File polling interval (seconds)
-
-# Auto-Discovery (n8n-api loader)
-N8N_BASE_URL=https://your-n8n.com
-N8N_API_BEARER_TOKEN=n8n_api_xxxxx
-AUTO_DISCOVERY_TAG=n8n-openai-bridge
-AUTO_DISCOVERY_POLL_INTERVAL=300
-
-# Webhook Authentication (bridge → n8n)
-N8N_WEBHOOK_BEARER_TOKEN=                 # Optional, for Webhook nodes only
-
-# Session & User Context
-SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id
-USER_ID_HEADERS=X-User-Id
-USER_EMAIL_HEADERS=X-User-Email
-USER_NAME_HEADERS=X-User-Name
-USER_ROLE_HEADERS=X-User-Role
-
-# Task Detection (Optional)
-ENABLE_TASK_DETECTION=false               # Detect automated task generation requests
-
-# Webhook Notifier (optional)
-WEBHOOK_NOTIFIER_URL=https://example.com/webhook
-WEBHOOK_NOTIFIER_TIMEOUT=5000
-WEBHOOK_NOTIFIER_RETRIES=3
-WEBHOOK_NOTIFIER_BEARER_TOKEN=
-WEBHOOK_NOTIFIER_ON_STARTUP=false
+MODELS_CONFIG_FILE=./models.json
 ```
 
-See docs/CONFIGURATION.md for complete details.
+See **docs/CONFIGURATION.md** for all environment variables including:
+- Model loading (file, n8n-api, static loaders)
+- Session & user context headers
+- Timeout configuration
+- Webhook notifier
+- Task detection
 
 ## Common Issues
 

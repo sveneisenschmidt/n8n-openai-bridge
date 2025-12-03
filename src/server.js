@@ -111,6 +111,10 @@ async function startServer() {
   // Start HTTP server
   const PORT = bootstrap.config.port;
   const server = app.listen(PORT, () => {
+    // Apply server timeout configuration
+    server.timeout = bootstrap.config.serverTimeout;
+    server.keepAliveTimeout = bootstrap.config.serverKeepAliveTimeout;
+    server.headersTimeout = bootstrap.config.serverHeadersTimeout;
     console.log('='.repeat(60));
     console.log(`Server running on port: ${PORT}`);
     console.log(`Request logging: ${bootstrap.config.logRequests ? 'ENABLED' : 'DISABLED'}`);

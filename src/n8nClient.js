@@ -118,7 +118,7 @@ class N8nClient {
       const response = await axios.post(webhookUrl, payload, {
         headers: this.getHeaders(),
         responseType: 'stream',
-        timeout: 300000, // 5 minutes
+        timeout: this.config.n8nTimeout,
       });
 
       // Use the shared stream processing method
@@ -138,7 +138,7 @@ class N8nClient {
       const response = await axios.post(webhookUrl, payload, {
         headers: this.getHeaders(),
         responseType: 'stream',
-        timeout: 300000, // 5 minutes
+        timeout: this.config.n8nTimeout,
       });
 
       const collectedContent = [];
