@@ -10,10 +10,15 @@ const N8nClient = require('../../src/n8nClient');
 
 /**
  * Create test client with default config
+ * @param {Object} configOverrides - Optional config overrides
  * @returns {N8nClient}
  */
-function createTestClient() {
-  const mockConfig = { n8nBearerToken: '' };
+function createTestClient(configOverrides = {}) {
+  const mockConfig = {
+    n8nBearerToken: '',
+    n8nTimeout: 300000,
+    ...configOverrides,
+  };
   return new N8nClient(mockConfig);
 }
 

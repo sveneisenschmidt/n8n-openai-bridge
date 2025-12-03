@@ -143,16 +143,27 @@ For testing and development only. See [Static Loader Documentation](MODELLOADER.
 
 ### Session & User Context Headers
 
+Configure headers for session tracking and user identification (comma-separated, first found wins):
+
 ```bash
-# Session & User Context Headers (comma-separated, first found wins)
-SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id
-USER_ID_HEADERS=X-User-Id
-USER_EMAIL_HEADERS=X-User-Email
-USER_NAME_HEADERS=X-User-Name
-USER_ROLE_HEADERS=X-User-Role
+SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
+USER_ID_HEADERS=X-User-Id,X-OpenWebUI-User-Id
+USER_EMAIL_HEADERS=X-User-Email,X-OpenWebUI-User-Email
+USER_NAME_HEADERS=X-User-Name,X-OpenWebUI-User-Name
+USER_ROLE_HEADERS=X-User-Role,X-OpenWebUI-User-Role
 ```
 
-See [Session Management](#session-management) and [User Context](#user-context) sections below.
+**Session ID detection priority:**
+1. Request body: `session_id`, `conversation_id`, `chat_id`
+2. HTTP headers (configured above)
+3. Fallback: Auto-generated UUID
+
+**User context detection priority:**
+1. HTTP headers (configured above)
+2. Request body: `user`, `user_id`, `userId`, `user_email`, etc.
+3. Fallback: `userId` defaults to "anonymous", others remain `null`
+
+All session and user context is forwarded to your n8n webhook. See [n8n Webhook Payload](#n8n-webhook-payload) for the full payload structure.
 
 ### Task Detection
 
@@ -279,6 +290,61 @@ When server starts (only if `WEBHOOK_NOTIFIER_ON_STARTUP=true`):
 - Trigger automated tests when new models are deployed
 - Send alerts to Slack/Discord when models are updated
 
+### Timeout Configuration
+
+Configure timeouts for n8n webhook requests and HTTP server connections:
+
+```bash
+# Timeout Configuration (in milliseconds)
+N8N_TIMEOUT=300000                   # n8n webhook request timeout (default: 5 minutes)
+SERVER_TIMEOUT=300000                # HTTP server request timeout (default: 5 minutes)
+SERVER_KEEP_ALIVE_TIMEOUT=120000     # Keep-alive connection timeout (default: 2 minutes)
+SERVER_HEADERS_TIMEOUT=121000        # Headers timeout (default: 121 seconds)
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `N8N_TIMEOUT` | `300000` (5 min) | Timeout for n8n webhook requests. Increase if your workflows take longer to respond. |
+| `SERVER_TIMEOUT` | `300000` (5 min) | Maximum time for the server to handle a request. |
+| `SERVER_KEEP_ALIVE_TIMEOUT` | `120000` (2 min) | How long to keep idle connections open. |
+| `SERVER_HEADERS_TIMEOUT` | `121000` | Timeout for receiving HTTP headers. Must be greater than keep-alive timeout. |
+
+**When to adjust:**
+- **Long-running workflows**: Increase `N8N_TIMEOUT` if your n8n workflows take longer than 5 minutes
+- **Proxy timeouts**: If you're behind a reverse proxy (nginx, Cloudflare) that has a 60-second timeout, you may need to adjust proxy settings rather than these values
+- **LibreChat/OpenWebUI timeouts**: If clients timeout waiting for responses, check both these settings and any intermediate proxy timeouts
+
+**Validation:**
+- All timeout values must be >= 1000ms
+- `SERVER_HEADERS_TIMEOUT` is automatically adjusted to be greater than `SERVER_KEEP_ALIVE_TIMEOUT` if set incorrectly
+
+### Rate Limiting
+
+Protect your bridge from abuse with configurable rate limiting:
+
+```bash
+# Rate Limiting Configuration
+RATE_LIMIT_WINDOW_MS=60000           # Time window in milliseconds (default: 1 minute)
+RATE_LIMIT_MAX_REQUESTS=100          # Max requests per window for general endpoints (default: 100)
+RATE_LIMIT_CHAT_COMPLETIONS=30       # Max chat completion requests per window (default: 30)
+DISABLE_RATE_LIMIT=false             # Set to 'true' to disable rate limiting entirely
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RATE_LIMIT_WINDOW_MS` | `60000` (1 min) | Time window for rate limit tracking |
+| `RATE_LIMIT_MAX_REQUESTS` | `100` | Max requests per window for `/v1/models` and `/admin/reload` |
+| `RATE_LIMIT_CHAT_COMPLETIONS` | `30` | Max requests per window for `/v1/chat/completions` |
+| `DISABLE_RATE_LIMIT` | `false` | Disable all rate limiting (not recommended for production) |
+
+**Endpoint-specific limits:**
+- `/health` - 10x the standard limit (for monitoring systems)
+- `/v1/models`, `/admin/reload` - Standard limit (`RATE_LIMIT_MAX_REQUESTS`)
+- `/v1/chat/completions` - Stricter limit (`RATE_LIMIT_CHAT_COMPLETIONS`)
+
+**Response headers:**
+Rate limit information is returned in standard `RateLimit-*` headers on each response.
+
 ## Model Configuration
 
 Models are loaded via a flexible **ModelLoader system** managed by the `ModelRepository`. The repository maintains model state in memory while loaders handle data sources (files, APIs, etc.).
@@ -317,52 +383,9 @@ AUTO_DISCOVERY_POLL_INTERVAL=300
 
 Tag workflows with `n8n-openai-bridge` in n8n UI and they are automatically discovered as models.
 
-## Session Management
+## n8n Webhook Payload
 
-### Session ID Detection
-
-Sessions are identified from (first found wins):
-
-1. Request body: `session_id`, `conversation_id`, `chat_id`
-2. HTTP headers: Configurable via `SESSION_ID_HEADERS`
-3. Fallback: Auto-generated UUID
-
-### Configuration
-
-```bash
-# Configure which headers to check for session ID
-SESSION_ID_HEADERS=X-Session-Id,X-Chat-Id,X-OpenWebUI-Chat-Id
-```
-
-## User Context
-
-### Available Fields
-
-- `userId` - User identifier (required, defaults to "anonymous")
-- `userEmail` - User email address (optional)
-- `userName` - User display name (optional)
-- `userRole` - User role/permission level (optional)
-
-### Detection Priority
-
-User information is extracted from (first found wins):
-
-1. HTTP headers: Configurable via `USER_ID_HEADERS`, `USER_EMAIL_HEADERS`, etc.
-2. Request body: `user`, `user_id`, `userId`, `user_email`, `userEmail`, etc.
-3. Fallback: `userId` defaults to "anonymous", others remain `null`
-
-### Configuration
-
-```bash
-USER_ID_HEADERS=X-User-Id,X-OpenWebUI-User-Id
-USER_EMAIL_HEADERS=X-User-Email,X-OpenWebUI-User-Email
-USER_NAME_HEADERS=X-User-Name,X-OpenWebUI-User-Name
-USER_ROLE_HEADERS=X-User-Role,X-OpenWebUI-User-Role
-```
-
-### n8n Webhook Payload
-
-All user context is automatically forwarded to your n8n webhook:
+All session and user context is automatically forwarded to your n8n webhook:
 
 ```json
 {

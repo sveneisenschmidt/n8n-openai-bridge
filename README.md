@@ -207,7 +207,7 @@ n8n-openai-bridge/
 │   ├── loaders/           # Model loader architecture
 │   ├── notifiers/         # Webhook notifiers
 │   └── utils/             # Utility functions
-├── tests/                 # Unit tests (403+ tests)
+├── tests/                 # Unit tests
 ├── docker/                # Docker configuration
 ├── docs/                  # Documentation
 ├── models.json            # Model configuration (git-ignored)

@@ -76,4 +76,33 @@ describe('N8nClient - Timeout Handling', () => {
       }),
     );
   });
+
+  test('should use custom timeout from config', async () => {
+    const customClient = createTestClient({ n8nTimeout: 600000 });
+
+    const mockStream = {
+      async *[Symbol.asyncIterator]() {
+        yield Buffer.from('{"content":"test"}');
+      },
+    };
+
+    axios.post.mockResolvedValue({ data: mockStream });
+
+    const userContext = { userId: 'test-user' };
+    await customClient.nonStreamingCompletion(
+      'https://n8n.example.com/webhook/test',
+      [{ role: 'user', content: 'Hello' }],
+      'session-123',
+      userContext,
+    );
+
+    // Verify custom timeout is used
+    expect(axios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({
+        timeout: 600000, // 10 minutes
+      }),
+    );
+  });
 });

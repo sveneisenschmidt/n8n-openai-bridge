@@ -25,7 +25,7 @@ The server logs its configuration and available endpoints on startup:
 ==============================================================
 n8n OpenAI Bridge
 ==============================================================
-Server running on port: 3000
+Server running on port: 3333
 Request logging: ENABLED
 Session ID headers: x-session-id, x-conversation-id
 ==============================================================
