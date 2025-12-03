@@ -64,6 +64,39 @@ class Config {
       );
       this.serverHeadersTimeout = this.serverKeepAliveTimeout + 1000;
     }
+
+    // File upload configuration
+    this.fileUploadMode = this.parseFileUploadMode();
+  }
+
+  /**
+   * Valid file upload modes
+   * @type {string[]}
+   */
+  static FILE_UPLOAD_MODES = ['passthrough', 'extract-json', 'extract-multipart', 'disabled'];
+
+  /**
+   * Parse FILE_UPLOAD_MODE from environment variable
+   * @returns {string} The file upload mode
+   */
+  parseFileUploadMode() {
+    const envValue = process.env.FILE_UPLOAD_MODE;
+    const defaultMode = 'passthrough';
+
+    if (!envValue || !envValue.trim()) {
+      return defaultMode;
+    }
+
+    const mode = envValue.trim().toLowerCase();
+
+    if (!Config.FILE_UPLOAD_MODES.includes(mode)) {
+      console.warn(
+        `FILE_UPLOAD_MODE '${envValue}' is invalid. Valid modes: ${Config.FILE_UPLOAD_MODES.join(', ')}. Using default: ${defaultMode}.`,
+      );
+      return defaultMode;
+    }
+
+    return mode;
   }
 
   /**

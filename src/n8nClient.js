@@ -17,6 +17,13 @@
  */
 
 const axios = require('axios');
+const FormData = require('form-data');
+const {
+  processMessages,
+  filesToBuffers,
+  extractTextFromMultimodal,
+  isMultimodalMessage,
+} = require('./services/fileProcessorService');
 
 class N8nClient {
   constructor(config, taskDetectorService = null) {
@@ -34,19 +41,42 @@ class N8nClient {
   }
 
   buildPayload(messages, sessionId, userContext) {
-    const systemPrompt = messages.find((m) => m.role === 'system')?.content || '';
-    const currentMessage = messages[messages.length - 1]?.content || '';
+    const fileUploadMode = this.config.fileUploadMode || 'passthrough';
+
+    // Process messages according to file upload mode
+    const { messages: processedMessages, files } = processMessages(messages, fileUploadMode);
+
+    // Extract system prompt (handle multimodal content)
+    const systemMessage = processedMessages.find((m) => m.role === 'system');
+    const systemPrompt = systemMessage
+      ? isMultimodalMessage(systemMessage)
+        ? extractTextFromMultimodal(systemMessage)
+        : systemMessage.content || ''
+      : '';
+
+    // Extract current message (handle multimodal content)
+    const lastMessage = processedMessages[processedMessages.length - 1];
+    const currentMessage = lastMessage
+      ? isMultimodalMessage(lastMessage)
+        ? extractTextFromMultimodal(lastMessage)
+        : lastMessage.content || ''
+      : '';
 
     const payload = {
       systemPrompt,
       currentMessage,
       chatInput: currentMessage,
-      messages: messages.filter((m) => m.role !== 'system'),
+      messages: processedMessages.filter((m) => m.role !== 'system'),
       sessionId,
       userId: userContext.userId,
       isTask: false,
       taskType: null,
     };
+
+    // Add files array for extract-json mode
+    if (fileUploadMode === 'extract-json' && files.length > 0) {
+      payload.files = files;
+    }
 
     // Add optional user fields if provided
     if (userContext.userEmail) {
@@ -67,6 +97,9 @@ class N8nClient {
         payload.taskType = taskDetection.taskType;
       }
     }
+
+    // Store files for multipart mode (used by request methods)
+    this._pendingFiles = fileUploadMode === 'extract-multipart' ? files : [];
 
     return payload;
   }
@@ -111,14 +144,63 @@ class N8nClient {
     }
   }
 
-  async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
-    const payload = this.buildPayload(messages, sessionId, userContext);
+  /**
+   * Build request config for axios, handling multipart mode
+   * @param {Object} payload - JSON payload
+   * @param {Array} files - Files to upload (for multipart mode)
+   * @returns {Object} Axios request config
+   * @private
+   */
+  buildRequestConfig(payload, files) {
+    if (files && files.length > 0) {
+      // Multipart mode
+      const form = new FormData();
+      form.append('payload', JSON.stringify(payload), {
+        contentType: 'application/json',
+      });
 
-    try {
-      const response = await axios.post(webhookUrl, payload, {
-        headers: this.getHeaders(),
+      // Add files as binary
+      const bufferFiles = filesToBuffers(files);
+      for (const file of bufferFiles) {
+        form.append('files', file.buffer, {
+          filename: file.name,
+          contentType: file.mimeType,
+        });
+      }
+
+      return {
+        headers: {
+          ...form.getHeaders(),
+          ...(this.config.n8nWebhookBearerToken && {
+            Authorization: `Bearer ${this.config.n8nWebhookBearerToken}`,
+          }),
+        },
+        data: form,
         responseType: 'stream',
         timeout: this.config.n8nTimeout,
+      };
+    }
+
+    // JSON mode
+    return {
+      headers: this.getHeaders(),
+      data: payload,
+      responseType: 'stream',
+      timeout: this.config.n8nTimeout,
+    };
+  }
+
+  async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
+    const payload = this.buildPayload(messages, sessionId, userContext);
+    const files = this._pendingFiles || [];
+    this._pendingFiles = [];
+
+    try {
+      const config = this.buildRequestConfig(payload, files);
+      const response = await axios.post(webhookUrl, config.data, {
+        headers: config.headers,
+        responseType: config.responseType,
+        timeout: config.timeout,
       });
 
       // Use the shared stream processing method
@@ -131,14 +213,17 @@ class N8nClient {
 
   async nonStreamingCompletion(webhookUrl, messages, sessionId, userContext) {
     const payload = this.buildPayload(messages, sessionId, userContext);
+    const files = this._pendingFiles || [];
+    this._pendingFiles = [];
 
     try {
       // n8n always sends streams, so we need to handle it as a stream
       // and collect all content chunks
-      const response = await axios.post(webhookUrl, payload, {
-        headers: this.getHeaders(),
-        responseType: 'stream',
-        timeout: this.config.n8nTimeout,
+      const config = this.buildRequestConfig(payload, files);
+      const response = await axios.post(webhookUrl, config.data, {
+        headers: config.headers,
+        responseType: config.responseType,
+        timeout: config.timeout,
       });
 
       const collectedContent = [];
