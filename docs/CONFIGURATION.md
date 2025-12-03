@@ -318,6 +318,54 @@ SERVER_HEADERS_TIMEOUT=121000        # Headers timeout (default: 121 seconds)
 - All timeout values must be >= 1000ms
 - `SERVER_HEADERS_TIMEOUT` is automatically adjusted to be greater than `SERVER_KEEP_ALIVE_TIMEOUT` if set incorrectly
 
+### File Upload Configuration
+
+Configure how multimodal content (images/files) in OpenAI API requests is handled:
+
+```bash
+# File Upload Configuration
+FILE_UPLOAD_MODE=passthrough         # Options: passthrough, extract-json, extract-multipart, disabled
+```
+
+| Mode | Description |
+|------|-------------|
+| `passthrough` (default) | Forward multimodal content as-is. Base64 data URLs stay in the messages array. Your n8n workflow handles decoding. |
+| `extract-json` | Extract files to a separate `files` array with clean base64 data (no `data:` prefix). Text is extracted to message content. |
+| `extract-multipart` | **Recommended.** Send as multipart/form-data with binary files. Works out of the box with n8n webhooks. |
+| `disabled` | Strip all image/file content. Only text is forwarded to n8n. |
+
+**When to use each mode:**
+
+- **extract-multipart** (recommended): Works seamlessly with n8n webhooks. Files are sent as binary attachments, payload fields are sent as form fields. n8n receives files directly without any decoding needed.
+- **passthrough**: Default for backwards compatibility. Use when your n8n workflow can handle base64 data URLs directly.
+- **extract-json**: Use when you want clean base64 data in a predictable structure. Useful with n8n's "Convert to File" node.
+- **disabled**: Use when you don't want to process images/files at all, or to reduce payload sizes.
+
+**Payload format for `extract-json` mode:**
+
+```json
+{
+  "systemPrompt": "...",
+  "currentMessage": "What is in this image?",
+  "messages": [
+    {"role": "user", "content": "What is in this image?"}
+  ],
+  "files": [
+    {
+      "name": "message_0_file_0.png",
+      "mimeType": "image/png",
+      "data": "iVBORw0KGgo..."
+    }
+  ],
+  "sessionId": "...",
+  "userId": "..."
+}
+```
+
+**Supported file types:**
+- Images: PNG, JPEG, GIF, WebP, SVG
+- Documents: PDF, plain text, JSON
+
 ### Rate Limiting
 
 Protect your bridge from abuse with configurable rate limiting:

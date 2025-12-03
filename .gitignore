@@ -41,3 +41,6 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# Local testing
+.local/

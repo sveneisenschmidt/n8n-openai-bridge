@@ -17,6 +17,7 @@ function createTestClient(configOverrides = {}) {
   const mockConfig = {
     n8nBearerToken: '',
     n8nTimeout: 300000,
+    fileUploadMode: 'passthrough',
     ...configOverrides,
   };
   return new N8nClient(mockConfig);
