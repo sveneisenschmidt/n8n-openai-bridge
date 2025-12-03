@@ -24,7 +24,7 @@ const {
   extractFilesFromMultimodal,
   processMessages,
   filesToBuffers,
-} = require('../../src/services/fileProcessorService');
+} = require('../../src/utils/fileProcessor');
 
 describe('FileProcessorService', () => {
   // Sample base64 PNG (1x1 transparent pixel)

@@ -23,7 +23,7 @@ const {
   filesToBuffers,
   extractTextFromMultimodal,
   isMultimodalMessage,
-} = require('./services/fileProcessorService');
+} = require('./utils/fileProcessor');
 
 class N8nClient {
   constructor(config, taskDetectorService = null) {
