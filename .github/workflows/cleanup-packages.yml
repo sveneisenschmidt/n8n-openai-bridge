@@ -1,0 +1,91 @@
+name: Cleanup PR packages
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday at midnight UTC
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run (list only, no deletions)'
+        type: boolean
+        default: true
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      pull-requests: read
+
+    steps:
+      - name: Find PR packages for closed PRs
+        id: find-packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching package versions with pr-* tags..."
+
+          # Get all package versions with pr-* tags
+          VERSIONS=$(gh api /users/${{ github.repository_owner }}/packages/container/n8n-openai-bridge/versions \
+            --jq '[.[] | select(.metadata.container.tags[] | startswith("pr-")) | {id, name, created_at, tags: .metadata.container.tags}]')
+
+          if [ "$VERSIONS" = "[]" ] || [ -z "$VERSIONS" ]; then
+            echo "No PR package versions found."
+            echo "packages_to_delete=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Found PR packages:"
+          echo "$VERSIONS" | jq -r '.[] | "ID: \(.id) | Tags: \(.tags | join(", ")) | Created: \(.created_at)"'
+          echo ""
+
+          # Check each PR package and collect those for closed PRs
+          PACKAGES_TO_DELETE="[]"
+
+          for row in $(echo "$VERSIONS" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo "$row" | base64 --decode | jq -r "$1"
+            }
+
+            ID=$(_jq '.id')
+            TAGS=$(_jq '.tags[]')
+            CREATED=$(_jq '.created_at')
+
+            # Extract PR number from tag (e.g., "pr-123" -> "123")
+            PR_NUMBER=$(echo "$TAGS" | grep -oE 'pr-[0-9]+' | head -1 | sed 's/pr-//')
+
+            if [ -n "$PR_NUMBER" ]; then
+              # Check if PR is open
+              PR_STATE=$(gh api /repos/${{ github.repository }}/pulls/$PR_NUMBER --jq '.state' 2>/dev/null || echo "not_found")
+
+              if [ "$PR_STATE" != "open" ]; then
+                echo "PR #$PR_NUMBER is $PR_STATE - package $ID will be deleted"
+                PACKAGES_TO_DELETE=$(echo "$PACKAGES_TO_DELETE" | jq --arg id "$ID" --arg pr "$PR_NUMBER" --arg created "$CREATED" '. + [{id: $id, pr: $pr, created: $created}]')
+              else
+                echo "PR #$PR_NUMBER is open - keeping package $ID"
+              fi
+            fi
+          done
+
+          echo ""
+          echo "Packages to delete:"
+          echo "$PACKAGES_TO_DELETE" | jq -r '.[] | "ID: \(.id) | PR: #\(.pr) | Created: \(.created)"'
+          echo ""
+          echo "Total: $(echo "$PACKAGES_TO_DELETE" | jq 'length') packages"
+
+          # Save to output for next step
+          echo "packages_to_delete=$(echo "$PACKAGES_TO_DELETE" | jq -c '.')" >> $GITHUB_OUTPUT
+
+      - name: Delete packages for closed PRs
+        if: ${{ inputs.dry-run == false && steps.find-packages.outputs.packages_to_delete != '[]' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Deleting packages for closed PRs..."
+
+          echo '${{ steps.find-packages.outputs.packages_to_delete }}' | jq -r '.[].id' | while read -r id; do
+            echo "Deleting package version $id..."
+            gh api -X DELETE /users/${{ github.repository_owner }}/packages/container/n8n-openai-bridge/versions/$id
+          done
+
+          echo "Cleanup complete."
