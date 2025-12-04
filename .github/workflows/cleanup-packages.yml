@@ -25,9 +25,11 @@ jobs:
         run: |
           echo "Fetching package versions with pr-* tags..."
 
-          # Get all package versions with pr-* tags
+          # Get all package versions with pr-* tags (paginate to get all results)
           VERSIONS=$(gh api /users/${{ github.repository_owner }}/packages/container/n8n-openai-bridge/versions \
-            --jq '[.[] | select(.metadata.container.tags[] | startswith("pr-")) | {id, name, created_at, tags: .metadata.container.tags}]')
+            --paginate \
+            --jq '[.[] | select(.metadata.container.tags[] | startswith("pr-")) | {id, name, created_at, tags: .metadata.container.tags}]' \
+            | jq -s 'add // []')
 
           if [ "$VERSIONS" = "[]" ] || [ -z "$VERSIONS" ]; then
             echo "No PR package versions found."
