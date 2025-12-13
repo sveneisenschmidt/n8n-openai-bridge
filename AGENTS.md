@@ -41,7 +41,7 @@ n8n-openai-bridge/
 │   ├── handlers/          # Request handlers (streaming, non-streaming)
 │   ├── middleware/        # Express middleware (auth, logging, rate limiting)
 │   ├── services/          # Business logic (session, user, validation)
-│   ├── loaders/           # Model loader architecture (file, n8n-api, static)
+│   ├── loaders/           # Model loader architecture (file, json-http, n8n-api, static)
 │   ├── notifiers/         # Webhook notifiers (model changes)
 │   └── utils/             # Utility functions
 ├── tests/                 # Unit tests
@@ -72,6 +72,7 @@ Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
 
 **Model Loading System:**
 - `JsonFileModelLoader` (TYPE: `file`) - Default, reads `models.json`, hash-based hot-reload
+- `JsonHttpModelLoader` (TYPE: `json-http`) - Fetches models from HTTP endpoint with polling
 - `N8nApiModelLoader` (TYPE: `n8n-api`) - Auto-discovers tagged workflows via n8n API
 - `StaticModelLoader` (TYPE: `static`) - Testing only, loads from env var
 
@@ -196,12 +197,12 @@ See .github/workflows/README.md for details.
 # Essential
 PORT=3333
 BEARER_TOKEN=your-api-key-here
-MODEL_LOADER_TYPE=file                    # Options: file, n8n-api, static
+MODEL_LOADER_TYPE=file                    # Options: file, json-http, n8n-api, static
 MODELS_CONFIG_FILE=./models.json
 ```
 
 See **docs/CONFIGURATION.md** for all environment variables including:
-- Model loading (file, n8n-api, static loaders)
+- Model loading (file, json-http, n8n-api, static loaders)
 - Session & user context headers
 - Timeout configuration
 - Webhook notifier

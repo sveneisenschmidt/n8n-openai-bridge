@@ -131,6 +131,7 @@ The bridge uses a flexible **ModelLoader architecture** to load models from diff
 | Loader | Type | Use Case |
 |--------|------|----------|
 | **JsonFileModelLoader** | File-based | Manual configuration in `models.json`, hot-reload on changes |
+| **JsonHttpModelLoader** | HTTP endpoint | Fetch models from any HTTP(S) endpoint with polling support |
 | **N8nApiModelLoader** | Auto-discovery | Workflows tagged with a specific tag are automatically discovered as models |
 
 ### Quick Start: File-based (Default)
