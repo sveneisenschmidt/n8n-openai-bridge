@@ -24,6 +24,8 @@ const WebhookNotifier = require('./services/webhookNotifier');
 const TaskDetectorService = require('./services/taskDetectorService');
 const createDetector = require('./detectors/createDetector');
 const detectorRegistry = require('./detectors/detectorRegistry');
+const McpClient = require('./mcpClient');
+const N8nClient = require('./n8nClient');
 
 /**
  * Bootstrap - Application Lifecycle Orchestrator
@@ -53,6 +55,16 @@ class Bootstrap {
     if (this.config.enableTaskDetection) {
       this.taskDetectorService = new TaskDetectorService();
       this.registerBuiltInDetectors();
+    }
+
+    // Setup execution clients
+    // n8nClient is always available for webhook-based models
+    this.n8nClient = new N8nClient(this.config, this.taskDetectorService);
+
+    // mcpClient is only available when using MCP loader
+    this.mcpClient = null;
+    if (this.modelLoader.constructor.TYPE === 'mcp') {
+      this.mcpClient = new McpClient(this.config.n8nMcpEndpoint, this.config.n8nMcpBearerToken);
     }
 
     // Promise that tracks model loading status

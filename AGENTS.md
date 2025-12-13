@@ -73,7 +73,8 @@ Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
 **Model Loading System:**
 - `JsonFileModelLoader` (TYPE: `file`) - Default, reads `models.json`, hash-based hot-reload
 - `JsonHttpModelLoader` (TYPE: `json-http`) - Fetches models from HTTP endpoint with polling
-- `N8nApiModelLoader` (TYPE: `n8n-api`) - Auto-discovers tagged workflows via n8n API
+- `N8nApiModelLoader` (TYPE: `n8n-api`) - Auto-discovers tagged workflows via n8n REST API
+- `McpModelLoader` (TYPE: `mcp`) - Discovery AND execution via n8n's Instance-Level MCP Server
 - `StaticModelLoader` (TYPE: `static`) - Testing only, loads from env var
 
 See docs/MODELLOADER.md for details.
@@ -197,12 +198,12 @@ See .github/workflows/README.md for details.
 # Essential
 PORT=3333
 BEARER_TOKEN=your-api-key-here
-MODEL_LOADER_TYPE=file                    # Options: file, json-http, n8n-api, static
+MODEL_LOADER_TYPE=file                    # Options: file, json-http, n8n-api, mcp, static
 MODELS_CONFIG_FILE=./models.json
 ```
 
 See **docs/CONFIGURATION.md** for all environment variables including:
-- Model loading (file, json-http, n8n-api, static loaders)
+- Model loading (file, json-http, n8n-api, mcp, static loaders)
 - Session & user context headers
 - Timeout configuration
 - Webhook notifier

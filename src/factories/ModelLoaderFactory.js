@@ -19,6 +19,7 @@
 const JsonFileModelLoader = require('../loaders/JsonFileModelLoader');
 const N8nApiModelLoader = require('../loaders/N8nApiModelLoader');
 const JsonHttpModelLoader = require('../loaders/JsonHttpModelLoader');
+const McpModelLoader = require('../loaders/McpModelLoader');
 const StaticModelLoader = require('../loaders/StaticModelLoader');
 
 /**
@@ -43,6 +44,7 @@ class ModelLoaderFactory {
     JsonFileModelLoader,
     N8nApiModelLoader,
     JsonHttpModelLoader,
+    McpModelLoader,
     StaticModelLoader,
   ];
 
