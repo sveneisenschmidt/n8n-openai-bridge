@@ -43,9 +43,45 @@ class ModelRepository {
    * Get webhook URL for a specific model
    * @param {string} modelId - The model identifier
    * @returns {string|undefined} The webhook URL or undefined if model not found
+   * @deprecated Use getModelInfo() for new code - this method only works for webhook models
    */
   getModelWebhookUrl(modelId) {
-    return this.models[modelId];
+    const value = this.models[modelId];
+    if (typeof value === 'string') {
+      return value;
+    }
+    // For extended format, return url if webhook type
+    if (value && value.type === 'webhook') {
+      return value.url;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get model info with type information
+   * Supports both legacy string format (webhook) and extended object format (mcp)
+   *
+   * @param {string} modelId - The model identifier
+   * @returns {{type: string, url?: string, workflowId?: string}|undefined} Model info or undefined
+   *
+   * @example
+   * // Legacy webhook format (string URL)
+   * getModelInfo("my-model") // → { type: "webhook", url: "https://..." }
+   *
+   * // Extended MCP format (object)
+   * getModelInfo("mcp-model") // → { type: "mcp", workflowId: "abc123" }
+   */
+  getModelInfo(modelId) {
+    const value = this.models[modelId];
+    if (value === undefined) {
+      return undefined;
+    }
+    // Legacy format: string = webhook URL
+    if (typeof value === 'string') {
+      return { type: 'webhook', url: value };
+    }
+    // Extended format: object with type
+    return value;
   }
 
   /**

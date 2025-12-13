@@ -67,6 +67,10 @@ class Config {
 
     // File upload configuration
     this.fileUploadMode = this.parseFileUploadMode();
+
+    // MCP configuration (instance-level)
+    this.n8nMcpEndpoint = process.env.N8N_MCP_ENDPOINT || '';
+    this.n8nMcpBearerToken = process.env.N8N_MCP_BEARER_TOKEN || '';
   }
 
   /**

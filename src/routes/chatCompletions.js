@@ -25,6 +25,8 @@ const { createErrorResponse } = require('../utils/errorResponse');
 const { debugSessionDetection } = require('../utils/debugSession');
 const { handleStreaming } = require('../handlers/streamingHandler');
 const { handleNonStreaming } = require('../handlers/nonStreamingHandler');
+const { handleMcpStreaming } = require('../handlers/mcpStreamingHandler');
+const { handleMcpNonStreaming } = require('../handlers/mcpNonStreamingHandler');
 
 const router = express.Router();
 
@@ -84,8 +86,8 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: validation.error });
   }
 
-  const webhookUrl = modelRepository.getModelWebhookUrl(model);
-  if (!webhookUrl) {
+  const modelInfo = modelRepository.getModelInfo(model);
+  if (!modelInfo) {
     return res
       .status(404)
       .json(createErrorResponse(`Model '${model}' not found`, 'invalid_request_error'));
@@ -109,28 +111,64 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    if (stream) {
-      await handleStreaming(
-        res,
-        n8nClient,
-        webhookUrl,
-        messages,
-        sessionId,
-        userContext,
-        model,
-        config,
-      );
+    // Route to appropriate handler based on model type
+    if (modelInfo.type === 'mcp') {
+      // MCP execution path
+      const mcpClient = req.app.locals.mcpClient;
+      if (!mcpClient) {
+        return res
+          .status(500)
+          .json(createErrorResponse('MCP client not configured', 'server_error'));
+      }
+
+      if (stream) {
+        await handleMcpStreaming(
+          res,
+          mcpClient,
+          modelInfo.workflowId,
+          messages,
+          sessionId,
+          userContext,
+          model,
+          config,
+        );
+      } else {
+        await handleMcpNonStreaming(
+          res,
+          mcpClient,
+          modelInfo.workflowId,
+          messages,
+          sessionId,
+          userContext,
+          model,
+          config,
+        );
+      }
     } else {
-      await handleNonStreaming(
-        res,
-        n8nClient,
-        webhookUrl,
-        messages,
-        sessionId,
-        userContext,
-        model,
-        config,
-      );
+      // Webhook execution path (default)
+      if (stream) {
+        await handleStreaming(
+          res,
+          n8nClient,
+          modelInfo.url,
+          messages,
+          sessionId,
+          userContext,
+          model,
+          config,
+        );
+      } else {
+        await handleNonStreaming(
+          res,
+          n8nClient,
+          modelInfo.url,
+          messages,
+          sessionId,
+          userContext,
+          model,
+          config,
+        );
+      }
     }
   } catch (error) {
     console.error('Error:', error);

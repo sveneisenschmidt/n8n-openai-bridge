@@ -19,7 +19,6 @@
 const express = require('express');
 const cors = require('cors');
 const Bootstrap = require('./Bootstrap');
-const N8nClient = require('./n8nClient');
 const { createErrorResponse } = require('./utils/errorResponse');
 
 // Middleware
@@ -36,13 +35,13 @@ const adminReloadRoute = require('./routes/adminReload');
 
 const app = express();
 const bootstrap = new Bootstrap();
-const n8nClient = new N8nClient(bootstrap.config, bootstrap.taskDetectorService);
 
-// Store bootstrap and n8nClient in app.locals for access in routes
+// Store bootstrap and clients in app.locals for access in routes
 app.locals.bootstrap = bootstrap;
 app.locals.config = bootstrap.config;
 app.locals.modelRepository = bootstrap.modelRepository;
-app.locals.n8nClient = n8nClient;
+app.locals.n8nClient = bootstrap.n8nClient;
+app.locals.mcpClient = bootstrap.mcpClient; // null if not using MCP loader
 
 // Create rate limiters
 const rateLimiters = createRateLimiters(bootstrap.config);
