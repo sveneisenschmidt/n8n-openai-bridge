@@ -259,15 +259,37 @@ class N8nClient {
 
       let braceCount = 0;
       let endIdx = -1;
+      let inString = false;
+      let escapeNext = false;
 
       for (let i = startIdx; i < remainder.length; i++) {
-        if (remainder[i] === '{') {
-          braceCount++;
-        } else if (remainder[i] === '}') {
-          braceCount--;
-          if (braceCount === 0) {
-            endIdx = i;
-            break;
+        const char = remainder[i];
+
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+
+        if (char === '\\' && inString) {
+          escapeNext = true;
+          continue;
+        }
+
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+
+        // Only count braces outside of strings
+        if (!inString) {
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              endIdx = i;
+              break;
+            }
           }
         }
       }
