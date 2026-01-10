@@ -44,3 +44,7 @@ Contributors are listed alphabetically.
 **[tiangao88](https://github.com/tiangao88)**
 - Documentation: n8n workflow example for JSON HTTP Loader
 - Date: 2025-11
+
+**[Tobias Grosse-Puppendahl](https://github.com/tobias-gp)**
+- Bugfix: Handle curly braces inside JSON strings during stream parsing (#62)
+- Date: 2026-01
