@@ -47,4 +47,5 @@ Contributors are listed alphabetically.
 
 **[Tobias Grosse-Puppendahl](https://github.com/tobias-gp)**
 - Bugfix: Handle curly braces inside JSON strings during stream parsing (#62)
+- Bugfix: Fixed incorrect splitting of utf8 bytes (#66)
 - Date: 2026-01
