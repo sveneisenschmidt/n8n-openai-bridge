@@ -18,6 +18,7 @@
 
 const axios = require('axios');
 const FormData = require('form-data');
+const { StringDecoder } = require('string_decoder');
 const {
   processMessages,
   filesToBuffers,
@@ -111,9 +112,10 @@ class N8nClient {
    */
   async *processResponseStream(response) {
     let buffer = '';
+    const decoder = new StringDecoder('utf8');
 
     for await (const chunk of response.data) {
-      const text = chunk.toString();
+      const text = decoder.write(chunk);
       buffer += text;
 
       // Check buffer size to prevent memory exhaustion
@@ -134,6 +136,9 @@ class N8nClient {
         }
       }
     }
+
+    // Flush any remaining buffered UTF-8 bytes
+    buffer += decoder.end();
 
     // Process remaining buffer
     if (buffer.trim()) {

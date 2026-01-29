@@ -48,6 +48,37 @@ describe('N8nClient - Special Characters', () => {
     expect(result).toBe('Hello 世界 🌍');
   });
 
+  test('should handle multibyte unicode split across chunks', async () => {
+    const full = Buffer.from('{"content":"nächste"}', 'utf8');
+    const umlautBytes = Buffer.from('ä', 'utf8'); // 2-byte sequence in UTF-8
+    const umlautStartIdx = full.indexOf(umlautBytes);
+
+    expect(umlautStartIdx).toBeGreaterThan(-1);
+
+    // Split in the middle of the UTF-8 sequence for 'ä'
+    const first = full.slice(0, umlautStartIdx + 1);
+    const second = full.slice(umlautStartIdx + 1);
+
+    const mockStream = {
+      async *[Symbol.asyncIterator]() {
+        yield first;
+        yield second;
+      },
+    };
+
+    axios.post.mockResolvedValue({ data: mockStream });
+
+    const userContext = { userId: 'test-user' };
+    const result = await client.nonStreamingCompletion(
+      'https://n8n.example.com/webhook/test',
+      [{ role: 'user', content: 'Hello' }],
+      'session-123',
+      userContext,
+    );
+
+    expect(result).toBe('nächste');
+  });
+
   test('should handle escaped characters', async () => {
     const mockStream = {
       async *[Symbol.asyncIterator]() {
