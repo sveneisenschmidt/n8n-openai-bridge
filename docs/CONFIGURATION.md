@@ -100,7 +100,7 @@ Select which loader to use and configure loader-specific variables:
 
 ```bash
 # Loader Selection
-MODEL_LOADER_TYPE=file           # Options: file (default), n8n-api, static
+MODEL_LOADER_TYPE=file           # Options: file (default), n8n-api, json-http, mcp, static
 ```
 
 #### File-based Loader (MODEL_LOADER_TYPE=file)
@@ -132,6 +132,24 @@ AUTO_DISCOVERY_POLL_INTERVAL=300
 | `AUTO_DISCOVERY_POLL_INTERVAL` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
 
 For detailed setup, see [Auto-Discovery Loader Documentation](MODELLOADER.md#n8napi-modelloader-type-n8n-api).
+
+#### MCP Loader (MODEL_LOADER_TYPE=mcp)
+
+```bash
+N8N_MCP_ENDPOINT=http://n8n:5678/mcp-server/http
+N8N_MCP_BEARER_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+MCP_POLL_INTERVAL=300
+```
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `N8N_MCP_ENDPOINT` | Yes | - | MCP server endpoint URL |
+| `N8N_MCP_BEARER_TOKEN` | Yes | - | Bearer token for MCP authentication |
+| `MCP_POLL_INTERVAL` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
+
+Uses n8n's Instance-Level MCP Server for both discovery and execution. Workflows must be marked "Available in MCP" in n8n settings.
+
+For detailed setup, see [MCP Loader Documentation](MODELLOADER.md#mcpmodelloader-type-mcp).
 
 #### Static Loader (MODEL_LOADER_TYPE=static)
 

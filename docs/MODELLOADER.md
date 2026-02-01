@@ -300,6 +300,71 @@ When building your model selection workflow:
 | **Resource Awareness** | No | Yes (workflow can check resources) |
 | **Auth Support** | API key required | Flexible (can use any n8n auth) |
 
+### McpModelLoader (Type: `mcp`)
+
+Discovers and executes n8n workflows via n8n's **Instance-Level MCP Server**. Uses the MCP (Model Context Protocol) for both discovery and execution.
+
+**Configuration:**
+```bash
+MODEL_LOADER_TYPE=mcp
+N8N_MCP_ENDPOINT=http://n8n:5678/mcp-server/http
+N8N_MCP_BEARER_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+MCP_POLL_INTERVAL=300
+```
+
+**Environment Variables:**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `N8N_MCP_ENDPOINT` | Yes | - | MCP server endpoint URL |
+| `N8N_MCP_BEARER_TOKEN` | Yes | - | Bearer token for MCP authentication |
+| `MCP_POLL_INTERVAL` | No | `300` | Polling interval in seconds (60-600, or 0 to disable) |
+
+**How It Works:**
+1. Connects to n8n's Instance-Level MCP server via Streamable HTTP
+2. Calls `search_workflows` to discover MCP-enabled workflows
+3. Maps workflows to extended model format with `workflowId`
+4. Executes workflows via `execute_workflow` MCP tool (not webhooks)
+
+**Key Differences from Other Loaders:**
+- **Discovery**: Uses MCP protocol instead of REST API or files
+- **Execution**: Uses MCP `execute_workflow` instead of webhook calls
+- **Model Format**: Returns extended format `{ type: "mcp", workflowId: "..." }`
+
+**n8n Setup:**
+1. Enable MCP Server in n8n: Settings → MCP Server → Enable
+2. Generate MCP bearer token
+3. Mark workflows as "Available in MCP" in workflow settings
+4. Configure bridge with MCP endpoint and token
+
+**Model Format:**
+
+Unlike other loaders that return webhook URLs as strings, McpModelLoader returns objects:
+```json
+{
+  "Agent-Name": { "type": "mcp", "workflowId": "g2cQ7ZBUGNuTQagK" }
+}
+```
+
+This extended format tells the bridge to use MCP execution instead of webhook calls.
+
+**Polling:**
+- Runs at startup, then at configured interval
+- Hash comparison: Only fires callbacks when models actually change
+- On failure: Logs error, keeps existing models, retries later
+- Disabled when `MCP_POLL_INTERVAL=0`
+
+**MCP Protocol Details:**
+- Transport: Streamable HTTP (JSON-RPC 2.0 over SSE)
+- Discovery: `tools/call` with `search_workflows`
+- Execution: `tools/call` with `execute_workflow`
+- Response extraction: Navigates `runData` to find `sendMessage` or equivalent
+
+**Security:**
+- MCP token provides access to all MCP-enabled workflows
+- Never commit token to git
+- Use HTTPS in production
+
 ### StaticModelLoader (Type: `static`)
 
 Loads models from environment variable. For testing and development only.
@@ -371,14 +436,15 @@ These are logged as warnings but don't block startup:
 
 ## Comparison
 
-| Feature | JsonFileModelLoader | N8nApiModelLoader | JsonHttpModelLoader | StaticModelLoader |
-|---------|-------------------|-------------------|-------------------|-------------------|
-| **Type ID** | `file` | `n8n-api` | `json-http` | `static` |
-| **Use Case** | Manual configuration | Auto-discovery | Remote config | Testing only |
-| **Startup Speed** | Fast | Depends on API | Depends on endpoint | Fast |
-| **Hot-Reload** | File watching | Polling | Polling | None |
-| **Dependencies** | None | n8n API access | HTTP endpoint | None |
-| **Authentication** | N/A | Required (API key) | None (future support) | N/A |
+| Feature | JsonFileModelLoader | N8nApiModelLoader | JsonHttpModelLoader | McpModelLoader | StaticModelLoader |
+|---------|-------------------|-------------------|-------------------|----------------|-------------------|
+| **Type ID** | `file` | `n8n-api` | `json-http` | `mcp` | `static` |
+| **Use Case** | Manual configuration | Auto-discovery (REST) | Remote config | Auto-discovery (MCP) | Testing only |
+| **Startup Speed** | Fast | Depends on API | Depends on endpoint | Depends on MCP | Fast |
+| **Hot-Reload** | File watching | Polling | Polling | Polling | None |
+| **Dependencies** | None | n8n API access | HTTP endpoint | n8n MCP server | None |
+| **Authentication** | N/A | Required (API key) | None (future support) | Required (MCP token) | N/A |
+| **Execution** | Webhook | Webhook | Webhook | MCP execute_workflow | Webhook |
 
 ---
 
@@ -452,10 +518,12 @@ AUTO_DISCOVERY_TAG=openai-model
 - **File Loader**: `src/loaders/JsonFileModelLoader.js`
 - **n8n API Loader**: `src/loaders/N8nApiModelLoader.js`
 - **JSON HTTP Loader**: `src/loaders/JsonHttpModelLoader.js`
+- **MCP Loader**: `src/loaders/McpModelLoader.js`
+- **MCP Client**: `src/mcpClient.js`
 - **Static Loader**: `src/loaders/StaticModelLoader.js`
 - **Factory**: `src/factories/ModelLoaderFactory.js`
 - **Config Integration**: `src/config.js`
-- **Tests**: `tests/loaders/`
+- **Tests**: `tests/loaders/`, `tests/mcpClient.test.js`
 
 ---
 
