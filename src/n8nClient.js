@@ -113,6 +113,8 @@ class N8nClient {
   async *processResponseStream(response) {
     let buffer = '';
     const decoder = new StringDecoder('utf8');
+    let hasYieldedContent = false;
+    let pendingTurnSeparator = false;
 
     for await (const chunk of response.data) {
       const text = decoder.write(chunk);
@@ -129,8 +131,20 @@ class N8nClient {
         buffer = chunks.remainder;
 
         for (const jsonChunk of chunks.extracted) {
+          // Track agent turn boundaries to inject separators
+          if (this.isAgentTurnEnd(jsonChunk)) {
+            if (hasYieldedContent) {
+              pendingTurnSeparator = true;
+            }
+          }
+
           const content = this.parseN8nChunk(jsonChunk);
           if (content) {
+            if (pendingTurnSeparator) {
+              yield '\n\n';
+              pendingTurnSeparator = false;
+            }
+            hasYieldedContent = true;
             yield content;
           }
         }
@@ -144,6 +158,9 @@ class N8nClient {
     if (buffer.trim()) {
       const content = this.parseN8nChunk(buffer.trim());
       if (content) {
+        if (pendingTurnSeparator) {
+          yield '\n\n';
+        }
         yield content;
       }
     }
@@ -329,6 +346,22 @@ class N8nClient {
       // Not JSON, return as plain text
       const stripped = chunkText.trim();
       return stripped.startsWith('{') ? null : stripped;
+    }
+  }
+
+  /**
+   * Check if a JSON chunk represents an agent turn boundary (end marker).
+   * n8n AI Agent sends {"type":"end"} when a turn completes (e.g. before tool execution).
+   * Used to inject separators between agent turns in streaming responses.
+   * @param {string} chunkText - Raw JSON string
+   * @returns {boolean} True if this is an end-of-turn marker
+   */
+  isAgentTurnEnd(chunkText) {
+    try {
+      const data = JSON.parse(chunkText);
+      return data.type === 'end';
+    } catch {
+      return false;
     }
   }
 }

@@ -222,6 +222,114 @@ describe('N8nClient', () => {
     });
   });
 
+  describe('processResponseStream', () => {
+    test('should preserve whitespace in JSON content fields', async () => {
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"content":"Hello "}');
+            yield Buffer.from('{"content":"\\n\\nWorld"}');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks).toEqual(['Hello ', '\n\nWorld']);
+    });
+
+    test('should preserve whitespace between agent turns in streaming', async () => {
+      // Simulates n8n sending content from different agent turns
+      // where trailing newlines separate paragraphs
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"content":"First paragraph.\\n\\n"}');
+            yield Buffer.from('{"content":"Second paragraph."}');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('First paragraph.\n\nSecond paragraph.');
+    });
+
+    test('should inject separator between agent turns at end/begin boundaries', async () => {
+      // Simulates n8n AI Agent sending end/begin markers between tool calls
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"First turn text."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Second turn text."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('First turn text.\n\nSecond turn text.');
+    });
+
+    test('should not inject separator before the first agent turn', async () => {
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Only turn."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('Only turn.');
+    });
+
+    test('should inject separator across multiple agent turns', async () => {
+      // Simulates 3 agent turns with tool calls in between
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 1."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 2."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 3."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('Turn 1.\n\nTurn 2.\n\nTurn 3.');
+    });
+  });
+
   describe('extractJsonChunks', () => {
     test('should extract single JSON object', () => {
       const buffer = '{"content":"Hello"}';
@@ -316,6 +424,28 @@ describe('N8nClient', () => {
       const result = client.parseN8nChunk('{invalid json}');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('isAgentTurnEnd', () => {
+    test('should return true for end marker', () => {
+      expect(client.isAgentTurnEnd('{"type":"end","metadata":{}}')).toBe(true);
+    });
+
+    test('should return false for begin marker', () => {
+      expect(client.isAgentTurnEnd('{"type":"begin","metadata":{}}')).toBe(false);
+    });
+
+    test('should return false for content chunk', () => {
+      expect(client.isAgentTurnEnd('{"type":"item","content":"hello"}')).toBe(false);
+    });
+
+    test('should return false for non-JSON text', () => {
+      expect(client.isAgentTurnEnd('plain text')).toBe(false);
+    });
+
+    test('should return false for empty input', () => {
+      expect(client.isAgentTurnEnd('')).toBe(false);
     });
   });
 });
