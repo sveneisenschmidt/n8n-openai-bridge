@@ -67,6 +67,11 @@ class Config {
 
     // File upload configuration
     this.fileUploadMode = this.parseFileUploadMode();
+
+    // Streaming configuration
+    const sep = process.env.AGENT_TURN_SEPARATOR;
+    this.agentTurnSeparator =
+      sep === undefined ? '\n\n' : sep.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
   }
 
   /**
