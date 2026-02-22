@@ -27,6 +27,9 @@ const {
 } = require('./utils/fileProcessor');
 
 class N8nClient {
+  /** @type {Set<string>} Chunk types treated as metadata (no content extracted) */
+  static METADATA_TYPES = new Set(['begin', 'end', 'error', 'metadata']);
+
   constructor(config, taskDetectorService = null) {
     this.config = config;
     this.taskDetectorService = taskDetectorService;
@@ -113,6 +116,9 @@ class N8nClient {
   async *processResponseStream(response) {
     let buffer = '';
     const decoder = new StringDecoder('utf8');
+    let hasYieldedContent = false;
+    let pendingTurnSeparator = false;
+    const turnSeparator = this.config.agentTurnSeparator ?? '\n\n';
 
     for await (const chunk of response.data) {
       const text = decoder.write(chunk);
@@ -129,8 +135,21 @@ class N8nClient {
         buffer = chunks.remainder;
 
         for (const jsonChunk of chunks.extracted) {
-          const content = this.parseN8nChunk(jsonChunk);
+          const { content, isEndOfTurn } = this.parseN8nChunk(jsonChunk);
+
+          // Track agent turn boundaries to inject separators
+          if (isEndOfTurn && hasYieldedContent) {
+            pendingTurnSeparator = true;
+          }
+
           if (content) {
+            if (pendingTurnSeparator) {
+              if (turnSeparator) {
+                yield turnSeparator;
+              }
+              pendingTurnSeparator = false;
+            }
+            hasYieldedContent = true;
             yield content;
           }
         }
@@ -142,8 +161,11 @@ class N8nClient {
 
     // Process remaining buffer
     if (buffer.trim()) {
-      const content = this.parseN8nChunk(buffer.trim());
+      const { content } = this.parseN8nChunk(buffer.trim());
       if (content) {
+        if (pendingTurnSeparator && turnSeparator) {
+          yield turnSeparator;
+        }
         yield content;
       }
     }
@@ -310,25 +332,36 @@ class N8nClient {
     return { extracted, remainder };
   }
 
+  /**
+   * Parse an n8n response chunk and extract content and turn boundary info.
+   * Handles JSON chunks with various content fields (content, text, output, message)
+   * and detects agent turn boundaries (type: "end") in a single parse.
+   * @param {string} chunkText - Raw chunk text (JSON or plain text)
+   * @returns {{ content: string|null, isEndOfTurn: boolean }} Parsed result
+   */
   parseN8nChunk(chunkText) {
     if (!chunkText || !chunkText.trim()) {
-      return null;
+      return { content: null, isEndOfTurn: false };
     }
 
     try {
       const data = JSON.parse(chunkText);
 
-      // Skip metadata chunks
-      if (data.type && ['begin', 'end', 'error', 'metadata'].includes(data.type)) {
-        return null;
+      const isEndOfTurn = data.type === 'end';
+
+      // Skip metadata chunks (but still report turn boundaries)
+      if (data.type && N8nClient.METADATA_TYPES.has(data.type)) {
+        return { content: null, isEndOfTurn };
       }
 
       // Extract content from common fields
-      return data.content || data.text || data.output || data.message || null;
+      const content = data.content || data.text || data.output || data.message || null;
+      return { content, isEndOfTurn };
     } catch {
       // Not JSON, return as plain text
       const stripped = chunkText.trim();
-      return stripped.startsWith('{') ? null : stripped;
+      const content = stripped.startsWith('{') ? null : stripped;
+      return { content, isEndOfTurn: false };
     }
   }
 }

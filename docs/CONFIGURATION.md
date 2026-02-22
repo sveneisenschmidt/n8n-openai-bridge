@@ -318,6 +318,34 @@ SERVER_HEADERS_TIMEOUT=121000        # Headers timeout (default: 121 seconds)
 - All timeout values must be >= 1000ms
 - `SERVER_HEADERS_TIMEOUT` is automatically adjusted to be greater than `SERVER_KEEP_ALIVE_TIMEOUT` if set incorrectly
 
+### Agent Turn Separator
+
+When n8n AI Agent workflows execute tool calls, they produce multiple "turns" in a single streaming response. By default, the bridge injects a separator between turns so they don't run together in the client output.
+
+```bash
+# Agent Turn Separator (default: \n\n)
+AGENT_TURN_SEPARATOR=\n\n
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_TURN_SEPARATOR` | `\n\n` | Separator injected between agent turns. Supports `\n` (newline) and `\t` (tab) escape sequences. Set to empty string to disable. |
+
+**Examples:**
+
+```bash
+AGENT_TURN_SEPARATOR=\n\n          # Double newline (default) - paragraph break
+AGENT_TURN_SEPARATOR=\n            # Single newline
+AGENT_TURN_SEPARATOR=" "           # Space
+AGENT_TURN_SEPARATOR=              # Empty - disable separator entirely
+AGENT_TURN_SEPARATOR=\n---\n       # Markdown horizontal rule
+```
+
+**When to adjust:**
+- **Markdown-aware clients** (Open WebUI): Default `\n\n` works well as a paragraph break
+- **Plain-text contexts**: A single `\n` or space may be more appropriate
+- **Disable entirely**: Set to empty string if your n8n workflow already handles turn boundaries in its output
+
 ### File Upload Configuration
 
 Configure how multimodal content (images/files) in OpenAI API requests is handled:

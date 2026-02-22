@@ -222,6 +222,143 @@ describe('N8nClient', () => {
     });
   });
 
+  describe('processResponseStream', () => {
+    test('should preserve whitespace in JSON content fields', async () => {
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"content":"Hello "}');
+            yield Buffer.from('{"content":"\\n\\nWorld"}');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks).toEqual(['Hello ', '\n\nWorld']);
+    });
+
+    test('should preserve whitespace between agent turns in streaming', async () => {
+      // Simulates n8n sending content from different agent turns
+      // where trailing newlines separate paragraphs
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"content":"First paragraph.\\n\\n"}');
+            yield Buffer.from('{"content":"Second paragraph."}');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('First paragraph.\n\nSecond paragraph.');
+    });
+
+    test('should inject separator between agent turns at end/begin boundaries', async () => {
+      // Simulates n8n AI Agent sending end/begin markers between tool calls
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"First turn text."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Second turn text."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('First turn text.\n\nSecond turn text.');
+    });
+
+    test('should not inject separator before the first agent turn', async () => {
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Only turn."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('Only turn.');
+    });
+
+    test('should inject separator across multiple agent turns', async () => {
+      // Simulates 3 agent turns with tool calls in between
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 1."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 2."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 3."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of client.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe('Turn 1.\n\nTurn 2.\n\nTurn 3.');
+    });
+
+    test.each([
+      [' --- ', 'Turn 1. --- Turn 2.', 'custom text'],
+      ['', 'Turn 1.Turn 2.', 'empty (disabled)'],
+      ['\n', 'Turn 1.\nTurn 2.', 'single newline'],
+    ])('should use configurable separator: %s (%s)', async (separator, expected) => {
+      mockConfig.agentTurnSeparator = separator;
+      const customClient = new N8nClient(mockConfig);
+
+      const mockResponse = {
+        data: {
+          async *[Symbol.asyncIterator]() {
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 1."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+            yield Buffer.from('{"type":"begin","metadata":{}}\n');
+            yield Buffer.from('{"type":"item","content":"Turn 2."}\n');
+            yield Buffer.from('{"type":"end","metadata":{}}\n');
+          },
+        },
+      };
+
+      const chunks = [];
+      for await (const content of customClient.processResponseStream(mockResponse)) {
+        chunks.push(content);
+      }
+
+      expect(chunks.join('')).toBe(expected);
+    });
+  });
+
   describe('extractJsonChunks', () => {
     test('should extract single JSON object', () => {
       const buffer = '{"content":"Hello"}';
@@ -271,51 +408,67 @@ describe('N8nClient', () => {
       const chunk = '{"content":"Hello world"}';
       const result = client.parseN8nChunk(chunk);
 
-      expect(result).toBe('Hello world');
+      expect(result).toEqual({ content: 'Hello world', isEndOfTurn: false });
     });
 
     test('should extract text from JSON chunk', () => {
       const chunk = '{"text":"Hello world"}';
       const result = client.parseN8nChunk(chunk);
 
-      expect(result).toBe('Hello world');
+      expect(result).toEqual({ content: 'Hello world', isEndOfTurn: false });
     });
 
     test('should extract output from JSON chunk', () => {
       const chunk = '{"output":"Hello world"}';
       const result = client.parseN8nChunk(chunk);
 
-      expect(result).toBe('Hello world');
+      expect(result).toEqual({ content: 'Hello world', isEndOfTurn: false });
     });
 
     test('should skip metadata chunks', () => {
       const chunk = '{"type":"metadata","data":"ignored"}';
       const result = client.parseN8nChunk(chunk);
 
-      expect(result).toBeNull();
+      expect(result).toEqual({ content: null, isEndOfTurn: false });
     });
 
-    test('should skip begin/end/error chunks', () => {
-      expect(client.parseN8nChunk('{"type":"begin"}')).toBeNull();
-      expect(client.parseN8nChunk('{"type":"end"}')).toBeNull();
-      expect(client.parseN8nChunk('{"type":"error"}')).toBeNull();
+    test('should skip begin/error chunks without end-of-turn signal', () => {
+      expect(client.parseN8nChunk('{"type":"begin"}')).toEqual({
+        content: null,
+        isEndOfTurn: false,
+      });
+      expect(client.parseN8nChunk('{"type":"error"}')).toEqual({
+        content: null,
+        isEndOfTurn: false,
+      });
+    });
+
+    test('should detect end-of-turn on end chunks', () => {
+      expect(client.parseN8nChunk('{"type":"end"}')).toEqual({
+        content: null,
+        isEndOfTurn: true,
+      });
+      expect(client.parseN8nChunk('{"type":"end","metadata":{}}')).toEqual({
+        content: null,
+        isEndOfTurn: true,
+      });
     });
 
     test('should handle plain text', () => {
       const result = client.parseN8nChunk('plain text');
 
-      expect(result).toBe('plain text');
+      expect(result).toEqual({ content: 'plain text', isEndOfTurn: false });
     });
 
-    test('should return null for empty input', () => {
-      expect(client.parseN8nChunk('')).toBeNull();
-      expect(client.parseN8nChunk('   ')).toBeNull();
+    test('should return null content for empty input', () => {
+      expect(client.parseN8nChunk('')).toEqual({ content: null, isEndOfTurn: false });
+      expect(client.parseN8nChunk('   ')).toEqual({ content: null, isEndOfTurn: false });
     });
 
-    test('should return null for invalid JSON starting with brace', () => {
+    test('should return null content for invalid JSON starting with brace', () => {
       const result = client.parseN8nChunk('{invalid json}');
 
-      expect(result).toBeNull();
+      expect(result).toEqual({ content: null, isEndOfTurn: false });
     });
   });
 });
