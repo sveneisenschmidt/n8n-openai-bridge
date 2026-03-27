@@ -35,12 +35,12 @@ n8n-openai-bridge/
 │   ├── Bootstrap.js       # Application lifecycle orchestration
 │   ├── n8nClient.js       # n8n webhook client
 │   ├── config/            # Configuration (ENV, server settings)
-│   ├── repositories/      # Data repositories (model state)
+│   ├── repositories/      # Data repositories (model state, file storage)
 │   ├── factories/         # Factory classes (loaders, notifiers)
-│   ├── routes/            # API endpoints (health, models, chat, admin)
+│   ├── routes/            # API endpoints (health, models, chat, files, admin)
 │   ├── handlers/          # Request handlers (streaming, non-streaming)
 │   ├── middleware/        # Express middleware (auth, logging, rate limiting)
-│   ├── services/          # Business logic (session, user, validation)
+│   ├── services/          # Business logic (files, tasks, webhooks)
 │   ├── loaders/           # Model loader architecture (file, json-http, n8n-api, static)
 │   ├── notifiers/         # Webhook notifiers (model changes)
 │   └── utils/             # Utility functions
@@ -69,6 +69,9 @@ Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
 - `server.js` - Express setup, OpenAI endpoints
 - `n8nClient.js` - n8n webhook communication
 - `taskDetectorService.js` - Detects automated task generation requests (optional)
+- `FileRepository.js` - In-memory file storage with TTL
+- `fileService.js` - File upload, retrieval, expiration logic
+- `fileResolver.js` - Resolves file_id references to inline content in chat completions
 
 **Model Loading System:**
 - `JsonFileModelLoader` (TYPE: `file`) - Default, reads `models.json`, hash-based hot-reload
@@ -127,7 +130,7 @@ Never run `npm install` on host machine.
 - One class per file, file name matches class name
 - Lowercase directories (services/, loaders/, utils/)
 - Tests mirror src/ structure (src/utils/session.js → tests/utils/session.test.js)
-- `src/services/` → Classes with state/dependencies (e.g., `TaskDetectorService`, `WebhookNotifier`)
+- `src/services/` → Classes with state/dependencies (e.g., `TaskDetectorService`, `WebhookNotifierService`, `FileService`)
 - `src/utils/` → Stateless pure functions (e.g., `sessionExtractor.js`, `userExtractor.js`, `requestValidator.js`)
 
 ### Copyright Headers
@@ -207,6 +210,7 @@ See **docs/CONFIGURATION.md** for all environment variables including:
 - Timeout configuration
 - Webhook notifier
 - Task detection
+- Files API (in-memory OpenAI `/v1/files` endpoint)
 
 ## Common Issues
 

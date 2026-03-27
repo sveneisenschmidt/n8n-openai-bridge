@@ -18,9 +18,11 @@
 
 const Config = require('./config/Config');
 const ModelRepository = require('./repositories/ModelRepository');
+const FileRepository = require('./repositories/FileRepository');
 const ModelLoaderFactory = require('./factories/ModelLoaderFactory');
 const WebhookNotifierFactory = require('./factories/WebhookNotifierFactory');
-const WebhookNotifier = require('./services/webhookNotifier');
+const WebhookNotifierService = require('./services/webhookNotifierService');
+const FileService = require('./services/fileService');
 const TaskDetectorService = require('./services/taskDetectorService');
 const createDetector = require('./detectors/createDetector');
 const detectorRegistry = require('./detectors/detectorRegistry');
@@ -47,6 +49,14 @@ class Bootstrap {
     this.modelRepository = new ModelRepository();
     this.modelLoader = ModelLoaderFactory.createModelLoader();
     this.webhookNotifier = WebhookNotifierFactory.createWebhookNotifier();
+
+    // Setup file service if enabled
+    this.fileRepository = null;
+    this.fileService = null;
+    if (this.config.filesEnabled) {
+      this.fileRepository = new FileRepository();
+      this.fileService = new FileService(this.fileRepository, this.config);
+    }
 
     // Setup task detector if enabled
     this.taskDetectorService = null;
@@ -93,10 +103,10 @@ class Bootstrap {
 
         // Notify webhook on startup if enabled
         if (this.webhookNotifier.enabled && this.webhookNotifier.notifyOnStartup) {
-          const payload = WebhookNotifier.createPayload(
+          const payload = WebhookNotifierService.createPayload(
             models,
             this.modelLoader.constructor.name,
-            WebhookNotifier.EventType.MODELS_LOADED,
+            WebhookNotifierService.EventType.MODELS_LOADED,
           );
           this.webhookNotifier.notify(payload).catch(() => {
             console.warn(
@@ -117,6 +127,11 @@ class Bootstrap {
 
     // Setup model watcher after initial load
     this.setupModelWatcher();
+
+    // Start file cleanup interval if enabled
+    if (this.fileService) {
+      this.fileService.startCleanupInterval();
+    }
   }
 
   /**
@@ -131,10 +146,10 @@ class Bootstrap {
       console.log(`Models reloaded successfully (${this.modelRepository.getModelCount()} models)`);
 
       // Notify webhook subscribers about model changes
-      const payload = WebhookNotifier.createPayload(
+      const payload = WebhookNotifierService.createPayload(
         newModels,
         this.modelLoader.constructor.name,
-        WebhookNotifier.EventType.MODELS_CHANGED,
+        WebhookNotifierService.EventType.MODELS_CHANGED,
       );
       this.webhookNotifier.notify(payload).catch(() => {
         console.warn(
@@ -151,6 +166,12 @@ class Bootstrap {
   close() {
     if (this.modelLoader) {
       this.modelLoader.stopWatching();
+    }
+    if (this.fileService) {
+      this.fileService.stopCleanupInterval();
+    }
+    if (this.fileRepository) {
+      this.fileRepository.clear();
     }
   }
 }

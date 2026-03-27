@@ -100,7 +100,7 @@ describe('Config - Timeout Configuration', () => {
       const config = new Config();
       expect(config.n8nTimeout).toBe(300000);
       expect(console.warn).toHaveBeenCalledWith(
-        'N8N_TIMEOUT must be a number >= 1000ms. Using default: 300000ms.',
+        'N8N_TIMEOUT must be a number >= 1000. Using default: 300000.',
       );
     });
 
@@ -109,7 +109,7 @@ describe('Config - Timeout Configuration', () => {
       const config = new Config();
       expect(config.serverTimeout).toBe(300000);
       expect(console.warn).toHaveBeenCalledWith(
-        'SERVER_TIMEOUT must be a number >= 1000ms. Using default: 300000ms.',
+        'SERVER_TIMEOUT must be a number >= 1000. Using default: 300000.',
       );
     });
 
@@ -118,7 +118,7 @@ describe('Config - Timeout Configuration', () => {
       const config = new Config();
       expect(config.serverKeepAliveTimeout).toBe(120000);
       expect(console.warn).toHaveBeenCalledWith(
-        'SERVER_KEEP_ALIVE_TIMEOUT must be a number >= 1000ms. Using default: 120000ms.',
+        'SERVER_KEEP_ALIVE_TIMEOUT must be a number >= 1000. Using default: 120000.',
       );
     });
 
