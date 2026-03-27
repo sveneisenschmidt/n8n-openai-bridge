@@ -97,6 +97,9 @@ router.post(
       if (error.code === 'STORAGE_LIMIT_EXCEEDED') {
         return sendError(res, 413, error.message, 'invalid_request_error');
       }
+      if (error.code === 'FILE_COUNT_LIMIT_EXCEEDED') {
+        return sendError(res, 413, error.message, 'invalid_request_error');
+      }
       console.error(`[${new Date().toISOString()}] Error uploading file: ${error.message}`);
       sendError(res, 500, 'Internal server error', 'server_error');
     }

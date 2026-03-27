@@ -31,6 +31,7 @@ describe('FileService', () => {
     config = {
       filesMaxFileSize: 1024 * 1024, // 1MB
       filesMaxTotalStorage: 10 * 1024 * 1024, // 10MB
+      filesMaxCount: 1000,
       filesTtlSeconds: 3600,
       filesCleanupIntervalSeconds: 60,
     };
@@ -93,6 +94,59 @@ describe('FileService', () => {
       expect(() => service.upload('small.bin', 'assistants', Buffer.alloc(200))).toThrow(
         expect.objectContaining({ code: 'STORAGE_LIMIT_EXCEEDED' }),
       );
+    });
+
+    it('should reject when file count limit is reached', () => {
+      config.filesMaxCount = 2;
+      service.upload('a.txt', 'assistants', Buffer.from('a'));
+      service.upload('b.txt', 'assistants', Buffer.from('b'));
+
+      expect(() => service.upload('c.txt', 'assistants', Buffer.from('c'))).toThrow(
+        /file count limit/i,
+      );
+    });
+
+    it('should set FILE_COUNT_LIMIT_EXCEEDED error code', () => {
+      config.filesMaxCount = 1;
+      service.upload('a.txt', 'assistants', Buffer.from('a'));
+
+      expect(() => service.upload('b.txt', 'assistants', Buffer.from('b'))).toThrow(
+        expect.objectContaining({ code: 'FILE_COUNT_LIMIT_EXCEEDED' }),
+      );
+    });
+
+    it('should allow upload after deleting when at count limit', () => {
+      config.filesMaxCount = 1;
+      const first = service.upload('a.txt', 'assistants', Buffer.from('a'));
+      service.deleteFile(first.id);
+
+      const second = service.upload('b.txt', 'assistants', Buffer.from('b'));
+      expect(second.id).toMatch(/^file-/);
+    });
+
+    it('should sanitize filenames with path traversal', () => {
+      const result = service.upload('../../etc/passwd', 'assistants', Buffer.from('x'));
+      expect(result.filename).toBe('passwd');
+    });
+
+    it('should sanitize filenames with control characters', () => {
+      const result = service.upload('file\x00name\x1f.txt', 'assistants', Buffer.from('x'));
+      expect(result.filename).toBe('filename.txt');
+    });
+
+    it('should sanitize filenames with double-quote characters', () => {
+      const result = service.upload('file"name.txt', 'assistants', Buffer.from('x'));
+      expect(result.filename).toBe('file_name.txt');
+    });
+
+    it('should strip Windows backslash paths to base filename', () => {
+      const result = service.upload('C:\\Users\\docs\\report.pdf', 'assistants', Buffer.from('x'));
+      expect(result.filename).toBe('report.pdf');
+    });
+
+    it('should use fallback for empty filenames', () => {
+      const result = service.upload('', 'assistants', Buffer.from('x'));
+      expect(result.filename).toBe('unnamed');
     });
   });
 
@@ -293,6 +347,74 @@ describe('FileService', () => {
       const future = { metadata: { expires_at: Math.floor(Date.now() / 1000) + 3600 } };
       expect(FileService.isExpired(past)).toBe(true);
       expect(FileService.isExpired(future)).toBe(false);
+    });
+  });
+
+  describe('sanitizeFilename', () => {
+    it('should return clean filenames unchanged', () => {
+      expect(FileService.sanitizeFilename('report.pdf')).toBe('report.pdf');
+      expect(FileService.sanitizeFilename('my-file_2024.txt')).toBe('my-file_2024.txt');
+    });
+
+    it('should strip Unix path components', () => {
+      expect(FileService.sanitizeFilename('/etc/passwd')).toBe('passwd');
+      expect(FileService.sanitizeFilename('../../secret.txt')).toBe('secret.txt');
+    });
+
+    it('should strip Windows path components', () => {
+      expect(FileService.sanitizeFilename('C:\\Users\\evil\\file.exe')).toBe('file.exe');
+      expect(FileService.sanitizeFilename('..\\..\\secret.txt')).toBe('secret.txt');
+    });
+
+    it('should remove control characters', () => {
+      expect(FileService.sanitizeFilename('file\x00.txt')).toBe('file.txt');
+      expect(FileService.sanitizeFilename('fi\x0ale\x1f.txt')).toBe('file.txt');
+      expect(FileService.sanitizeFilename('file\x7f.txt')).toBe('file.txt');
+    });
+
+    it('should replace double-quotes with underscores', () => {
+      expect(FileService.sanitizeFilename('file"name.txt')).toBe('file_name.txt');
+    });
+
+    it('should treat backslash as path separator and strip to base name', () => {
+      expect(FileService.sanitizeFilename('file\\name.txt')).toBe('name.txt');
+      expect(FileService.sanitizeFilename('dir\\sub\\file.txt')).toBe('file.txt');
+    });
+
+    it('should truncate filenames exceeding max length, preserving extension', () => {
+      const longName = `${'a'.repeat(300)}.pdf`;
+      const result = FileService.sanitizeFilename(longName);
+      expect(result.length).toBe(255);
+      expect(result.endsWith('.pdf')).toBe(true);
+    });
+
+    it('should truncate filenames without extension', () => {
+      const longName = 'a'.repeat(300);
+      const result = FileService.sanitizeFilename(longName);
+      expect(result.length).toBe(255);
+    });
+
+    it('should return unnamed for null/undefined/empty', () => {
+      expect(FileService.sanitizeFilename(null)).toBe('unnamed');
+      expect(FileService.sanitizeFilename(undefined)).toBe('unnamed');
+      expect(FileService.sanitizeFilename('')).toBe('unnamed');
+    });
+
+    it('should return unnamed for non-string inputs', () => {
+      expect(FileService.sanitizeFilename(123)).toBe('unnamed');
+      expect(FileService.sanitizeFilename({})).toBe('unnamed');
+    });
+
+    it('should return unnamed when only dots remain', () => {
+      expect(FileService.sanitizeFilename('.')).toBe('unnamed');
+    });
+
+    it('should handle whitespace-only filenames', () => {
+      expect(FileService.sanitizeFilename('   ')).toBe('unnamed');
+    });
+
+    it('should trim leading/trailing whitespace', () => {
+      expect(FileService.sanitizeFilename('  file.txt  ')).toBe('file.txt');
     });
   });
 });

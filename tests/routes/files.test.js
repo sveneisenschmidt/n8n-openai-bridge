@@ -132,6 +132,22 @@ describe('files route', () => {
 
       expect(response.status).toBe(413);
     });
+
+    it('should return 413 when file count limit exceeded', async () => {
+      const error = new Error('File count limit of 1000 reached');
+      error.code = 'FILE_COUNT_LIMIT_EXCEEDED';
+      mockFileService.upload.mockImplementation(() => {
+        throw error;
+      });
+
+      const response = await request(app)
+        .post('/')
+        .field('purpose', 'assistants')
+        .attach('file', Buffer.from('data'), 'test.txt');
+
+      expect(response.status).toBe(413);
+      expect(response.body.error.message).toMatch(/file count limit/i);
+    });
   });
 
   describe('GET /', () => {
@@ -226,6 +242,20 @@ describe('files route', () => {
       const response = await request(app).get('/file-nonexistent/content');
 
       expect(response.status).toBe(404);
+    });
+
+    it('should produce safe Content-Disposition for filenames with special chars', async () => {
+      mockFileService.getFileContent.mockReturnValue({
+        buffer: Buffer.from('content'),
+        metadata: { filename: 'safe_name_.txt' },
+      });
+
+      const response = await request(app).get('/file-123/content');
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-disposition']).toBe('attachment; filename="safe_name_.txt"');
+      const filenameMatch = response.headers['content-disposition'].match(/filename="([^"]*)"/);
+      expect(filenameMatch[1]).not.toMatch(/["\\\x00-\x1f]/);
     });
   });
 });

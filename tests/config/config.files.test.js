@@ -96,6 +96,36 @@ describe('Config - Files API', () => {
     });
   });
 
+  describe('filesMaxCount', () => {
+    it('should default to 1000', () => {
+      delete process.env.FILES_MAX_COUNT;
+      const config = loadConfig();
+      expect(config.filesMaxCount).toBe(1000);
+    });
+
+    it('should parse from env var', () => {
+      process.env.FILES_MAX_COUNT = '500';
+      const config = loadConfig();
+      expect(config.filesMaxCount).toBe(500);
+    });
+
+    it('should use default for invalid value', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      process.env.FILES_MAX_COUNT = 'abc';
+      const config = loadConfig();
+      expect(config.filesMaxCount).toBe(1000);
+      warnSpy.mockRestore();
+    });
+
+    it('should use default for zero', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      process.env.FILES_MAX_COUNT = '0';
+      const config = loadConfig();
+      expect(config.filesMaxCount).toBe(1000);
+      warnSpy.mockRestore();
+    });
+  });
+
   describe('filesTtlSeconds', () => {
     it('should default to 3600', () => {
       delete process.env.FILES_TTL_SECONDS;

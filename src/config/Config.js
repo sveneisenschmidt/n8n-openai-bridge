@@ -72,6 +72,7 @@ class Config {
     this.filesEnabled = process.env.FILES_ENABLED !== 'false';
     this.filesMaxFileSize = this.parseIntFromEnv('FILES_MAX_FILE_SIZE', 20 * 1024 * 1024);
     this.filesMaxTotalStorage = this.parseIntFromEnv('FILES_MAX_TOTAL_STORAGE', 200 * 1024 * 1024);
+    this.filesMaxCount = this.parseIntFromEnv('FILES_MAX_COUNT', 1000);
     this.filesTtlSeconds = this.parseIntFromEnv('FILES_TTL_SECONDS', 3600);
     this.filesCleanupIntervalSeconds = this.parseIntFromEnv('FILES_CLEANUP_INTERVAL_SECONDS', 60);
 

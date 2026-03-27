@@ -74,15 +74,24 @@ class FileService {
       throw error;
     }
 
+    if (this.fileRepository.getCount() >= this.config.filesMaxCount) {
+      const error = new Error(
+        `File count limit of ${this.config.filesMaxCount} reached. Delete existing files or wait for expiration.`,
+      );
+      error.code = 'FILE_COUNT_LIMIT_EXCEEDED';
+      throw error;
+    }
+
     const fileId = FileService.generateFileId();
     const now = Math.floor(Date.now() / 1000);
+    const sanitized = FileService.sanitizeFilename(filename);
 
     const metadata = {
       id: fileId,
       object: 'file',
       bytes,
       created_at: now,
-      filename,
+      filename: sanitized,
       purpose,
       status: 'processed',
       expires_at: now + this.config.filesTtlSeconds,
@@ -249,6 +258,43 @@ class FileService {
    */
   static isExpired(entry) {
     return entry.metadata.expires_at <= Math.floor(Date.now() / 1000);
+  }
+
+  /** @type {number} Max allowed filename length */
+  static MAX_FILENAME_LENGTH = 255;
+
+  /**
+   * Sanitize a filename for safe storage and HTTP header use.
+   * Strips path components, control characters, and Content-Disposition-unsafe characters.
+   * @param {string} filename - Raw filename from client
+   * @returns {string} Sanitized filename
+   */
+  static sanitizeFilename(filename) {
+    if (!filename || typeof filename !== 'string') {
+      return 'unnamed';
+    }
+
+    let sanitized = filename
+      .replace(/^.*[/\\]/, '') // strip directory components
+      .replace(/[\x00-\x1f\x7f]/g, '') // remove control characters
+      .replace(/["\\]/g, '_') // replace chars unsafe in Content-Disposition
+      .trim();
+
+    if (sanitized.length > FileService.MAX_FILENAME_LENGTH) {
+      const dotIndex = sanitized.lastIndexOf('.');
+      if (dotIndex > 0) {
+        const ext = sanitized.slice(dotIndex);
+        sanitized = sanitized.slice(0, FileService.MAX_FILENAME_LENGTH - ext.length) + ext;
+      } else {
+        sanitized = sanitized.slice(0, FileService.MAX_FILENAME_LENGTH);
+      }
+    }
+
+    if (!sanitized || sanitized === '.') {
+      return 'unnamed';
+    }
+
+    return sanitized;
   }
 }
 
