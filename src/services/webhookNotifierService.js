@@ -29,7 +29,7 @@ const WebhookEventType = {
 /**
  * Service for notifying external webhooks when models change
  */
-class WebhookNotifier {
+class WebhookNotifierService {
   static EventType = WebhookEventType;
   constructor(config = {}) {
     this.webhookUrl = config.webhookUrl || null;
@@ -45,7 +45,7 @@ class WebhookNotifier {
   /**
    * Notify webhook about model changes
    * @param {Object} payload - Notification payload
-   * @param {WebhookEventType} payload.type - Event type (WebhookNotifier.EventType.MODELS_CHANGED or .MODELS_LOADED)
+   * @param {WebhookEventType} payload.type - Event type (WebhookNotifierService.EventType.MODELS_CHANGED or .MODELS_LOADED)
    * @param {Object} payload.models - Updated models object
    * @param {string} payload.source - Source of the change (loader class name)
    * @param {string} payload.timestamp - ISO timestamp of the change
@@ -117,13 +117,13 @@ class WebhookNotifier {
    * Create payload for model change notification
    * @param {Object} models - Models object
    * @param {string} source - Source loader class name
-   * @param {WebhookEventType} eventType - Event type (use WebhookNotifier.EventType enum, required)
+   * @param {WebhookEventType} eventType - Event type (use WebhookNotifierService.EventType enum, required)
    * @returns {Object} Notification payload
    */
   static createPayload(models, source, eventType) {
     if (!eventType) {
       throw new Error(
-        'eventType is required. Use WebhookNotifier.EventType.MODELS_CHANGED or .MODELS_LOADED',
+        'eventType is required. Use WebhookNotifierService.EventType.MODELS_CHANGED or .MODELS_LOADED',
       );
     }
 
@@ -137,4 +137,4 @@ class WebhookNotifier {
   }
 }
 
-module.exports = WebhookNotifier;
+module.exports = WebhookNotifierService;

@@ -56,26 +56,7 @@ function parseDataUrl(dataUrl) {
   };
 }
 
-/**
- * Get file extension from mime type
- * @param {string} mimeType - MIME type (e.g., "image/png")
- * @returns {string} File extension (e.g., "png")
- */
-function getExtensionFromMimeType(mimeType) {
-  const mimeToExt = {
-    'image/png': 'png',
-    'image/jpeg': 'jpg',
-    'image/jpg': 'jpg',
-    'image/gif': 'gif',
-    'image/webp': 'webp',
-    'image/svg+xml': 'svg',
-    'application/pdf': 'pdf',
-    'text/plain': 'txt',
-    'application/json': 'json',
-  };
-
-  return mimeToExt[mimeType] || 'bin';
-}
+const { getExtensionFromMimeType } = require('./mimeTypes');
 
 /**
  * Extract text content from a multimodal message

@@ -392,7 +392,46 @@ FILE_UPLOAD_MODE=passthrough         # Options: passthrough, extract-json, extra
 
 **Supported file types:**
 - Images: PNG, JPEG, GIF, WebP, SVG
-- Documents: PDF, plain text, JSON
+- Documents: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), CSV, plain text, JSON
+
+### Files API (In-Memory)
+
+The bridge implements the OpenAI `/v1/files` endpoint with in-memory storage. This allows clients like Open WebUI to upload files (PDFs, documents) which are then resolved into inline content when referenced in chat completions.
+
+```bash
+# Files API Configuration
+FILES_ENABLED=true                     # Enable/disable Files API (default: true)
+FILES_MAX_FILE_SIZE=20971520           # Max size per file in bytes (default: 20MB)
+FILES_MAX_TOTAL_STORAGE=209715200      # Max total in-memory storage in bytes (default: 200MB)
+FILES_TTL_SECONDS=3600                 # File expiration time in seconds (default: 1 hour)
+FILES_CLEANUP_INTERVAL_SECONDS=60      # Cleanup sweep interval in seconds (default: 60)
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FILES_ENABLED` | `true` | Enable/disable the `/v1/files` endpoints. Set to `false` to disable entirely. |
+| `FILES_MAX_FILE_SIZE` | `20971520` (20MB) | Maximum size per uploaded file in bytes. |
+| `FILES_MAX_TOTAL_STORAGE` | `209715200` (200MB) | Maximum total in-memory storage for all files. |
+| `FILES_TTL_SECONDS` | `3600` (1 hour) | Time-to-live for stored files before automatic eviction. |
+| `FILES_CLEANUP_INTERVAL_SECONDS` | `60` | How often the cleanup sweep runs to remove expired files. |
+
+**Endpoints:**
+- `POST /v1/files` - Upload a file (multipart/form-data)
+- `GET /v1/files` - List uploaded files
+- `GET /v1/files/:file_id` - Get file metadata
+- `GET /v1/files/:file_id/content` - Download file content
+- `DELETE /v1/files/:file_id` - Delete a file
+
+**How it works:**
+1. Client uploads a file via `POST /v1/files`, receives a `file-{uuid}` ID
+2. Client references the file ID in a chat completion request (via attachments or content parts)
+3. The bridge resolves file references to inline base64 data URLs before forwarding to n8n
+4. Files are automatically cleaned up after `FILES_TTL_SECONDS`
+
+**Notes:**
+- Files are stored entirely in memory - plan `FILES_MAX_TOTAL_STORAGE` according to available RAM
+- Expired files are lazily evicted on access and periodically by the cleanup sweep
+- The Files API requires authentication (same `BEARER_TOKEN` as other endpoints)
 
 ### Rate Limiting
 

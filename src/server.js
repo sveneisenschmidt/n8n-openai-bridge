@@ -32,6 +32,7 @@ const createRateLimiters = require('./middleware/rateLimiter');
 const healthRoute = require('./routes/health');
 const modelsRoute = require('./routes/models');
 const chatCompletionsRoute = require('./routes/chatCompletions');
+const filesRoute = require('./routes/files');
 const adminReloadRoute = require('./routes/adminReload');
 
 const app = express();
@@ -43,6 +44,7 @@ app.locals.bootstrap = bootstrap;
 app.locals.config = bootstrap.config;
 app.locals.modelRepository = bootstrap.modelRepository;
 app.locals.n8nClient = n8nClient;
+app.locals.fileService = bootstrap.fileService;
 
 // Create rate limiters
 const rateLimiters = createRateLimiters(bootstrap.config);
@@ -67,6 +69,9 @@ app.use(authenticate(bootstrap.config));
 app.use('/admin/reload', rateLimiters.standard, adminReloadRoute);
 app.use('/v1/models', rateLimiters.standard, modelsRoute);
 app.use('/v1/chat/completions', rateLimiters.chatCompletions, chatCompletionsRoute);
+if (bootstrap.config.filesEnabled) {
+  app.use('/v1/files', rateLimiters.standard, filesRoute);
+}
 
 // Error handler
 app.use((err, _req, res, _next) => {
@@ -134,6 +139,13 @@ async function startServer() {
     console.log('  GET  /health');
     console.log('  GET  /v1/models');
     console.log('  POST /v1/chat/completions');
+    if (bootstrap.config.filesEnabled) {
+      console.log('  POST /v1/files');
+      console.log('  GET  /v1/files');
+      console.log('  GET  /v1/files/:file_id');
+      console.log('  GET  /v1/files/:file_id/content');
+      console.log('  DEL  /v1/files/:file_id');
+    }
     console.log('  POST /admin/reload');
     console.log('='.repeat(60));
   });

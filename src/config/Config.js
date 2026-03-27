@@ -52,10 +52,10 @@ class Config {
     this.userRoleHeaders = this.parseUserRoleHeaders();
 
     // Timeout configuration
-    this.n8nTimeout = this.parseTimeout('N8N_TIMEOUT', 300000);
-    this.serverTimeout = this.parseTimeout('SERVER_TIMEOUT', 300000);
-    this.serverKeepAliveTimeout = this.parseTimeout('SERVER_KEEP_ALIVE_TIMEOUT', 120000);
-    this.serverHeadersTimeout = this.parseTimeout('SERVER_HEADERS_TIMEOUT', 121000);
+    this.n8nTimeout = this.parseIntFromEnv('N8N_TIMEOUT', 300000, 1000);
+    this.serverTimeout = this.parseIntFromEnv('SERVER_TIMEOUT', 300000, 1000);
+    this.serverKeepAliveTimeout = this.parseIntFromEnv('SERVER_KEEP_ALIVE_TIMEOUT', 120000, 1000);
+    this.serverHeadersTimeout = this.parseIntFromEnv('SERVER_HEADERS_TIMEOUT', 121000, 1000);
 
     // Validate headers timeout > keep-alive timeout
     if (this.serverHeadersTimeout <= this.serverKeepAliveTimeout) {
@@ -67,6 +67,13 @@ class Config {
 
     // File upload configuration
     this.fileUploadMode = this.parseFileUploadMode();
+
+    // Files API configuration (in-memory OpenAI Files endpoint)
+    this.filesEnabled = process.env.FILES_ENABLED !== 'false';
+    this.filesMaxFileSize = this.parseIntFromEnv('FILES_MAX_FILE_SIZE', 20 * 1024 * 1024);
+    this.filesMaxTotalStorage = this.parseIntFromEnv('FILES_MAX_TOTAL_STORAGE', 200 * 1024 * 1024);
+    this.filesTtlSeconds = this.parseIntFromEnv('FILES_TTL_SECONDS', 3600);
+    this.filesCleanupIntervalSeconds = this.parseIntFromEnv('FILES_CLEANUP_INTERVAL_SECONDS', 60);
 
     // Streaming configuration
     const sep = process.env.AGENT_TURN_SEPARATOR;
@@ -188,13 +195,14 @@ class Config {
   }
 
   /**
-   * Parse timeout value from environment variable
+   * Parse an integer from environment variable with minimum threshold
    * @param {string} envVarName - Name of the environment variable
-   * @param {number} defaultValue - Default timeout in milliseconds
-   * @returns {number} Timeout in milliseconds
+   * @param {number} defaultValue - Default value if env var not set or invalid
+   * @param {number} [min=1] - Minimum accepted value
+   * @returns {number} Parsed integer
    * @private
    */
-  parseTimeout(envVarName, defaultValue) {
+  parseIntFromEnv(envVarName, defaultValue, min = 1) {
     const envValue = process.env[envVarName];
 
     if (!envValue || !envValue.trim()) {
@@ -203,8 +211,8 @@ class Config {
 
     const parsed = parseInt(envValue, 10);
 
-    if (isNaN(parsed) || parsed < 1000) {
-      console.warn(`${envVarName} must be a number >= 1000ms. Using default: ${defaultValue}ms.`);
+    if (isNaN(parsed) || parsed < min) {
+      console.warn(`${envVarName} must be a number >= ${min}. Using default: ${defaultValue}.`);
       return defaultValue;
     }
 
