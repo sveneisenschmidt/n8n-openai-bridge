@@ -111,6 +111,12 @@ router.post(
  * List files with optional filtering
  */
 router.get('/', (req, res) => {
+  const config = req.app.locals.config;
+
+  if (!config.filesListEnabled) {
+    return res.status(200).json({ object: 'list', data: [], has_more: false });
+  }
+
   const fileService = req.app.locals.fileService;
 
   try {

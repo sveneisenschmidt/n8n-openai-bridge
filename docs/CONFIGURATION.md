@@ -392,7 +392,7 @@ FILE_UPLOAD_MODE=passthrough         # Options: passthrough, extract-json, extra
 
 **Supported file types:**
 - Images: PNG, JPEG, GIF, WebP, SVG
-- Documents: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), CSV, plain text, JSON
+- Documents: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX), CSV, plain text, JSON
 
 ### Files API (In-Memory)
 
@@ -405,6 +405,7 @@ FILES_MAX_FILE_SIZE=20971520           # Max size per file in bytes (default: 20
 FILES_MAX_TOTAL_STORAGE=209715200      # Max total in-memory storage in bytes (default: 200MB)
 FILES_TTL_SECONDS=3600                 # File expiration time in seconds (default: 1 hour)
 FILES_CLEANUP_INTERVAL_SECONDS=60      # Cleanup sweep interval in seconds (default: 60)
+FILES_LIST_ENABLED=false               # Enable GET /v1/files listing (default: false)
 ```
 
 | Variable | Default | Description |
@@ -414,6 +415,7 @@ FILES_CLEANUP_INTERVAL_SECONDS=60      # Cleanup sweep interval in seconds (defa
 | `FILES_MAX_TOTAL_STORAGE` | `209715200` (200MB) | Maximum total in-memory storage for all files. |
 | `FILES_TTL_SECONDS` | `3600` (1 hour) | Time-to-live for stored files before automatic eviction. |
 | `FILES_CLEANUP_INTERVAL_SECONDS` | `60` | How often the cleanup sweep runs to remove expired files. |
+| `FILES_LIST_ENABLED` | `false` | Enable the `GET /v1/files` list endpoint. Disabled by default to prevent users from listing files uploaded by others. |
 
 **Endpoints:**
 - `POST /v1/files` - Upload a file (multipart/form-data)
@@ -432,6 +434,9 @@ FILES_CLEANUP_INTERVAL_SECONDS=60      # Cleanup sweep interval in seconds (defa
 - Files are stored entirely in memory - plan `FILES_MAX_TOTAL_STORAGE` according to available RAM
 - Expired files are lazily evicted on access and periodically by the cleanup sweep
 - The Files API requires authentication (same `BEARER_TOKEN` as other endpoints)
+
+**Limitations:**
+- Files are not scoped per user. Since all clients share the same bearer token, any authenticated user could access files uploaded by others if they know the file ID (UUID). The `GET /v1/files` list endpoint is disabled by default (`FILES_LIST_ENABLED=false`) to prevent users from browsing files uploaded by others. Enable it only in single-user or trusted environments.
 
 ### Rate Limiting
 

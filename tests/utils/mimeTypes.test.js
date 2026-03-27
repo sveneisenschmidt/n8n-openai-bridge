@@ -31,6 +31,12 @@ describe('mimeTypes', () => {
       expect(getExtensionFromMimeType('application/pdf')).toBe('pdf');
       expect(getExtensionFromMimeType('text/csv')).toBe('csv');
       expect(getExtensionFromMimeType('application/msword')).toBe('doc');
+      expect(getExtensionFromMimeType('application/vnd.ms-powerpoint')).toBe('ppt');
+      expect(
+        getExtensionFromMimeType(
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ),
+      ).toBe('pptx');
     });
 
     it('should return bin for unknown MIME types', () => {
@@ -47,6 +53,9 @@ describe('mimeTypes', () => {
       expect(getMimeTypeFromFilename('data.csv')).toBe('text/csv');
       expect(getMimeTypeFromFilename('doc.docx')).toBe(
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      expect(getMimeTypeFromFilename('slides.pptx')).toBe(
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       );
     });
 

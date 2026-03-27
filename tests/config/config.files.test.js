@@ -140,6 +140,26 @@ describe('Config - Files API', () => {
     });
   });
 
+  describe('filesListEnabled', () => {
+    it('should default to false', () => {
+      delete process.env.FILES_LIST_ENABLED;
+      const config = loadConfig();
+      expect(config.filesListEnabled).toBe(false);
+    });
+
+    it('should be true when set to true', () => {
+      process.env.FILES_LIST_ENABLED = 'true';
+      const config = loadConfig();
+      expect(config.filesListEnabled).toBe(true);
+    });
+
+    it('should be false for any value other than true', () => {
+      process.env.FILES_LIST_ENABLED = 'yes';
+      const config = loadConfig();
+      expect(config.filesListEnabled).toBe(false);
+    });
+  });
+
   describe('filesCleanupIntervalSeconds', () => {
     it('should default to 60', () => {
       delete process.env.FILES_CLEANUP_INTERVAL_SECONDS;

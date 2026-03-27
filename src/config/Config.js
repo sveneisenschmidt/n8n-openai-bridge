@@ -75,6 +75,7 @@ class Config {
     this.filesMaxCount = this.parseIntFromEnv('FILES_MAX_COUNT', 1000);
     this.filesTtlSeconds = this.parseIntFromEnv('FILES_TTL_SECONDS', 3600);
     this.filesCleanupIntervalSeconds = this.parseIntFromEnv('FILES_CLEANUP_INTERVAL_SECONDS', 60);
+    this.filesListEnabled = process.env.FILES_LIST_ENABLED === 'true';
 
     // Streaming configuration
     const sep = process.env.AGENT_TURN_SEPARATOR;

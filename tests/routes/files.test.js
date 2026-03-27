@@ -42,6 +42,7 @@ describe('files route', () => {
     app.locals.fileService = mockFileService;
     app.locals.config = {
       filesMaxFileSize: 20 * 1024 * 1024,
+      filesListEnabled: true,
     };
 
     app.use('/', filesRoute);
@@ -151,6 +152,16 @@ describe('files route', () => {
   });
 
   describe('GET /', () => {
+    it('should return empty list when filesListEnabled is false', async () => {
+      app.locals.config.filesListEnabled = false;
+
+      const response = await request(app).get('/');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ object: 'list', data: [], has_more: false });
+      expect(mockFileService.listFiles).not.toHaveBeenCalled();
+    });
+
     it('should list files', async () => {
       const listResult = {
         object: 'list',
