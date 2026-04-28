@@ -43,7 +43,7 @@ n8n-openai-bridge/
 │   ├── services/          # Business logic (session, user, validation)
 │   ├── loaders/           # Model loader architecture (file, json-http, n8n-api, static)
 │   ├── notifiers/         # Webhook notifiers (model changes)
-│   └── utils/             # Utility functions
+│   └── utils/             # Utility functions (session, user, message consolidation)
 ├── tests/                 # Unit tests
 │   ├── image-tests/       # Modular image validation scenarios
 │   └── test-image-build.sh  # Image test orchestrator
@@ -59,6 +59,8 @@ n8n-openai-bridge/
 Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
               ↓
          Session/User Context → Model Validation → Streaming/Non-streaming Response
+              ↓
+         No session ID? → Generate UUID → Consolidate messages into single prompt
 ```
 
 **Key Components:**
@@ -69,6 +71,7 @@ Client → Auth Middleware → Route Handler → n8nClient → n8n Webhook
 - `server.js` - Express setup, OpenAI endpoints
 - `n8nClient.js` - n8n webhook communication
 - `taskDetectorService.js` - Detects automated task generation requests (optional)
+- `messageConsolidator.js` - Consolidates multi-turn conversation into single prompt when no session ID provided
 
 **Model Loading System:**
 - `JsonFileModelLoader` (TYPE: `file`) - Default, reads `models.json`, hash-based hot-reload

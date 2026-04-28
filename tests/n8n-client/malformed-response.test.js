@@ -43,6 +43,7 @@ describe('N8nClient - Malformed Response Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toBe('');
@@ -65,6 +66,7 @@ describe('N8nClient - Malformed Response Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toBe('');
@@ -87,6 +89,7 @@ describe('N8nClient - Malformed Response Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     // Should only collect valid chunks
@@ -110,6 +113,7 @@ describe('N8nClient - Malformed Response Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toBe('Hello World');
@@ -136,6 +140,7 @@ describe('N8nClient - Malformed Response Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result.length).toBeGreaterThan(90000);

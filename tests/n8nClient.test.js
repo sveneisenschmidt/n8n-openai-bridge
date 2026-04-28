@@ -61,7 +61,12 @@ describe('N8nClient', () => {
         userRole: 'admin',
       };
 
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.systemPrompt).toBe('You are a helpful assistant');
       expect(payload.currentMessage).toBe('How are you?');
@@ -81,7 +86,12 @@ describe('N8nClient', () => {
       ];
 
       const userContext = { userId: 'user-456' };
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages).toHaveLength(2);
       expect(payload.messages.every((m) => m.role !== 'system')).toBe(true);
@@ -89,7 +99,7 @@ describe('N8nClient', () => {
 
     test('should handle empty messages array', () => {
       const userContext = { userId: 'user-456' };
-      const payload = client.buildPayload([], 'session-123', userContext);
+      const payload = client.buildPayload([], 'session-123', userContext, 'req.body.session_id');
 
       expect(payload.systemPrompt).toBe('');
       expect(payload.currentMessage).toBe('');
@@ -106,7 +116,12 @@ describe('N8nClient', () => {
         userRole: null,
       };
 
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.userId).toBe('user-456');
       expect(payload).not.toHaveProperty('userEmail');
@@ -124,7 +139,12 @@ describe('N8nClient', () => {
         userRole: 'admin',
       };
 
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.userId).toBe('user-456');
       expect(payload.userEmail).toBe('user@example.com');
@@ -155,6 +175,7 @@ describe('N8nClient', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       );
 
       expect(result).toBe('Hello World');
@@ -178,6 +199,7 @@ describe('N8nClient', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       );
 
       expect(result).toBe('Complete response');
@@ -202,6 +224,7 @@ describe('N8nClient', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       );
 
       expect(result).toBe('Part 1 Part 2 Part 3');
@@ -217,6 +240,7 @@ describe('N8nClient', () => {
           [{ role: 'user', content: 'Hello' }],
           'session-123',
           userContext,
+          'req.body.session_id',
         ),
       ).rejects.toThrow('Network error');
     });

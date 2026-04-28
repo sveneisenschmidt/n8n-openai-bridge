@@ -25,6 +25,7 @@ const {
   extractTextFromMultimodal,
   isMultimodalMessage,
 } = require('./utils/fileProcessor');
+const { consolidateMessages } = require('./utils/messageConsolidator');
 
 class N8nClient {
   /** @type {Set<string>} Chunk types treated as metadata (no content extracted) */
@@ -44,7 +45,7 @@ class N8nClient {
     return headers;
   }
 
-  buildPayload(messages, sessionId, userContext) {
+  buildPayload(messages, sessionId, userContext, sessionSource) {
     const fileUploadMode = this.config.fileUploadMode || 'passthrough';
 
     // Process messages according to file upload mode
@@ -60,11 +61,22 @@ class N8nClient {
 
     // Extract current message (handle multimodal content)
     const lastMessage = processedMessages[processedMessages.length - 1];
-    const currentMessage = lastMessage
+    let currentMessage = lastMessage
       ? isMultimodalMessage(lastMessage)
         ? extractTextFromMultimodal(lastMessage)
         : lastMessage.content || ''
       : '';
+
+    // Consolidate messages when session is generated (no session ID provided)
+    // This preserves conversation context for n8n workflows that only read chatInput
+    const isGeneratedSession = sessionSource === 'generated (new UUID)';
+    if (isGeneratedSession) {
+      const nonSystemMessages = processedMessages.filter((m) => m.role !== 'system');
+      if (nonSystemMessages.length > 1) {
+        const consolidated = consolidateMessages(nonSystemMessages);
+        currentMessage = consolidated;
+      }
+    }
 
     const payload = {
       systemPrompt,
@@ -223,8 +235,8 @@ class N8nClient {
     };
   }
 
-  async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
-    const payload = this.buildPayload(messages, sessionId, userContext);
+  async *streamCompletion(webhookUrl, messages, sessionId, userContext, sessionSource) {
+    const payload = this.buildPayload(messages, sessionId, userContext, sessionSource);
     const files = this._pendingFiles || [];
     this._pendingFiles = [];
 
@@ -244,8 +256,8 @@ class N8nClient {
     }
   }
 
-  async nonStreamingCompletion(webhookUrl, messages, sessionId, userContext) {
-    const payload = this.buildPayload(messages, sessionId, userContext);
+  async nonStreamingCompletion(webhookUrl, messages, sessionId, userContext, sessionSource) {
+    const payload = this.buildPayload(messages, sessionId, userContext, sessionSource);
     const files = this._pendingFiles || [];
     this._pendingFiles = [];
 

@@ -48,7 +48,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should preserve multimodal content as-is', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       // Messages should be unchanged
       expect(payload.messages[0].content).toEqual(multimodalMessage.content);
@@ -57,7 +62,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should extract text for currentMessage', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.currentMessage).toBe('What is in this image?');
       expect(payload.chatInput).toBe('What is in this image?');
@@ -65,7 +75,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should handle simple messages normally', () => {
       const messages = [simpleMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages[0].content).toBe('Hello');
       expect(payload.currentMessage).toBe('Hello');
@@ -81,7 +96,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should extract files to separate array', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.files).toHaveLength(1);
       expect(payload.files[0]).toEqual({
@@ -93,14 +113,24 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should replace message content with text only', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages[0].content).toBe('What is in this image?');
     });
 
     test('should not include files array when no files present', () => {
       const messages = [simpleMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.files).toBeUndefined();
     });
@@ -116,7 +146,12 @@ describe('N8nClient - File Upload Modes', () => {
           ],
         },
       ];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.files).toHaveLength(2);
       expect(payload.files[0].name).toBe('message_0_file_0.png');
@@ -133,7 +168,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should store files for multipart upload', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       // Files should NOT be in payload (they go in multipart form)
       expect(payload.files).toBeUndefined();
@@ -145,7 +185,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should replace message content with text only', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages[0].content).toBe('What is in this image?');
     });
@@ -160,7 +205,12 @@ describe('N8nClient - File Upload Modes', () => {
 
     test('should strip files and keep only text', () => {
       const messages = [multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages[0].content).toBe('What is in this image?');
       expect(payload.files).toBeUndefined();
@@ -173,7 +223,12 @@ describe('N8nClient - File Upload Modes', () => {
         content: [{ type: 'image_url', image_url: { url: sampleDataUrl } }],
       };
       const messages = [imageOnlyMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.messages[0].content).toBe('');
       expect(payload.currentMessage).toBe('');
@@ -191,7 +246,12 @@ describe('N8nClient - File Upload Modes', () => {
       };
       const client = createTestClient({ fileUploadMode: 'extract-json' });
       const messages = [multimodalSystem, simpleMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.systemPrompt).toBe('You are a vision assistant');
     });
@@ -199,7 +259,12 @@ describe('N8nClient - File Upload Modes', () => {
     test('should handle simple system message normally', () => {
       const client = createTestClient({ fileUploadMode: 'passthrough' });
       const messages = [systemMessage, simpleMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.systemPrompt).toBe('You are a helpful assistant');
     });
@@ -209,7 +274,12 @@ describe('N8nClient - File Upload Modes', () => {
     test('should handle mix of simple and multimodal messages', () => {
       const client = createTestClient({ fileUploadMode: 'extract-json' });
       const messages = [systemMessage, simpleMessage, multimodalMessage];
-      const payload = client.buildPayload(messages, 'session-123', userContext);
+      const payload = client.buildPayload(
+        messages,
+        'session-123',
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.systemPrompt).toBe('You are a helpful assistant');
       expect(payload.messages).toHaveLength(2); // Excludes system

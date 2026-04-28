@@ -24,7 +24,12 @@ describe('N8nClient - Task Detection', () => {
       const sessionId = 'test-session';
       const userContext = { userId: 'user-123' };
 
-      const payload = n8nClient.buildPayload(messages, sessionId, userContext);
+      const payload = n8nClient.buildPayload(
+        messages,
+        sessionId,
+        userContext,
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(false);
       expect(payload.taskType).toBe(null);
@@ -34,7 +39,7 @@ describe('N8nClient - Task Detection', () => {
       const detectSpy = jest.spyOn(taskDetectorService, 'detectTask');
       const messages = [{ role: 'user', content: 'Test' }];
 
-      n8nClient.buildPayload(messages, 'session', { userId: 'user' });
+      n8nClient.buildPayload(messages, 'session', { userId: 'user' }, 'req.body.session_id');
 
       expect(detectSpy).not.toHaveBeenCalled();
     });
@@ -58,7 +63,12 @@ describe('N8nClient - Task Detection', () => {
         },
       ];
 
-      const payload = n8nClient.buildPayload(messages, 'session-123', { userId: 'user-123' });
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session-123',
+        { userId: 'user-123' },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(true);
       expect(payload.taskType).toBe(TaskType.GENERATE_TITLE);
@@ -77,7 +87,12 @@ describe('N8nClient - Task Detection', () => {
         },
       ];
 
-      const payload = n8nClient.buildPayload(messages, 'session-123', { userId: 'user-123' });
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session-123',
+        { userId: 'user-123' },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(true);
       expect(payload.taskType).toBe(TaskType.GENERATE_TAGS);
@@ -95,7 +110,12 @@ describe('N8nClient - Task Detection', () => {
         },
       ];
 
-      const payload = n8nClient.buildPayload(messages, 'session-123', { userId: 'user-123' });
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session-123',
+        { userId: 'user-123' },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(true);
       expect(payload.taskType).toBe(TaskType.GENERATE_FOLLOW_UP_QUESTIONS);
@@ -107,7 +127,12 @@ describe('N8nClient - Task Detection', () => {
 
       const messages = [{ role: 'user', content: 'Hello, how are you?' }];
 
-      const payload = n8nClient.buildPayload(messages, 'session-123', { userId: 'user-123' });
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session-123',
+        { userId: 'user-123' },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(false);
       expect(payload.taskType).toBe(null);
@@ -128,7 +153,12 @@ describe('N8nClient - Task Detection', () => {
         userRole: 'admin',
       };
 
-      const payload = n8nClient.buildPayload(messages, 'session-abc', userContext);
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session-abc',
+        userContext,
+        'req.body.session_id',
+      );
 
       // Standard fields
       expect(payload.systemPrompt).toBe('System prompt');
@@ -150,9 +180,14 @@ describe('N8nClient - Task Detection', () => {
       const n8nClientWithoutDetector = new N8nClient(config, null);
 
       const messages = [{ role: 'user', content: 'Test' }];
-      const payload = n8nClientWithoutDetector.buildPayload(messages, 'session', {
-        userId: 'user',
-      });
+      const payload = n8nClientWithoutDetector.buildPayload(
+        messages,
+        'session',
+        {
+          userId: 'user',
+        },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(false);
       expect(payload.taskType).toBe(null);
@@ -165,7 +200,12 @@ describe('N8nClient - Task Detection', () => {
       const n8nClientDisabled = new N8nClient(config, null);
 
       const messages = [{ role: 'user', content: 'Test' }];
-      const payload = n8nClientDisabled.buildPayload(messages, 'session', { userId: 'user' });
+      const payload = n8nClientDisabled.buildPayload(
+        messages,
+        'session',
+        { userId: 'user' },
+        'req.body.session_id',
+      );
 
       expect(payload).toHaveProperty('isTask');
       expect(payload).toHaveProperty('taskType');
@@ -181,14 +221,24 @@ describe('N8nClient - Task Detection', () => {
       // With detection disabled
       config.enableTaskDetection = false;
       const clientDisabled = new N8nClient(config, taskDetectorService);
-      const payloadDisabled = clientDisabled.buildPayload(messages, sessionId, userContext);
+      const payloadDisabled = clientDisabled.buildPayload(
+        messages,
+        sessionId,
+        userContext,
+        'req.body.session_id',
+      );
 
       // With detection enabled but no match
       config.enableTaskDetection = true;
       const clientEnabled = new N8nClient(config, taskDetectorService);
       const detector = jest.fn().mockReturnValue(false);
       taskDetectorService.registerDetector(TaskType.GENERATE_TITLE, detector);
-      const payloadEnabled = clientEnabled.buildPayload(messages, sessionId, userContext);
+      const payloadEnabled = clientEnabled.buildPayload(
+        messages,
+        sessionId,
+        userContext,
+        'req.body.session_id',
+      );
 
       // Both should have the same structure
       expect(Object.keys(payloadDisabled).sort()).toEqual(Object.keys(payloadEnabled).sort());
@@ -211,7 +261,12 @@ describe('N8nClient - Task Detection', () => {
       taskDetectorService.registerDetector(TaskType.GENERATE_FOLLOW_UP_QUESTIONS, followUpDetector);
 
       const messages = [{ role: 'user', content: 'Test' }];
-      const payload = n8nClient.buildPayload(messages, 'session', { userId: 'user' });
+      const payload = n8nClient.buildPayload(
+        messages,
+        'session',
+        { userId: 'user' },
+        'req.body.session_id',
+      );
 
       expect(payload.isTask).toBe(true);
       expect(payload.taskType).toBe(TaskType.GENERATE_TAGS);
@@ -225,7 +280,7 @@ describe('N8nClient - Task Detection', () => {
       taskDetectorService.registerDetector(TaskType.GENERATE_TAGS, tagsDetector);
 
       const messages = [{ role: 'user', content: 'Test' }];
-      n8nClient.buildPayload(messages, 'session', { userId: 'user' });
+      n8nClient.buildPayload(messages, 'session', { userId: 'user' }, 'req.body.session_id');
 
       expect(titleDetector).toHaveBeenCalled();
       // tagsDetector may or may not be called depending on Map iteration order
