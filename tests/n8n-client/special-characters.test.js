@@ -43,6 +43,7 @@ describe('N8nClient - Special Characters', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toBe('Hello 世界 🌍');
@@ -74,6 +75,7 @@ describe('N8nClient - Special Characters', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toBe('nächste');
@@ -94,6 +96,7 @@ describe('N8nClient - Special Characters', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toContain('Line 1');
@@ -115,6 +118,7 @@ describe('N8nClient - Special Characters', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     expect(result).toContain('Hello');

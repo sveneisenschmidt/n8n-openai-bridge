@@ -29,6 +29,7 @@ const { createCompletionResponse } = require('../utils/openaiResponse');
  * @param {Object} userContext - User context data
  * @param {string} model - Model identifier
  * @param {Object} config - Configuration object
+ * @param {string} sessionSource - Source of session ID
  * @returns {Promise<void>}
  */
 async function handleNonStreaming(
@@ -40,12 +41,14 @@ async function handleNonStreaming(
   userContext,
   model,
   config,
+  sessionSource,
 ) {
   const content = await n8nClient.nonStreamingCompletion(
     webhookUrl,
     messages,
     sessionId,
     userContext,
+    sessionSource,
   );
 
   const response = createCompletionResponse(model, content);

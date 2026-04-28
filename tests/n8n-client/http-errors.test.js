@@ -44,6 +44,7 @@ describe('N8nClient - HTTP Error Responses', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       response: {
@@ -68,6 +69,7 @@ describe('N8nClient - HTTP Error Responses', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       response: {
@@ -92,6 +94,7 @@ describe('N8nClient - HTTP Error Responses', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       response: {

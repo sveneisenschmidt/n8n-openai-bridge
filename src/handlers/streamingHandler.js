@@ -30,6 +30,7 @@ const { createErrorResponse } = require('../utils/errorResponse');
  * @param {Object} userContext - User context data
  * @param {string} model - Model identifier
  * @param {Object} config - Configuration object
+ * @param {string} sessionSource - Source of session ID
  * @returns {Promise<void>}
  */
 async function handleStreaming(
@@ -41,6 +42,7 @@ async function handleStreaming(
   userContext,
   model,
   config,
+  sessionSource,
 ) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -52,6 +54,7 @@ async function handleStreaming(
       messages,
       sessionId,
       userContext,
+      sessionSource,
     );
 
     for await (const content of streamGenerator) {

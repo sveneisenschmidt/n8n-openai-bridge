@@ -119,6 +119,7 @@ router.post('/', async (req, res) => {
         userContext,
         model,
         config,
+        sessionSource,
       );
     } else {
       await handleNonStreaming(
@@ -130,6 +131,7 @@ router.post('/', async (req, res) => {
         userContext,
         model,
         config,
+        sessionSource,
       );
     }
   } catch (error) {

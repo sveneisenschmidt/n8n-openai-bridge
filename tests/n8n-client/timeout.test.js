@@ -42,6 +42,7 @@ describe('N8nClient - Timeout Handling', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       code: 'ECONNABORTED',
@@ -65,6 +66,7 @@ describe('N8nClient - Timeout Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     // Verify timeout is configured
@@ -94,6 +96,7 @@ describe('N8nClient - Timeout Handling', () => {
       [{ role: 'user', content: 'Hello' }],
       'session-123',
       userContext,
+      'req.body.session_id',
     );
 
     // Verify custom timeout is used

@@ -202,6 +202,7 @@ describe('chatCompletions route', () => {
           [{ role: 'user', content: 'Hello' }],
           'session-123',
           expect.objectContaining({ userId: 'anonymous' }),
+          'headers[X-Session-Id]',
         );
       });
 
@@ -229,6 +230,7 @@ describe('chatCompletions route', () => {
             userName: 'Test User',
             userRole: 'admin',
           },
+          expect.any(String),
         );
       });
 
@@ -327,6 +329,7 @@ describe('chatCompletions route', () => {
           [{ role: 'user', content: 'Hello' }],
           'session-789',
           expect.objectContaining({ userId: 'user-123' }),
+          'headers[X-Session-Id]',
         );
       });
     });

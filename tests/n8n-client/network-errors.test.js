@@ -43,6 +43,7 @@ describe('N8nClient - Network Errors', () => {
           [{ role: 'user', content: 'Hello' }],
           'session-123',
           userContext,
+          'req.body.session_id',
         )
         .next(),
     ).rejects.toMatchObject({
@@ -64,6 +65,7 @@ describe('N8nClient - Network Errors', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       code: 'ENOTFOUND',
@@ -84,6 +86,7 @@ describe('N8nClient - Network Errors', () => {
         [{ role: 'user', content: 'Hello' }],
         'session-123',
         userContext,
+        'req.body.session_id',
       ),
     ).rejects.toMatchObject({
       code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
