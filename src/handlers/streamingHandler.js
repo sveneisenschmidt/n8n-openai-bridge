@@ -16,8 +16,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const crypto = require('crypto');
 const { createStreamingChunk } = require('../utils/openaiResponse');
 const { createErrorResponse } = require('../utils/errorResponse');
+const { emitExternalToolCompletions } = require('../utils/externalToolEvents');
 
 /**
  * Handles streaming chat completion requests
@@ -33,6 +35,7 @@ const { createErrorResponse } = require('../utils/errorResponse');
  * @returns {Promise<void>}
  */
 async function handleStreaming(
+  req,
   res,
   n8nClient,
   webhookUrl,
@@ -41,10 +44,24 @@ async function handleStreaming(
   userContext,
   model,
   config,
+  activeStreamRegistry,
 ) {
+  const streamId = crypto.randomUUID();
+  let closed = false;
+  let responseContent = '';
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+  activeStreamRegistry.register(streamId, res, model);
+
+  const cleanup = () => {
+    closed = true;
+    activeStreamRegistry.delete(streamId);
+  };
+  req.on('close', cleanup);
 
   try {
     const streamGenerator = n8nClient.streamCompletion(
@@ -52,27 +69,57 @@ async function handleStreaming(
       messages,
       sessionId,
       userContext,
+      streamId,
     );
 
     for await (const content of streamGenerator) {
-      const chunk = createStreamingChunk(model, content, null);
-      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      if (closed || res.writableEnded || res.destroyed) {
+        break;
+      }
+      /**
+       * Tool calls are emitted asynchronously through the OpenAI-compatible upstream side-channel.
+       * n8n may split the final answer into fragments before that side-channel
+       * has registered the tool (e.g. `get` + `al: 57`). Forwarding those
+       * fragments immediately makes LibreChat discard the first fragment while
+       * its current run step is still TOOL_CALLS. Buffer the authoritative n8n
+       * response and emit it once after the stream has fully resolved, so the
+       * tool lifecycle and complete final answer have a deterministic order.
+       */
+      responseContent += content;
     }
 
-    // Send final chunk
-    const finalChunk = createStreamingChunk(model, null, 'stop');
-    res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    if (!closed && !res.writableEnded && !res.destroyed) {
+      /**
+       * The answer must be delivered while the external tool card is still
+       * active. LibreChat closes its graph branch once it receives the external
+       * completion lifecycle event, so emitting content after that event drops
+       * the entire answer. The response is still atomic because every n8n text
+       * fragment was accumulated above.
+       */
+      if (responseContent) {
+        const chunk = createStreamingChunk(model, responseContent, null);
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      }
+      emitExternalToolCompletions(activeStreamRegistry, streamId);
+      const finalChunk = createStreamingChunk(model, null, 'stop');
+      res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
 
     if (config.logRequests) {
       console.log(`Streaming completed for session: ${sessionId}`);
     }
   } catch (streamError) {
     console.error('Stream error:', streamError);
-    const errorChunk = createErrorResponse('Error during streaming', 'server_error');
-    res.write(`data: ${JSON.stringify(errorChunk)}\n\n`);
-    res.end();
+    if (!closed && !res.writableEnded && !res.destroyed) {
+      const errorChunk = createErrorResponse('Error during streaming', 'server_error');
+      res.write(`data: ${JSON.stringify(errorChunk)}\n\n`);
+      res.end();
+    }
+  } finally {
+    req.off('close', cleanup);
+    activeStreamRegistry.delete(streamId);
   }
 }
 

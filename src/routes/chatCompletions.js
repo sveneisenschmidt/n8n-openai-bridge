@@ -72,6 +72,7 @@ router.post('/', async (req, res) => {
   const config = req.app.locals.config;
   const modelRepository = req.app.locals.modelRepository;
   const n8nClient = req.app.locals.n8nClient;
+  const activeStreamRegistry = req.app.locals.activeStreamRegistry;
 
   const { model, messages, stream = false } = req.body;
 
@@ -111,6 +112,7 @@ router.post('/', async (req, res) => {
   try {
     if (stream) {
       await handleStreaming(
+        req,
         res,
         n8nClient,
         webhookUrl,
@@ -119,6 +121,7 @@ router.post('/', async (req, res) => {
         userContext,
         model,
         config,
+        activeStreamRegistry,
       );
     } else {
       await handleNonStreaming(

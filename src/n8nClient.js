@@ -44,7 +44,7 @@ class N8nClient {
     return headers;
   }
 
-  buildPayload(messages, sessionId, userContext) {
+  buildPayload(messages, sessionId, userContext, streamId = null) {
     const fileUploadMode = this.config.fileUploadMode || 'passthrough';
 
     // Process messages according to file upload mode
@@ -91,6 +91,10 @@ class N8nClient {
     }
     if (userContext.userRole) {
       payload.userRole = userContext.userRole;
+    }
+
+    if (streamId) {
+      payload.streamId = streamId;
     }
 
     // Add task detection if enabled
@@ -223,8 +227,8 @@ class N8nClient {
     };
   }
 
-  async *streamCompletion(webhookUrl, messages, sessionId, userContext) {
-    const payload = this.buildPayload(messages, sessionId, userContext);
+  async *streamCompletion(webhookUrl, messages, sessionId, userContext, streamId = null) {
+    const payload = this.buildPayload(messages, sessionId, userContext, streamId);
     const files = this._pendingFiles || [];
     this._pendingFiles = [];
 

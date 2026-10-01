@@ -67,8 +67,17 @@ function authenticate(config) {
 
     const token = authHeader.substring(7);
 
-    // Use timing-safe comparison to prevent timing attacks
-    if (!timingSafeEqual(token, config.bearerToken)) {
+    // The internal OpenAI-compatible tool proxy accepts its configured upstream
+    // API key as well. This lets n8n retain its upstream credential while public
+    // client-facing routes remain bridge-token protected.
+    const isOpenaiToolProxyRequest = req.originalUrl.startsWith('/openai-tool-proxy/');
+    const validBridgeToken = timingSafeEqual(token, config.bearerToken);
+    const validOpenaiToolProxyToken =
+      isOpenaiToolProxyRequest &&
+      config.openaiToolProxyApiKey &&
+      timingSafeEqual(token, config.openaiToolProxyApiKey);
+
+    if (!validBridgeToken && !validOpenaiToolProxyToken) {
       return sendError(res, 401, 'Invalid token', 'authentication_error');
     }
 

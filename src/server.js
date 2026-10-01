@@ -21,6 +21,7 @@ const cors = require('cors');
 const Bootstrap = require('./Bootstrap');
 const N8nClient = require('./n8nClient');
 const { createErrorResponse } = require('./utils/errorResponse');
+const ActiveStreamRegistry = require('./services/activeStreamRegistry');
 
 // Middleware
 const requestLogger = require('./middleware/requestLogger');
@@ -33,16 +34,22 @@ const healthRoute = require('./routes/health');
 const modelsRoute = require('./routes/models');
 const chatCompletionsRoute = require('./routes/chatCompletions');
 const adminReloadRoute = require('./routes/adminReload');
+const openaiToolProxyRoute = require('./routes/openaiToolProxy');
 
 const app = express();
 const bootstrap = new Bootstrap();
 const n8nClient = new N8nClient(bootstrap.config, bootstrap.taskDetectorService);
+const activeStreamRegistry = new ActiveStreamRegistry({
+  ttlMs: bootstrap.config.activeStreamTtlMs,
+  sweepIntervalMs: bootstrap.config.activeStreamSweepIntervalMs,
+});
 
 // Store bootstrap and n8nClient in app.locals for access in routes
 app.locals.bootstrap = bootstrap;
 app.locals.config = bootstrap.config;
 app.locals.modelRepository = bootstrap.modelRepository;
 app.locals.n8nClient = n8nClient;
+app.locals.activeStreamRegistry = activeStreamRegistry;
 
 // Create rate limiters
 const rateLimiters = createRateLimiters(bootstrap.config);
@@ -67,6 +74,7 @@ app.use(authenticate(bootstrap.config));
 app.use('/admin/reload', rateLimiters.standard, adminReloadRoute);
 app.use('/v1/models', rateLimiters.standard, modelsRoute);
 app.use('/v1/chat/completions', rateLimiters.chatCompletions, chatCompletionsRoute);
+app.use('/openai-tool-proxy', rateLimiters.chatCompletions, openaiToolProxyRoute);
 
 // Error handler
 app.use((err, _req, res, _next) => {
@@ -134,6 +142,9 @@ async function startServer() {
     console.log('  GET  /health');
     console.log('  GET  /v1/models');
     console.log('  POST /v1/chat/completions');
+    if (bootstrap.config.openaiToolProxyBaseUrl) {
+      console.log('  POST /openai-tool-proxy/v1/chat/completions');
+    }
     console.log('  POST /admin/reload');
     console.log('='.repeat(60));
   });
@@ -142,6 +153,7 @@ async function startServer() {
   const shutdown = (signal) => {
     console.log(`${signal} received, shutting down gracefully...`);
     bootstrap.close(); // Stop model loader watching/polling
+    activeStreamRegistry.close();
     server.close(() => {
       console.log('Server closed');
       process.exit(0);
