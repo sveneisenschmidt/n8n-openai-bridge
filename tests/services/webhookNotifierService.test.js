@@ -1,9 +1,9 @@
-const WebhookNotifier = require('../../src/services/webhookNotifier');
+const WebhookNotifierService = require('../../src/services/webhookNotifierService');
 const axios = require('axios');
 
 jest.mock('axios');
 
-describe('WebhookNotifier', () => {
+describe('WebhookNotifierService', () => {
   let consoleLogSpy;
   let consoleWarnSpy;
   let consoleErrorSpy;
@@ -26,19 +26,19 @@ describe('WebhookNotifier', () => {
 
   describe('constructor', () => {
     test('should be disabled when no webhook URL is provided', () => {
-      const notifier = new WebhookNotifier({});
+      const notifier = new WebhookNotifierService({});
       expect(notifier.enabled).toBe(false);
     });
 
     test('should be enabled when webhook URL is provided', () => {
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
       });
       expect(notifier.enabled).toBe(true);
     });
 
     test('should use default values when not provided', () => {
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
       });
       expect(notifier.timeout).toBe(5000);
@@ -48,7 +48,7 @@ describe('WebhookNotifier', () => {
     });
 
     test('should use custom configuration values', () => {
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         timeout: 10000,
         maxRetries: 5,
@@ -64,7 +64,7 @@ describe('WebhookNotifier', () => {
 
   describe('notify', () => {
     test('should not call webhook when disabled', async () => {
-      const notifier = new WebhookNotifier({});
+      const notifier = new WebhookNotifierService({});
       const payload = { type: 'models_changed', models: {} };
 
       await notifier.notify(payload);
@@ -75,7 +75,7 @@ describe('WebhookNotifier', () => {
     test('should call webhook with correct payload and headers', async () => {
       axios.post.mockResolvedValueOnce({ status: 200 });
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
       });
 
@@ -98,7 +98,7 @@ describe('WebhookNotifier', () => {
     test('should include authorization header when bearer token provided', async () => {
       axios.post.mockResolvedValueOnce({ status: 200 });
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         bearerToken: 'secret-token',
       });
@@ -123,7 +123,7 @@ describe('WebhookNotifier', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce({ status: 200 });
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         maxRetries: 3,
       });
@@ -140,7 +140,7 @@ describe('WebhookNotifier', () => {
       const error = new Error('Network error');
       axios.post.mockRejectedValue(error);
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         maxRetries: 2,
       });
@@ -162,7 +162,7 @@ describe('WebhookNotifier', () => {
       const error = new Error('Network error');
       axios.post.mockRejectedValue(error);
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         maxRetries: 2,
       });
@@ -176,7 +176,7 @@ describe('WebhookNotifier', () => {
     test('should log success message on successful notification', async () => {
       axios.post.mockResolvedValueOnce({ status: 200 });
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
       });
 
@@ -192,7 +192,7 @@ describe('WebhookNotifier', () => {
     test('should respect custom timeout', async () => {
       axios.post.mockResolvedValueOnce({ status: 200 });
 
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
         timeout: 15000,
       });
@@ -218,10 +218,10 @@ describe('WebhookNotifier', () => {
         'model-2': 'https://n8n.example.com/webhook/2',
       };
 
-      const payload = WebhookNotifier.createPayload(
+      const payload = WebhookNotifierService.createPayload(
         models,
         'JsonFileModelLoader',
-        WebhookNotifier.EventType.MODELS_CHANGED,
+        WebhookNotifierService.EventType.MODELS_CHANGED,
       );
 
       expect(payload.type).toBe('models_changed');
@@ -237,10 +237,10 @@ describe('WebhookNotifier', () => {
         'model-1': 'https://n8n.example.com/webhook/1',
       };
 
-      const payload = WebhookNotifier.createPayload(
+      const payload = WebhookNotifierService.createPayload(
         models,
         'N8nApiModelLoader',
-        WebhookNotifier.EventType.MODELS_LOADED,
+        WebhookNotifierService.EventType.MODELS_LOADED,
       );
 
       expect(payload.type).toBe('models_loaded');
@@ -250,10 +250,10 @@ describe('WebhookNotifier', () => {
     });
 
     test('should handle empty models object', () => {
-      const payload = WebhookNotifier.createPayload(
+      const payload = WebhookNotifierService.createPayload(
         {},
         'N8nApiModelLoader',
-        WebhookNotifier.EventType.MODELS_CHANGED,
+        WebhookNotifierService.EventType.MODELS_CHANGED,
       );
 
       expect(payload.modelCount).toBe(0);
@@ -262,10 +262,10 @@ describe('WebhookNotifier', () => {
 
     test('should use current timestamp', () => {
       const beforeTime = Date.now();
-      const payload = WebhookNotifier.createPayload(
+      const payload = WebhookNotifierService.createPayload(
         {},
         'StaticModelLoader',
-        WebhookNotifier.EventType.MODELS_LOADED,
+        WebhookNotifierService.EventType.MODELS_LOADED,
       );
       const afterTime = Date.now();
 
@@ -276,20 +276,20 @@ describe('WebhookNotifier', () => {
 
     test('should throw error when eventType is not provided', () => {
       expect(() => {
-        WebhookNotifier.createPayload({}, 'JsonFileModelLoader');
+        WebhookNotifierService.createPayload({}, 'JsonFileModelLoader');
       }).toThrow('eventType is required');
     });
 
     test('should throw error when eventType is null', () => {
       expect(() => {
-        WebhookNotifier.createPayload({}, 'JsonFileModelLoader', null);
+        WebhookNotifierService.createPayload({}, 'JsonFileModelLoader', null);
       }).toThrow('eventType is required');
     });
   });
 
   describe('sleep', () => {
     test('should sleep for specified duration', async () => {
-      const notifier = new WebhookNotifier({
+      const notifier = new WebhookNotifierService({
         webhookUrl: 'https://example.com/webhook',
       });
 

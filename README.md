@@ -13,6 +13,7 @@ OpenAI-compatible API middleware for n8n workflows. Use your n8n agents and work
 - Session tracking for conversation memory
 - User context forwarding (ID, email, name, role)
 - File uploads support (images, documents)
+- In-memory OpenAI Files API (`/v1/files`) with TTL-based expiration
 - Rate limiting with configurable thresholds per endpoint
 - Request ID tracking for distributed tracing
 - Docker ready with health checks
@@ -44,6 +45,7 @@ See [Integration Guide](docs/INTEGRATIONS.md) for setup.
    └────────────────────┬────────────────────────┘
                         │ OpenAI API Format
                         │ /v1/chat/completions
+                        │ /v1/files
                         ▼
               ┌─────────────────────┐
               │ n8n OpenAI Bridge   │
@@ -198,7 +200,8 @@ n8n-openai-bridge/
 │   ├── config/            # Configuration
 │   │   └── Config.js      # ENV parsing & server settings
 │   ├── repositories/      # Data repositories
-│   │   └── ModelRepository.js  # Model state management
+│   │   ├── ModelRepository.js  # Model state management
+│   │   └── FileRepository.js   # In-memory file storage
 │   ├── factories/         # Factory classes
 │   │   ├── ModelLoaderFactory.js     # Create model loaders
 │   │   └── WebhookNotifierFactory.js # Create webhook notifiers

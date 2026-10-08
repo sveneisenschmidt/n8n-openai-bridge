@@ -25,6 +25,7 @@ const { createErrorResponse } = require('../utils/errorResponse');
 const { debugSessionDetection } = require('../utils/debugSession');
 const { handleStreaming } = require('../handlers/streamingHandler');
 const { handleNonStreaming } = require('../handlers/nonStreamingHandler');
+const { resolveFileReferences } = require('../utils/fileResolver');
 
 const router = express.Router();
 
@@ -108,13 +109,17 @@ router.post('/', async (req, res) => {
     console.log(`Stream: ${stream}`);
   }
 
+  // Resolve file_id references to inline content
+  const fileService = req.app.locals.fileService;
+  const resolvedMessages = fileService ? resolveFileReferences(messages, fileService) : messages;
+
   try {
     if (stream) {
       await handleStreaming(
         res,
         n8nClient,
         webhookUrl,
-        messages,
+        resolvedMessages,
         sessionId,
         userContext,
         model,
@@ -125,7 +130,7 @@ router.post('/', async (req, res) => {
         res,
         n8nClient,
         webhookUrl,
-        messages,
+        resolvedMessages,
         sessionId,
         userContext,
         model,

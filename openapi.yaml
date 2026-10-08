@@ -41,6 +41,8 @@ tags:
     description: Model management endpoints
   - name: Chat
     description: Chat completion endpoints
+  - name: Files
+    description: In-memory OpenAI Files API with TTL-based expiration
   - name: Admin
     description: Administrative endpoints
 
@@ -184,6 +186,171 @@ paths:
           $ref: '#/components/responses/ModelNotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+
+  /v1/files:
+    post:
+      summary: Upload a file
+      description: Upload a file to in-memory storage. Files are stored with a TTL and automatically expired.
+      operationId: uploadFile
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - purpose
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload
+                purpose:
+                  type: string
+                  enum: [assistants, batch, fine-tune, vision, user_data, evals]
+                  description: The intended purpose of the file
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileObject'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '413':
+          description: File too large or storage limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: List files
+      description: List uploaded files with optional filtering and pagination.
+      operationId: listFiles
+      tags:
+        - Files
+      parameters:
+        - name: purpose
+          in: query
+          schema:
+            type: string
+          description: Filter by purpose
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 10000
+          description: Maximum number of results
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order by created_at
+        - name: after
+          in: query
+          schema:
+            type: string
+          description: Cursor for pagination (file ID)
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FileObject'
+                  has_more:
+                    type: boolean
+
+  /v1/files/{file_id}:
+    get:
+      summary: Retrieve file metadata
+      operationId: getFile
+      tags:
+        - Files
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileObject'
+        '404':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: Delete a file
+      operationId: deleteFile
+      tags:
+        - Files
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  object:
+                    type: string
+                    example: file
+                  deleted:
+                    type: boolean
+                    example: true
+        '404':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/files/{file_id}/content:
+    get:
+      summary: Retrieve file content
+      description: Returns the raw binary content of the file.
+      operationId: getFileContent
+      tags:
+        - Files
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/ValidationError'
 
   /admin/reload:
     post:
@@ -357,6 +524,38 @@ components:
             total_tokens:
               type: integer
               example: 30
+
+    FileObject:
+      type: object
+      properties:
+        id:
+          type: string
+          description: File identifier
+          example: file-abc123
+        object:
+          type: string
+          enum: [file]
+        bytes:
+          type: integer
+          description: File size in bytes
+          example: 120000
+        created_at:
+          type: integer
+          description: Unix timestamp of creation
+          example: 1677610602
+        filename:
+          type: string
+          example: document.pdf
+        purpose:
+          type: string
+          enum: [assistants, batch, fine-tune, vision, user_data, evals]
+        status:
+          type: string
+          enum: [processed]
+        expires_at:
+          type: integer
+          description: Unix timestamp when the file expires
+          example: 1677614202
 
     Error:
       type: object

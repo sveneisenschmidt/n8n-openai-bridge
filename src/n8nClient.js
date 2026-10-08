@@ -77,8 +77,10 @@ class N8nClient {
       taskType: null,
     };
 
-    // Add files array for extract-json mode
-    if (fileUploadMode === 'extract-json' && files.length > 0) {
+    // Add extracted files for JSON forwarding modes. The XLSX-only mode is
+    // intentionally narrow and contains only workbook bytes accepted by the
+    // file processor.
+    if (['extract-json', 'extract-xlsx-json'].includes(fileUploadMode) && files.length > 0) {
       payload.files = files;
     }
 

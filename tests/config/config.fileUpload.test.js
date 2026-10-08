@@ -68,6 +68,12 @@ describe('Config - File Upload Configuration', () => {
       expect(config.fileUploadMode).toBe('extract-multipart');
     });
 
+    test('should accept extract-xlsx-json mode', () => {
+      process.env.FILE_UPLOAD_MODE = 'extract-xlsx-json';
+      const config = new Config();
+      expect(config.fileUploadMode).toBe('extract-xlsx-json');
+    });
+
     test('should accept disabled mode', () => {
       process.env.FILE_UPLOAD_MODE = 'disabled';
       const config = new Config();
@@ -93,7 +99,7 @@ describe('Config - File Upload Configuration', () => {
       const config = new Config();
       expect(config.fileUploadMode).toBe('passthrough');
       expect(console.warn).toHaveBeenCalledWith(
-        "FILE_UPLOAD_MODE 'invalid-mode' is invalid. Valid modes: passthrough, extract-json, extract-multipart, disabled. Using default: passthrough.",
+        "FILE_UPLOAD_MODE 'invalid-mode' is invalid. Valid modes: passthrough, extract-json, extract-multipart, extract-xlsx-json, disabled. Using default: passthrough.",
       );
     });
 
@@ -116,6 +122,7 @@ describe('Config - File Upload Configuration', () => {
         'passthrough',
         'extract-json',
         'extract-multipart',
+        'extract-xlsx-json',
         'disabled',
       ]);
     });

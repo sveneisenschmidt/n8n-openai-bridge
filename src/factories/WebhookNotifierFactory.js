@@ -16,13 +16,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const WebhookNotifier = require('../services/webhookNotifier');
+const WebhookNotifierService = require('../services/webhookNotifierService');
 
 /**
- * WebhookNotifierFactory - Factory for creating WebhookNotifier instances
+ * WebhookNotifierFactory - Factory for creating WebhookNotifierService instances
  *
  * Responsibilities:
- * - Create and configure WebhookNotifier instances
+ * - Create and configure WebhookNotifierService instances
  * - Read webhook-related environment variables
  *
  * Does NOT:
@@ -32,9 +32,9 @@ const WebhookNotifier = require('../services/webhookNotifier');
  */
 class WebhookNotifierFactory {
   /**
-   * Create and configure the WebhookNotifier
+   * Create and configure the WebhookNotifierService
    * Only enabled if WEBHOOK_NOTIFIER_URL is set
-   * @returns {WebhookNotifier} Configured notifier instance
+   * @returns {WebhookNotifierService} Configured notifier instance
    */
   static createWebhookNotifier() {
     const config = {
@@ -45,7 +45,7 @@ class WebhookNotifierFactory {
       notifyOnStartup: process.env.WEBHOOK_NOTIFIER_ON_STARTUP === 'true',
     };
 
-    return new WebhookNotifier(config);
+    return new WebhookNotifierService(config);
   }
 }
 
